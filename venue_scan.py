@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python3
 """
 venue_scan.py — survey commodity prediction markets on Kalshi and Polymarket.
 
@@ -59,22 +59,16 @@ UA = "Mozilla/5.0 (compatible; venue-scan/1.0)"
 PAUSE = 0.08           # ~12 rps, well under Kalshi's ~30 rps public limit
 TIMEOUT = 20
 
-# Kalshi commodity series. Tickers drift; unknown ones are skipped with a note.
-KALSHI_SERIES = [
-    ("KXWTIW",     "WTI crude, weekly range"),
-    ("KXWTID",     "WTI crude, daily range"),
-    ("KXWTIM",     "WTI crude, monthly range"),
-    ("KXBRENT",    "Brent crude range"),
-    ("KXNGAS",     "Natural gas range"),
-    ("KXGOLD",     "Gold range"),
-    ("KXGOLDD",    "Gold, daily range"),
-    ("KXSILVER",   "Silver range"),
-    ("KXCOPPER",   "Copper range"),
-    ("KXGAS",      "US gasoline price"),
-    ("KXCORN",     "Corn range"),
-    ("KXWHEAT",    "Wheat range"),
-    ("KXSOY",      "Soybean range"),
-]
+# Categories to pull series from. The series themselves are DISCOVERED at
+# runtime via /series - never hardcoded, because guessed tickers silently
+# 404 and get misreported as "no open markets".
+KALSHI_CATEGORIES = ["Commodities", "Economics", "Financials"]
+
+# Series are matched against ticker+title. Keeps the scan to instruments that
+# plausibly have a listed options chain to hedge against.
+DEFAULT_KEYWORDS = ("oil,crude,wti,brent,gas,gasoline,natural,gold,silver,"
+                    "copper,platinum,corn,wheat,soy,cotton,coffee,sugar,"
+                    "s&p,nasdaq,dow,russell,vix,index,treasury,yield,fed")
 
 POLY_QUERIES = ["oil", "crude", "wti", "brent", "natural gas",
                 "gold", "silver", "copper", "gasoline", "wheat", "corn"]
@@ -200,9 +194,90 @@ class Book:
 # kalshi
 # --------------------------------------------------------------------------
 
-def kalshi_events(series: str) -> list[dict]:
-    out = get(f"{KALSHI}/events", {"series_ticker": series,
-                                   "status": "open", "limit": 200})
+def kalshi_discover_series(categories: Iterable[str],
+                           keywords: list[str] | None = None
+                           ) -> list[tuple[str, str]]:
+    """Ask Kalshi which series exist. Never guess tickers."""
+    out: list[tuple[str, str]] = []
+    seen: set[str] = set()
+    for cat in categories:
+        resp = get(f"{KALSHI}/series", {"category": cat})
+        time.sleep(PAUSE)
+        if not resp:
+            print(f"  ! category '{cat}' returned nothing", file=sys.stderr)
+            continue
+        rows = resp.get("series", []) or []
+        kept = 0
+        for r in rows:
+            tk = r.get("ticker")
+            title = (r.get("title") or tk or "")
+            if not tk or tk in seen:
+                continue
+            if keywords:
+                hay = f"{tk} {title}".lower()
+                if not any(k in hay for k in keywords):
+                    continue
+            seen.add(tk)
+            out.append((tk, title[:46]))
+            kept += 1
+        print(f"  {cat:14s} {len(rows):4d} series -> {kept} kept", file=sys.stderr)
+    return out
+
+
+def _book_from_sides(yes_raw, no_raw, scale=1.0) -> Book:
+    yes = [(p * scale, c) for p, c in _parse_kalshi_side(yes_raw)]
+    no = [(p * scale, c) for p, c in _parse_kalshi_side(no_raw)]
+    book = Book()
+    book.yes_bids = sorted((Level(round(p, 2), c) for p, c in yes),
+                           key=lambda l: -l.price)
+    # yes_ask = 100 - no_bid  (Kalshi returns bids only, on both sides)
+    book.yes_asks = sorted((Level(round(100.0 - p, 2), c) for p, c in no),
+                           key=lambda l: l.price)
+    return book
+
+
+def kalshi_books_bulk(tickers: list[str]) -> dict[str, Book]:
+    """
+    Fetch up to 100 orderbooks per request via /markets/orderbooks.
+    Falls back to per-ticker calls if the bulk endpoint isn't available.
+    """
+    books: dict[str, Book] = {}
+    for i in range(0, len(tickers), 100):
+        chunk = tickers[i:i + 100]
+        raw = get(f"{KALSHI}/markets/orderbooks", {"tickers": ",".join(chunk)})
+        time.sleep(PAUSE)
+        if not raw:
+            for tk in chunk:                       # fallback: one at a time
+                bk = kalshi_book(tk)
+                time.sleep(PAUSE)
+                if bk:
+                    books[tk] = bk
+            continue
+        entries = (raw.get("orderbooks") or raw.get("markets")
+                   or (raw if isinstance(raw, list) else []))
+        for e in entries:
+            if not isinstance(e, dict):
+                continue
+            tk = e.get("ticker") or e.get("market_ticker")
+            if not tk:
+                continue
+            ob = e.get("orderbook") or e
+            y, n, sc = ob.get("yes"), ob.get("no"), 1.0
+            if y is None and n is None:
+                fp = e.get("orderbook_fp") or ob.get("orderbook_fp") or {}
+                y, n = fp.get("yes_dollars"), fp.get("no_dollars")
+                sc = 100.0
+            if y is None and n is None:
+                continue
+            books[tk] = _book_from_sides(y, n, sc)
+    return books
+
+
+def kalshi_events(series: str, nested: bool = True) -> list[dict]:
+    p = {"series_ticker": series, "status": "open", "limit": 200}
+    if nested:
+        p["with_nested_markets"] = "true"
+    out = get(f"{KALSHI}/events", p)
     if not out:
         return []
     return out.get("events", []) or []
@@ -250,33 +325,33 @@ def kalshi_book(ticker: str, depth: int = 100) -> Book | None:
     yes = [(p * scale, c) for p, c in _parse_kalshi_side(yes_raw)]
     no = [(p * scale, c) for p, c in _parse_kalshi_side(no_raw)]
 
-    book = Book()
-    book.yes_bids = sorted((Level(round(p, 2), c) for p, c in yes),
-                           key=lambda l: -l.price)
-    # the derivation that everyone gets wrong:
-    book.yes_asks = sorted((Level(round(100.0 - p, 2), c) for p, c in no),
-                           key=lambda l: l.price)
-    return book
+    return _book_from_sides(yes_raw, no_raw, scale)
 
 
-def scan_kalshi_ladder(series: str, label: str, size: int) -> list[dict]:
+def scan_kalshi_ladder(series: str, label: str, size: int,
+                       max_events: int = 3) -> list[dict]:
     results = []
     events = kalshi_events(series)
     if not events:
         return results
 
-    for ev in events[:4]:                       # nearest few expiries
+    for ev in events[:max_events]:              # nearest few expiries
         et = ev.get("event_ticker")
-        markets = kalshi_markets(et)
-        # keep only genuine bracket ladders
-        if len(markets) < 3:
+        # nested markets come back with the event -> saves a round trip
+        markets = ev.get("markets") or []
+        if not markets:
+            markets = kalshi_markets(et)
+            time.sleep(PAUSE)
+        if len(markets) < 3:                    # not a bracket ladder
             continue
+
+        tickers = [m.get("ticker") for m in markets if m.get("ticker")]
+        books = kalshi_books_bulk(tickers)      # 1 call per 100 brackets
 
         rows = []
         for m in markets:
             tk = m.get("ticker")
-            bk = kalshi_book(tk)
-            time.sleep(PAUSE)
+            bk = books.get(tk)
             if bk is None:
                 continue
             rows.append({
@@ -458,9 +533,16 @@ def report_kalshi(res: list[dict], size: int) -> None:
         if (r["buy_edge"] or -1) > 0 or (r["sell_edge"] or -1) > 0:
             flag = "  <== ARB"
             hits.append(r)
+        # None means NOT ALL LEGS QUOTED - print n/a, never 0.0, which reads
+        # as "no bids" when it actually means "ladder incomplete".
+        asum = f"{r['ask_sum']:7.1f}" if r["ask_sum"] is not None else "    n/a"
+        bsum = f"{r['bid_sum']:7.1f}" if r["bid_sum"] is not None else "    n/a"
+        miss = ""
+        if r["ask_sum"] is None or r["bid_sum"] is None:
+            miss = (f"  [{r['n_quoted_bid']}/{r['n_brackets']} bid, "
+                    f"{r['n_quoted_ask']}/{r['n_brackets']} ask]")
         print(f"{r['event'][:30]:30s} {r['n_brackets']:3d} "
-              f"{(r['ask_sum'] or 0):7.1f} {(r['bid_sum'] or 0):7.1f} "
-              f"{be:>8s} {se:>9s} {cap:6d}{flag}")
+              f"{asum} {bsum} {be:>8s} {se:>9s} {cap:6d}{flag}{miss}")
 
     if not hits:
         print("\n  no ladder-sum arbitrage. Expected — this is the cheap check,")
@@ -551,6 +633,16 @@ def main() -> None:
     ap.add_argument("--venue", choices=["kalshi", "polymarket", "both"],
                     default="both")
     ap.add_argument("--series", help="single Kalshi series ticker, e.g. KXWTIW")
+    ap.add_argument("--categories",
+                    help="comma-separated Kalshi categories to discover "
+                         "(default: Commodities,Economics,Financials)")
+    ap.add_argument("--filter", default=DEFAULT_KEYWORDS,
+                    help="comma-separated keywords; a series is scanned only "
+                         "if its ticker or title matches one")
+    ap.add_argument("--no-filter", action="store_true",
+                    help="scan every discovered series (slow)")
+    ap.add_argument("--max-events", type=int, default=3,
+                    help="expiries per series to scan (default 3)")
     ap.add_argument("--size", type=int, default=500,
                     help="depth target in contracts (500=std CL unit, 50=Micro)")
     ap.add_argument("--json", help="write full results to this path")
@@ -560,19 +652,29 @@ def main() -> None:
     poly: list[dict] = []
 
     if a.venue in ("kalshi", "both"):
-        series = ([(a.series, "user-specified")] if a.series else KALSHI_SERIES)
-        print(f"scanning {len(series)} Kalshi series ...", file=sys.stderr)
-        for tk, label in series:
+        if a.series:
+            series = [(a.series, "user-specified")]
+        else:
+            cats = a.categories.split(",") if a.categories else KALSHI_CATEGORIES
+            kw = None if a.no_filter else [k.strip().lower()
+                                           for k in a.filter.split(",")]
+            print("discovering Kalshi series ...", file=sys.stderr)
+            series = kalshi_discover_series(cats, kw)
+            print(f"  -> {len(series)} series to scan\n", file=sys.stderr)
+
+        for i, (tk, label) in enumerate(series, 1):
             try:
-                got = scan_kalshi_ladder(tk, label, a.size)
+                got = scan_kalshi_ladder(tk, label, a.size, a.max_events)
             except Exception as e:                       # noqa: BLE001
                 print(f"  ! {tk}: {type(e).__name__}: {e}", file=sys.stderr)
                 continue
             if got:
-                print(f"  {tk:10s} {len(got)} ladder(s)", file=sys.stderr)
+                n = sum(r["n_brackets"] for r in got)
+                print(f"  [{i}/{len(series)}] {tk:18s} "
+                      f"{len(got)} ladder(s), {n} brackets", file=sys.stderr)
                 kal.extend(got)
-            else:
-                print(f"  {tk:10s} none open", file=sys.stderr)
+            elif i % 10 == 0:
+                print(f"  [{i}/{len(series)}] ...", file=sys.stderr)
             time.sleep(PAUSE)
 
     if a.venue in ("polymarket", "both"):
