@@ -1,0 +1,1923 @@
+{
+  "ts": 1788310326.7157052,
+  "size": 50,
+  "kalshi": [
+    {
+      "venue": "kalshi",
+      "series": "KXWTIW",
+      "label": "WTI crude, weekly range",
+      "event": "KXWTIW-26SEP0414",
+      "title": "Oil Price (WTI) on Sep 4, 2026?",
+      "n_brackets": 27,
+      "n_quoted_ask": 27,
+      "n_quoted_bid": 14,
+      "ask_sum": 127.0,
+      "bid_sum": null,
+      "fee_buy": 0.27,
+      "fee_sell": 0.14,
+      "buy_edge": -27.27,
+      "sell_edge": null,
+      "buy_cap": 124,
+      "sell_cap": 0,
+      "rows": [
+        {
+          "ticker": "KXWTIW-26SEP0414-T95.99",
+          "label": "Above $95.99",
+          "bid": 13.0,
+          "ask": 14.0,
+          "spread": 1.0,
+          "bid_size": 5284,
+          "ask_size": 500,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 14.0,
+            "touch": 14.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 13.0,
+            "touch": 13.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        },
+        {
+          "ticker": "KXWTIW-26SEP0414-T71.00",
+          "label": "Below $71.00",
+          "bid": null,
+          "ask": 1.0,
+          "spread": null,
+          "bid_size": 0,
+          "ask_size": 450,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 1.0,
+            "touch": 1.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 0,
+            "vwap": null,
+            "touch": null,
+            "slip_cents": null,
+            "complete": false
+          }
+        },
+        {
+          "ticker": "KXWTIW-26SEP0414-B95.50",
+          "label": "$95.00 to $95.99",
+          "bid": 3.0,
+          "ask": 4.0,
+          "spread": 1.0,
+          "bid_size": 6804,
+          "ask_size": 200,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 4.0,
+            "touch": 4.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 3.0,
+            "touch": 3.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        },
+        {
+          "ticker": "KXWTIW-26SEP0414-B94.50",
+          "label": "$94.00 to $94.99",
+          "bid": 5.0,
+          "ask": 6.0,
+          "spread": 1.0,
+          "bid_size": 1556,
+          "ask_size": 200,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 6.0,
+            "touch": 6.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 5.0,
+            "touch": 5.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        },
+        {
+          "ticker": "KXWTIW-26SEP0414-B93.50",
+          "label": "$93.00 to $93.99",
+          "bid": 7.0,
+          "ask": 8.0,
+          "spread": 1.0,
+          "bid_size": 1131,
+          "ask_size": 200,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 8.0,
+            "touch": 8.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 7.0,
+            "touch": 7.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        },
+        {
+          "ticker": "KXWTIW-26SEP0414-B92.50",
+          "label": "$92.00 to $92.99",
+          "bid": 8.0,
+          "ask": 9.0,
+          "spread": 1.0,
+          "bid_size": 625,
+          "ask_size": 200,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 9.0,
+            "touch": 9.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 8.0,
+            "touch": 8.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        },
+        {
+          "ticker": "KXWTIW-26SEP0414-B91.50",
+          "label": "$91.00 to $91.99",
+          "bid": 9.0,
+          "ask": 10.0,
+          "spread": 1.0,
+          "bid_size": 500,
+          "ask_size": 183,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 10.0,
+            "touch": 10.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 9.0,
+            "touch": 9.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        },
+        {
+          "ticker": "KXWTIW-26SEP0414-B90.50",
+          "label": "$90.00 to $90.99",
+          "bid": 10.0,
+          "ask": 11.0,
+          "spread": 1.0,
+          "bid_size": 500,
+          "ask_size": 124,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 11.0,
+            "touch": 11.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 10.0,
+            "touch": 10.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        },
+        {
+          "ticker": "KXWTIW-26SEP0414-B89.50",
+          "label": "$89.00 to $89.99",
+          "bid": 8.0,
+          "ask": 10.0,
+          "spread": 2.0,
+          "bid_size": 1071,
+          "ask_size": 200,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 10.0,
+            "touch": 10.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 8.0,
+            "touch": 8.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        },
+        {
+          "ticker": "KXWTIW-26SEP0414-B88.50",
+          "label": "$88.00 to $88.99",
+          "bid": 10.0,
+          "ask": 11.0,
+          "spread": 1.0,
+          "bid_size": 448,
+          "ask_size": 700,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 11.0,
+            "touch": 11.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 10.0,
+            "touch": 10.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        },
+        {
+          "ticker": "KXWTIW-26SEP0414-B87.50",
+          "label": "$87.00 to $87.99",
+          "bid": 6.0,
+          "ask": 8.0,
+          "spread": 2.0,
+          "bid_size": 125,
+          "ask_size": 1001,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 8.0,
+            "touch": 8.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 6.0,
+            "touch": 6.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        },
+        {
+          "ticker": "KXWTIW-26SEP0414-B86.50",
+          "label": "$86.00 to $86.99",
+          "bid": 3.0,
+          "ask": 4.0,
+          "spread": 1.0,
+          "bid_size": 636,
+          "ask_size": 183,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 4.0,
+            "touch": 4.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 3.0,
+            "touch": 3.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        },
+        {
+          "ticker": "KXWTIW-26SEP0414-B85.50",
+          "label": "$85.00 to $85.99",
+          "bid": 2.0,
+          "ask": 4.0,
+          "spread": 2.0,
+          "bid_size": 125,
+          "ask_size": 422,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 4.0,
+            "touch": 4.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 2.0,
+            "touch": 2.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        },
+        {
+          "ticker": "KXWTIW-26SEP0414-B84.50",
+          "label": "$84.00 to $84.99",
+          "bid": 2.0,
+          "ask": 3.0,
+          "spread": 1.0,
+          "bid_size": 200,
+          "ask_size": 768,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 3.0,
+            "touch": 3.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 2.0,
+            "touch": 2.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        },
+        {
+          "ticker": "KXWTIW-26SEP0414-B83.50",
+          "label": "$83.00 to $83.99",
+          "bid": 1.0,
+          "ask": 2.0,
+          "spread": 1.0,
+          "bid_size": 325,
+          "ask_size": 605,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 2.0,
+            "touch": 2.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 1.0,
+            "touch": 1.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        },
+        {
+          "ticker": "KXWTIW-26SEP0414-B82.50",
+          "label": "$82.00 to $82.99",
+          "bid": null,
+          "ask": 2.0,
+          "spread": null,
+          "bid_size": 0,
+          "ask_size": 737,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 2.0,
+            "touch": 2.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 0,
+            "vwap": null,
+            "touch": null,
+            "slip_cents": null,
+            "complete": false
+          }
+        },
+        {
+          "ticker": "KXWTIW-26SEP0414-B81.50",
+          "label": "$81.00 to $81.99",
+          "bid": null,
+          "ask": 1.0,
+          "spread": null,
+          "bid_size": 0,
+          "ask_size": 682,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 1.0,
+            "touch": 1.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 0,
+            "vwap": null,
+            "touch": null,
+            "slip_cents": null,
+            "complete": false
+          }
+        },
+        {
+          "ticker": "KXWTIW-26SEP0414-B80.50",
+          "label": "$80.00 to $80.99",
+          "bid": null,
+          "ask": 1.0,
+          "spread": null,
+          "bid_size": 0,
+          "ask_size": 388,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 1.0,
+            "touch": 1.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 0,
+            "vwap": null,
+            "touch": null,
+            "slip_cents": null,
+            "complete": false
+          }
+        },
+        {
+          "ticker": "KXWTIW-26SEP0414-B79.50",
+          "label": "$79.00 to $79.99",
+          "bid": null,
+          "ask": 2.0,
+          "spread": null,
+          "bid_size": 0,
+          "ask_size": 5110,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 2.0,
+            "touch": 2.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 0,
+            "vwap": null,
+            "touch": null,
+            "slip_cents": null,
+            "complete": false
+          }
+        },
+        {
+          "ticker": "KXWTIW-26SEP0414-B78.50",
+          "label": "$78.00 to $78.99",
+          "bid": null,
+          "ask": 2.0,
+          "spread": null,
+          "bid_size": 0,
+          "ask_size": 5535,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 2.0,
+            "touch": 2.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 0,
+            "vwap": null,
+            "touch": null,
+            "slip_cents": null,
+            "complete": false
+          }
+        },
+        {
+          "ticker": "KXWTIW-26SEP0414-B77.50",
+          "label": "$77.00 to $77.99",
+          "bid": null,
+          "ask": 2.0,
+          "spread": null,
+          "bid_size": 0,
+          "ask_size": 5149,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 2.0,
+            "touch": 2.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 0,
+            "vwap": null,
+            "touch": null,
+            "slip_cents": null,
+            "complete": false
+          }
+        },
+        {
+          "ticker": "KXWTIW-26SEP0414-B76.50",
+          "label": "$76.00 to $76.99",
+          "bid": null,
+          "ask": 2.0,
+          "spread": null,
+          "bid_size": 0,
+          "ask_size": 158,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 2.0,
+            "touch": 2.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 0,
+            "vwap": null,
+            "touch": null,
+            "slip_cents": null,
+            "complete": false
+          }
+        },
+        {
+          "ticker": "KXWTIW-26SEP0414-B75.50",
+          "label": "$75.00 to $75.99",
+          "bid": null,
+          "ask": 2.0,
+          "spread": null,
+          "bid_size": 0,
+          "ask_size": 145,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 2.0,
+            "touch": 2.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 0,
+            "vwap": null,
+            "touch": null,
+            "slip_cents": null,
+            "complete": false
+          }
+        },
+        {
+          "ticker": "KXWTIW-26SEP0414-B74.50",
+          "label": "$74.00 to $74.99",
+          "bid": null,
+          "ask": 2.0,
+          "spread": null,
+          "bid_size": 0,
+          "ask_size": 145,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 2.0,
+            "touch": 2.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 0,
+            "vwap": null,
+            "touch": null,
+            "slip_cents": null,
+            "complete": false
+          }
+        },
+        {
+          "ticker": "KXWTIW-26SEP0414-B73.50",
+          "label": "$73.00 to $73.99",
+          "bid": null,
+          "ask": 2.0,
+          "spread": null,
+          "bid_size": 0,
+          "ask_size": 5100,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 2.0,
+            "touch": 2.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 0,
+            "vwap": null,
+            "touch": null,
+            "slip_cents": null,
+            "complete": false
+          }
+        },
+        {
+          "ticker": "KXWTIW-26SEP0414-B72.50",
+          "label": "$72.00 to $72.99",
+          "bid": null,
+          "ask": 2.0,
+          "spread": null,
+          "bid_size": 0,
+          "ask_size": 5100,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 2.0,
+            "touch": 2.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 0,
+            "vwap": null,
+            "touch": null,
+            "slip_cents": null,
+            "complete": false
+          }
+        },
+        {
+          "ticker": "KXWTIW-26SEP0414-B71.50",
+          "label": "$71.00 to $71.99",
+          "bid": null,
+          "ask": 2.0,
+          "spread": null,
+          "bid_size": 0,
+          "ask_size": 5100,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 2.0,
+            "touch": 2.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 0,
+            "vwap": null,
+            "touch": null,
+            "slip_cents": null,
+            "complete": false
+          }
+        }
+      ],
+      "tails": [
+        {
+          "ticker": "KXWTIW-26SEP0414-T95.99",
+          "label": "Above $95.99",
+          "bid": 13.0,
+          "ask": 14.0,
+          "spread": 1.0,
+          "bid_size": 5284,
+          "ask_size": 500,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 14.0,
+            "touch": 14.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 13.0,
+            "touch": 13.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        },
+        {
+          "ticker": "KXWTIW-26SEP0414-B94.50",
+          "label": "$94.00 to $94.99",
+          "bid": 5.0,
+          "ask": 6.0,
+          "spread": 1.0,
+          "bid_size": 1556,
+          "ask_size": 200,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 6.0,
+            "touch": 6.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 5.0,
+            "touch": 5.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        },
+        {
+          "ticker": "KXWTIW-26SEP0414-B93.50",
+          "label": "$93.00 to $93.99",
+          "bid": 7.0,
+          "ask": 8.0,
+          "spread": 1.0,
+          "bid_size": 1131,
+          "ask_size": 200,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 8.0,
+            "touch": 8.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 7.0,
+            "touch": 7.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        },
+        {
+          "ticker": "KXWTIW-26SEP0414-B92.50",
+          "label": "$92.00 to $92.99",
+          "bid": 8.0,
+          "ask": 9.0,
+          "spread": 1.0,
+          "bid_size": 625,
+          "ask_size": 200,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 9.0,
+            "touch": 9.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 8.0,
+            "touch": 8.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        },
+        {
+          "ticker": "KXWTIW-26SEP0414-B91.50",
+          "label": "$91.00 to $91.99",
+          "bid": 9.0,
+          "ask": 10.0,
+          "spread": 1.0,
+          "bid_size": 500,
+          "ask_size": 183,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 10.0,
+            "touch": 10.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 9.0,
+            "touch": 9.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        },
+        {
+          "ticker": "KXWTIW-26SEP0414-B90.50",
+          "label": "$90.00 to $90.99",
+          "bid": 10.0,
+          "ask": 11.0,
+          "spread": 1.0,
+          "bid_size": 500,
+          "ask_size": 124,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 11.0,
+            "touch": 11.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 10.0,
+            "touch": 10.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        },
+        {
+          "ticker": "KXWTIW-26SEP0414-B89.50",
+          "label": "$89.00 to $89.99",
+          "bid": 8.0,
+          "ask": 10.0,
+          "spread": 2.0,
+          "bid_size": 1071,
+          "ask_size": 200,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 10.0,
+            "touch": 10.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 8.0,
+            "touch": 8.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        },
+        {
+          "ticker": "KXWTIW-26SEP0414-B88.50",
+          "label": "$88.00 to $88.99",
+          "bid": 10.0,
+          "ask": 11.0,
+          "spread": 1.0,
+          "bid_size": 448,
+          "ask_size": 700,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 11.0,
+            "touch": 11.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 10.0,
+            "touch": 10.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        },
+        {
+          "ticker": "KXWTIW-26SEP0414-B87.50",
+          "label": "$87.00 to $87.99",
+          "bid": 6.0,
+          "ask": 8.0,
+          "spread": 2.0,
+          "bid_size": 125,
+          "ask_size": 1001,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 8.0,
+            "touch": 8.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 6.0,
+            "touch": 6.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        }
+      ]
+    },
+    {
+      "venue": "kalshi",
+      "series": "KXGOLDD",
+      "label": "Gold, daily range",
+      "event": "KXGOLDD-26SEP0217",
+      "title": "Gold price on September 02, 2026 at 5:00 PM EDT?",
+      "n_brackets": 40,
+      "n_quoted_ask": 38,
+      "n_quoted_bid": 27,
+      "ask_sum": null,
+      "bid_sum": null,
+      "fee_buy": 0.47,
+      "fee_sell": 0.35,
+      "buy_edge": null,
+      "sell_edge": null,
+      "buy_cap": 0,
+      "sell_cap": 0,
+      "rows": [
+        {
+          "ticker": "KXGOLDD-26SEP0217-T4564",
+          "label": "Above $4564",
+          "bid": null,
+          "ask": 8.0,
+          "spread": null,
+          "bid_size": 0,
+          "ask_size": 12,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 11.8,
+            "touch": 8.0,
+            "slip_cents": 3.8,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 0,
+            "vwap": null,
+            "touch": null,
+            "slip_cents": null,
+            "complete": false
+          }
+        },
+        {
+          "ticker": "KXGOLDD-26SEP0217-T4554",
+          "label": "Above $4554",
+          "bid": null,
+          "ask": 8.0,
+          "spread": null,
+          "bid_size": 0,
+          "ask_size": 10,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 12.0,
+            "touch": 8.0,
+            "slip_cents": 4.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 0,
+            "vwap": null,
+            "touch": null,
+            "slip_cents": null,
+            "complete": false
+          }
+        },
+        {
+          "ticker": "KXGOLDD-26SEP0217-T4544",
+          "label": "Above $4544",
+          "bid": null,
+          "ask": 9.0,
+          "spread": null,
+          "bid_size": 0,
+          "ask_size": 9,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 12.28,
+            "touch": 9.0,
+            "slip_cents": 3.28,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 0,
+            "vwap": null,
+            "touch": null,
+            "slip_cents": null,
+            "complete": false
+          }
+        },
+        {
+          "ticker": "KXGOLDD-26SEP0217-T4534",
+          "label": "Above $4534",
+          "bid": null,
+          "ask": 9.0,
+          "spread": null,
+          "bid_size": 0,
+          "ask_size": 10,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 11.4,
+            "touch": 9.0,
+            "slip_cents": 2.4,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 0,
+            "vwap": null,
+            "touch": null,
+            "slip_cents": null,
+            "complete": false
+          }
+        },
+        {
+          "ticker": "KXGOLDD-26SEP0217-T4524",
+          "label": "Above $4524",
+          "bid": null,
+          "ask": 9.0,
+          "spread": null,
+          "bid_size": 0,
+          "ask_size": 9,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 13.1,
+            "touch": 9.0,
+            "slip_cents": 4.1,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 0,
+            "vwap": null,
+            "touch": null,
+            "slip_cents": null,
+            "complete": false
+          }
+        },
+        {
+          "ticker": "KXGOLDD-26SEP0217-T4514",
+          "label": "Above $4514",
+          "bid": null,
+          "ask": 9.0,
+          "spread": null,
+          "bid_size": 0,
+          "ask_size": 12,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 12.04,
+            "touch": 9.0,
+            "slip_cents": 3.04,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 0,
+            "vwap": null,
+            "touch": null,
+            "slip_cents": null,
+            "complete": false
+          }
+        },
+        {
+          "ticker": "KXGOLDD-26SEP0217-T4504",
+          "label": "Above $4504",
+          "bid": null,
+          "ask": 9.0,
+          "spread": null,
+          "bid_size": 0,
+          "ask_size": 10,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 13.0,
+            "touch": 9.0,
+            "slip_cents": 4.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 0,
+            "vwap": null,
+            "touch": null,
+            "slip_cents": null,
+            "complete": false
+          }
+        },
+        {
+          "ticker": "KXGOLDD-26SEP0217-T4494",
+          "label": "Above $4494",
+          "bid": null,
+          "ask": 9.0,
+          "spread": null,
+          "bid_size": 0,
+          "ask_size": 9,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 13.1,
+            "touch": 9.0,
+            "slip_cents": 4.1,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 0,
+            "vwap": null,
+            "touch": null,
+            "slip_cents": null,
+            "complete": false
+          }
+        },
+        {
+          "ticker": "KXGOLDD-26SEP0217-T4484",
+          "label": "Above $4484",
+          "bid": null,
+          "ask": 3.0,
+          "spread": null,
+          "bid_size": 0,
+          "ask_size": 62,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 3.0,
+            "touch": 3.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 0,
+            "vwap": null,
+            "touch": null,
+            "slip_cents": null,
+            "complete": false
+          }
+        },
+        {
+          "ticker": "KXGOLDD-26SEP0217-T4474",
+          "label": "Above $4474",
+          "bid": null,
+          "ask": 3.0,
+          "spread": null,
+          "bid_size": 0,
+          "ask_size": 62,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 3.0,
+            "touch": 3.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 0,
+            "vwap": null,
+            "touch": null,
+            "slip_cents": null,
+            "complete": false
+          }
+        },
+        {
+          "ticker": "KXGOLDD-26SEP0217-T4464",
+          "label": "Above $4464",
+          "bid": null,
+          "ask": 3.0,
+          "spread": null,
+          "bid_size": 0,
+          "ask_size": 63,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 3.0,
+            "touch": 3.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 0,
+            "vwap": null,
+            "touch": null,
+            "slip_cents": null,
+            "complete": false
+          }
+        },
+        {
+          "ticker": "KXGOLDD-26SEP0217-T4454",
+          "label": "Above $4454",
+          "bid": null,
+          "ask": 4.0,
+          "spread": null,
+          "bid_size": 0,
+          "ask_size": 500,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 4.0,
+            "touch": 4.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 0,
+            "vwap": null,
+            "touch": null,
+            "slip_cents": null,
+            "complete": false
+          }
+        },
+        {
+          "ticker": "KXGOLDD-26SEP0217-T4444",
+          "label": "Above $4444",
+          "bid": null,
+          "ask": 4.0,
+          "spread": null,
+          "bid_size": 0,
+          "ask_size": 500,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 4.0,
+            "touch": 4.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 0,
+            "vwap": null,
+            "touch": null,
+            "slip_cents": null,
+            "complete": false
+          }
+        },
+        {
+          "ticker": "KXGOLDD-26SEP0217-T4434",
+          "label": "Above $4434",
+          "bid": 1.0,
+          "ask": 4.0,
+          "spread": 3.0,
+          "bid_size": 500,
+          "ask_size": 353,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 4.0,
+            "touch": 4.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 1.0,
+            "touch": 1.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        },
+        {
+          "ticker": "KXGOLDD-26SEP0217-T4424",
+          "label": "Above $4424",
+          "bid": 1.0,
+          "ask": 4.0,
+          "spread": 3.0,
+          "bid_size": 759,
+          "ask_size": 346,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 4.0,
+            "touch": 4.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 1.0,
+            "touch": 1.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        },
+        {
+          "ticker": "KXGOLDD-26SEP0217-T4414",
+          "label": "Above $4414",
+          "bid": 2.0,
+          "ask": 4.0,
+          "spread": 2.0,
+          "bid_size": 12,
+          "ask_size": 17,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 4.66,
+            "touch": 4.0,
+            "slip_cents": 0.66,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 1.24,
+            "touch": 2.0,
+            "slip_cents": 0.76,
+            "complete": true
+          }
+        },
+        {
+          "ticker": "KXGOLDD-26SEP0217-T4404",
+          "label": "Above $4404",
+          "bid": 2.0,
+          "ask": 6.0,
+          "spread": 4.0,
+          "bid_size": 762,
+          "ask_size": 500,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 6.0,
+            "touch": 6.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 2.0,
+            "touch": 2.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        },
+        {
+          "ticker": "KXGOLDD-26SEP0217-T4394",
+          "label": "Above $4394",
+          "bid": 9.0,
+          "ask": 10.0,
+          "spread": 1.0,
+          "bid_size": 50,
+          "ask_size": 500,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 10.0,
+            "touch": 10.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 9.0,
+            "touch": 9.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        },
+        {
+          "ticker": "KXGOLDD-26SEP0217-T4384",
+          "label": "Above $4384",
+          "bid": 7.0,
+          "ask": 9.0,
+          "spread": 2.0,
+          "bid_size": 509,
+          "ask_size": 27,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 9.92,
+            "touch": 9.0,
+            "slip_cents": 0.92,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 7.0,
+            "touch": 7.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        },
+        {
+          "ticker": "KXGOLDD-26SEP0217-T4374",
+          "label": "Above $4374",
+          "bid": 11.0,
+          "ask": 14.0,
+          "spread": 3.0,
+          "bid_size": 500,
+          "ask_size": 180,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 14.0,
+            "touch": 14.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 11.0,
+            "touch": 11.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        },
+        {
+          "ticker": "KXGOLDD-26SEP0217-T4364",
+          "label": "Above $4364",
+          "bid": 16.0,
+          "ask": 20.0,
+          "spread": 4.0,
+          "bid_size": 500,
+          "ask_size": 500,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 20.0,
+            "touch": 20.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 16.0,
+            "touch": 16.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        },
+        {
+          "ticker": "KXGOLDD-26SEP0217-T4354",
+          "label": "Above $4354",
+          "bid": 23.0,
+          "ask": 27.0,
+          "spread": 4.0,
+          "bid_size": 500,
+          "ask_size": 500,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 27.0,
+            "touch": 27.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 23.0,
+            "touch": 23.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        },
+        {
+          "ticker": "KXGOLDD-26SEP0217-T4344",
+          "label": "Above $4344",
+          "bid": 31.0,
+          "ask": 35.0,
+          "spread": 4.0,
+          "bid_size": 500,
+          "ask_size": 500,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 35.0,
+            "touch": 35.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 31.0,
+            "touch": 31.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        },
+        {
+          "ticker": "KXGOLDD-26SEP0217-T4334",
+          "label": "Above $4334",
+          "bid": 39.0,
+          "ask": 43.0,
+          "spread": 4.0,
+          "bid_size": 500,
+          "ask_size": 500,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 43.0,
+            "touch": 43.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 39.0,
+            "touch": 39.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        },
+        {
+          "ticker": "KXGOLDD-26SEP0217-T4324",
+          "label": "Above $4324",
+          "bid": 48.0,
+          "ask": 52.0,
+          "spread": 4.0,
+          "bid_size": 500,
+          "ask_size": 500,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 52.0,
+            "touch": 52.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 48.0,
+            "touch": 48.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        },
+        {
+          "ticker": "KXGOLDD-26SEP0217-T4314",
+          "label": "Above $4314",
+          "bid": 57.0,
+          "ask": 61.0,
+          "spread": 4.0,
+          "bid_size": 500,
+          "ask_size": 500,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 61.0,
+            "touch": 61.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 57.0,
+            "touch": 57.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        },
+        {
+          "ticker": "KXGOLDD-26SEP0217-T4304",
+          "label": "Above $4304",
+          "bid": 65.0,
+          "ask": 69.0,
+          "spread": 4.0,
+          "bid_size": 500,
+          "ask_size": 500,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 69.0,
+            "touch": 69.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 65.0,
+            "touch": 65.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        },
+        {
+          "ticker": "KXGOLDD-26SEP0217-T4294",
+          "label": "Above $4294",
+          "bid": 72.0,
+          "ask": 76.0,
+          "spread": 4.0,
+          "bid_size": 500,
+          "ask_size": 500,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 76.0,
+            "touch": 76.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 72.0,
+            "touch": 72.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        },
+        {
+          "ticker": "KXGOLDD-26SEP0217-T4284",
+          "label": "Above $4284",
+          "bid": 78.0,
+          "ask": 82.0,
+          "spread": 4.0,
+          "bid_size": 500,
+          "ask_size": 500,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 82.0,
+            "touch": 82.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 78.0,
+            "touch": 78.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        },
+        {
+          "ticker": "KXGOLDD-26SEP0217-T4274",
+          "label": "Above $4274",
+          "bid": 83.0,
+          "ask": 87.0,
+          "spread": 4.0,
+          "bid_size": 500,
+          "ask_size": 500,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 87.0,
+            "touch": 87.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 83.0,
+            "touch": 83.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        },
+        {
+          "ticker": "KXGOLDD-26SEP0217-T4264",
+          "label": "Above $4264",
+          "bid": 86.0,
+          "ask": 90.0,
+          "spread": 4.0,
+          "bid_size": 500,
+          "ask_size": 500,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 90.0,
+            "touch": 90.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 86.0,
+            "touch": 86.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        },
+        {
+          "ticker": "KXGOLDD-26SEP0217-T4254",
+          "label": "Above $4254",
+          "bid": 91.0,
+          "ask": 94.0,
+          "spread": 3.0,
+          "bid_size": 64,
+          "ask_size": 500,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 94.0,
+            "touch": 94.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 91.0,
+            "touch": 91.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        },
+        {
+          "ticker": "KXGOLDD-26SEP0217-T4244",
+          "label": "Above $4244",
+          "bid": 93.0,
+          "ask": 96.0,
+          "spread": 3.0,
+          "bid_size": 69,
+          "ask_size": 500,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 96.0,
+            "touch": 96.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 93.0,
+            "touch": 93.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        },
+        {
+          "ticker": "KXGOLDD-26SEP0217-T4234",
+          "label": "Above $4234",
+          "bid": 94.0,
+          "ask": 98.0,
+          "spread": 4.0,
+          "bid_size": 500,
+          "ask_size": 750,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 98.0,
+            "touch": 98.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 94.0,
+            "touch": 94.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        },
+        {
+          "ticker": "KXGOLDD-26SEP0217-T4224",
+          "label": "Above $4224",
+          "bid": 96.0,
+          "ask": 99.0,
+          "spread": 3.0,
+          "bid_size": 74,
+          "ask_size": 810,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 99.0,
+            "touch": 99.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 96.0,
+            "touch": 96.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        },
+        {
+          "ticker": "KXGOLDD-26SEP0217-T4214",
+          "label": "Above $4214",
+          "bid": 96.0,
+          "ask": 99.0,
+          "spread": 3.0,
+          "bid_size": 65,
+          "ask_size": 551,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 99.0,
+            "touch": 99.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 96.0,
+            "touch": 96.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        },
+        {
+          "ticker": "KXGOLDD-26SEP0217-T4204",
+          "label": "Above $4204",
+          "bid": 96.0,
+          "ask": 99.0,
+          "spread": 3.0,
+          "bid_size": 77,
+          "ask_size": 551,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 99.0,
+            "touch": 99.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 96.0,
+            "touch": 96.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        },
+        {
+          "ticker": "KXGOLDD-26SEP0217-T4194",
+          "label": "Above $4194",
+          "bid": 95.0,
+          "ask": 99.0,
+          "spread": 4.0,
+          "bid_size": 500,
+          "ask_size": 551,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 99.0,
+            "touch": 99.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 95.0,
+            "touch": 95.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        },
+        {
+          "ticker": "KXGOLDD-26SEP0217-T4184",
+          "label": "Above $4184",
+          "bid": 97.0,
+          "ask": null,
+          "spread": null,
+          "bid_size": 73,
+          "ask_size": 0,
+          "buy_sweep": {
+            "filled": 0,
+            "vwap": null,
+            "touch": null,
+            "slip_cents": null,
+            "complete": false
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 97.0,
+            "touch": 97.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        },
+        {
+          "ticker": "KXGOLDD-26SEP0217-T4174",
+          "label": "Above $4174",
+          "bid": 97.0,
+          "ask": null,
+          "spread": null,
+          "bid_size": 69,
+          "ask_size": 0,
+          "buy_sweep": {
+            "filled": 0,
+            "vwap": null,
+            "touch": null,
+            "slip_cents": null,
+            "complete": false
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 97.0,
+            "touch": 97.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        }
+      ],
+      "tails": [
+        {
+          "ticker": "KXGOLDD-26SEP0217-T4394",
+          "label": "Above $4394",
+          "bid": 9.0,
+          "ask": 10.0,
+          "spread": 1.0,
+          "bid_size": 50,
+          "ask_size": 500,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 10.0,
+            "touch": 10.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 9.0,
+            "touch": 9.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        },
+        {
+          "ticker": "KXGOLDD-26SEP0217-T4384",
+          "label": "Above $4384",
+          "bid": 7.0,
+          "ask": 9.0,
+          "spread": 2.0,
+          "bid_size": 509,
+          "ask_size": 27,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 9.92,
+            "touch": 9.0,
+            "slip_cents": 0.92,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 7.0,
+            "touch": 7.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        },
+        {
+          "ticker": "KXGOLDD-26SEP0217-T4374",
+          "label": "Above $4374",
+          "bid": 11.0,
+          "ask": 14.0,
+          "spread": 3.0,
+          "bid_size": 500,
+          "ask_size": 180,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 14.0,
+            "touch": 14.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 11.0,
+            "touch": 11.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        },
+        {
+          "ticker": "KXGOLDD-26SEP0217-T4364",
+          "label": "Above $4364",
+          "bid": 16.0,
+          "ask": 20.0,
+          "spread": 4.0,
+          "bid_size": 500,
+          "ask_size": 500,
+          "buy_sweep": {
+            "filled": 50,
+            "vwap": 20.0,
+            "touch": 20.0,
+            "slip_cents": 0.0,
+            "complete": true
+          },
+          "sell_sweep": {
+            "filled": 50,
+            "vwap": 16.0,
+            "touch": 16.0,
+            "slip_cents": 0.0,
+            "complete": true
+          }
+        }
+      ]
+    }
+  ],
+  "polymarket": [
+    {
+      "venue": "polymarket",
+      "query": "oil",
+      "question": "Will Crude Oil reach a new all-time high by September 30?",
+      "slug": "will-crude-oil-reach-a-new-all-time-high-by-september-30",
+      "end": "2026-10-01",
+      "vol24": 105248.19668899999,
+      "liquidity": 94563.75713,
+      "neg_risk": false,
+      "bid": 2.1,
+      "ask": 3.0,
+      "spread": 0.8999999999999999,
+      "bid_size": 1038,
+      "ask_size": 795,
+      "book_bid_total": 510201,
+      "book_ask_total": 2566578,
+      "buy_sweep": {
+        "filled": 50,
+        "vwap": 3.0,
+        "touch": 3.0,
+        "slip_cents": 0.0,
+        "complete": true
+      },
+      "sell_sweep": {
+        "filled": 50,
+        "vwap": 2.1,
+        "touch": 2.1,
+        "slip_cents": 0.0,
+        "complete": true
+      }
+    }
+  ]
+}
