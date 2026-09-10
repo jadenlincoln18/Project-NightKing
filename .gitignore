@@ -10,3 +10,8 @@ data/raw/
 data/manifest.jsonl
 data/manifest.v1.json
 data/probe.json
+.env
+# databento store (large / bought data); FINDINGS_*.md and manifest.jsonl are kept
+data_cme/raw/
+data_cme/parquet/
+data_cme/db.log
