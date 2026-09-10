@@ -292,9 +292,18 @@ class BudgetExceeded(SystemExit):
     pass
 
 
+def load_dbn(path: Path):
+    """Read a raw DBN file back into a DataFrame (module-level so tests can swap it)."""
+    import databento as db
+    return db.DBNStore.from_file(str(path)).to_df(pretty_ts=True, map_symbols=True)
+
+
 class DBClient:
     """Wraps databento.Historical with the brief's discipline. Every pull:
-    quote -> log -> cap check -> (dry run: plan only) -> fetch to raw DBN -> parquet -> manifest."""
+    quote -> log -> cap check -> (dry run: plan only) -> fetch to raw DBN -> parquet -> manifest.
+    A raw file on disk without a manifest entry (crash between download and record)
+    is rebuilt from the file, never bought again. A failed request is recorded as
+    status=error and the run continues; the next run quotes and retries it."""
 
     def __init__(self, out: Path, max_cost: float = DEFAULT_MAX_COST, execute: bool = False,
                  client: Any = None, key: Optional[str] = None):
@@ -354,7 +363,30 @@ class DBClient:
             log.info("cached $%8.2f  %-11s %-22s (bought %s)", float(prev.get("cost") or 0), schema,
                      ",".join(symbols)[:22], prev.get("at", "?")[:10])
             return pd.read_parquet(prev["parquet_path"])
+        raw = self.out / "raw" / ("%s.dbn.zst" % name)
         cost = self.quote(schema, symbols, stype_in, start, end, dataset)
+        if raw.exists() and raw.stat().st_size > 0 and self.execute:
+            # paid for and downloaded, but never recorded: rebuild, do not buy again
+            log.warning("RECOVER %s: raw %s exists without a manifest entry - rebuilding from it (no purchase)",
+                        name, raw.name)
+            t0 = time.monotonic()
+            try:
+                df = load_dbn(raw)
+            except Exception as e:                                       # noqa: BLE001
+                log.error("RECOVER %s failed to read %s (%s) - will re-buy", name, raw.name, str(e)[:120])
+                df = None
+            if df is not None:
+                df = df.reset_index() if df.index.name else df
+                pq.parent.mkdir(parents=True, exist_ok=True)
+                df.to_parquet(pq, index=False, compression="snappy")
+                self.manifest.record({"key": k, "name": name, "dataset": dataset, "schema": schema,
+                                      "symbols": symbols, "stype_in": stype_in, "start": start, "end": end,
+                                      "cost": cost, "records": int(len(df)), "raw_path": str(raw),
+                                      "parquet_path": str(pq), "elapsed_s": round(time.monotonic() - t0, 1),
+                                      "status": "ok", "recovered_from_raw": True})
+                self.plan.append({"name": name, "schema": schema, "symbols": symbols, "stype_in": stype_in,
+                                  "start": start, "end": end, "cost": cost, "cached": True})
+                return df
         self.plan.append({"name": name, "schema": schema, "symbols": symbols, "stype_in": stype_in,
                           "start": start, "end": end, "cost": cost, "cached": False})
         if not self.execute:
@@ -363,13 +395,21 @@ class DBClient:
             raise BudgetExceeded(
                 "BUDGET: %s would cost $%.2f; run total $%.2f + this exceeds --max-cost $%.2f. Nothing bought."
                 % (name, cost, self.run_total, self.max_cost))
-        raw = self.out / "raw" / ("%s.dbn.zst" % name)
         raw.parent.mkdir(parents=True, exist_ok=True)
         log.info("BUYING $%8.2f  %-11s %-22s %s..%s -> %s", cost, schema, ",".join(symbols)[:22], start, end, raw.name)
         t0 = time.monotonic()
-        store = self.client.timeseries.get_range(dataset=dataset, symbols=symbols, stype_in=stype_in,
-                                                 schema=schema, start=start, end=end, path=str(raw))
-        df = store.to_df(pretty_ts=True, map_symbols=True)
+        try:
+            store = self.client.timeseries.get_range(dataset=dataset, symbols=symbols, stype_in=stype_in,
+                                                     schema=schema, start=start, end=end, path=str(raw))
+            df = store.to_df(pretty_ts=True, map_symbols=True)
+        except Exception as e:                                           # noqa: BLE001
+            log.error("FAILED %s: %s: %s - recorded as error; the next run retries it", name,
+                      type(e).__name__, str(e)[:200])
+            self.manifest.record({"key": k, "name": name, "dataset": dataset, "schema": schema, "symbols": symbols,
+                                  "stype_in": stype_in, "start": start, "end": end, "cost": 0.0,
+                                  "quoted": cost, "status": "error", "error": "%s: %s" % (type(e).__name__, str(e)[:200]),
+                                  "raw_path": str(raw) if raw.exists() else None})
+            return None
         df = df.reset_index() if df.index.name else df
         pq.parent.mkdir(parents=True, exist_ok=True)
         df.to_parquet(pq, index=False, compression="snappy")

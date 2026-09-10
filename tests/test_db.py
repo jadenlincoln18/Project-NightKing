@@ -134,6 +134,42 @@ class TestCostDiscipline(unittest.TestCase):
             c.pull("b", "statistics", ["CL.FUT"], "parent", "2026-03-01", "2026-03-10")
         self.assertEqual(len(c.manifest.entries), 1)
 
+    def test_raw_without_manifest_is_rebuilt_not_rebought(self):
+        fake = FakeHistorical()
+        c = dc.DBClient(self.out, max_cost=25, execute=True, client=fake)
+        raw = self.out / "raw" / "stats.dbn.zst"
+        raw.parent.mkdir(parents=True)
+        raw.write_bytes(b"paid-for download, process died before the manifest line")
+        rows = fake.statistics(["CL.c.0"], "continuous", date(2026, 3, 2), date(2026, 3, 9))
+        orig = dc.load_dbn
+        dc.load_dbn = lambda path: pd.DataFrame(rows)
+        try:
+            df = c.pull("stats", "statistics", ["CL.c.0"], "continuous", "2026-03-01", "2026-03-10")
+        finally:
+            dc.load_dbn = orig
+        self.assertEqual(len(df), len(rows))
+        self.assertEqual(c.run_total, 0.0, "recovered, not bought")
+        e = list(c.manifest.entries.values())[0]
+        self.assertTrue(e.get("recovered_from_raw"))
+        self.assertEqual(e["status"], "ok")
+
+    def test_failed_request_is_recorded_and_run_continues(self):
+        fake = FakeHistorical()
+        def boom(**kw):
+            raise ConnectionError("simulated outage")
+        fake.timeseries.get_range = boom
+        c = dc.DBClient(self.out, max_cost=25, execute=True, client=fake)
+        df = c.pull("stats", "statistics", ["CL.c.0"], "continuous", "2026-03-01", "2026-03-10")
+        self.assertIsNone(df)
+        e = list(c.manifest.entries.values())[0]
+        self.assertEqual(e["status"], "error")
+        self.assertEqual(e["cost"], 0.0)
+        self.assertEqual(c.run_total, 0.0)
+        # the next run does not treat the error entry as cached
+        c2 = dc.DBClient(self.out, max_cost=25, execute=False, client=FakeHistorical())
+        self.assertIsNone(c2.pull("stats", "statistics", ["CL.c.0"], "continuous", "2026-03-01", "2026-03-10"))
+        self.assertEqual(len(c2.plan), 1)
+
     def test_resolve_children_reads_partial(self):
         c = dc.DBClient(self.out, execute=False, client=FakeHistorical())
         kids = c.resolve_children("LO1.OPT", "2026-03-01", "2026-09-10")
