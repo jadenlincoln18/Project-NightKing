@@ -29,6 +29,7 @@ import re
 HEDGEABLE_HINTS = ("ICE", "CME", "NYMEX", "COMEX", "CBOT", "CBOE")
 USABLE_SHARE = 0.5          # a month is "live" when >= 50% of its markets have candles ...
 MIN_CANDLES_PER_MARKET = 50  # ... AND the month averages at least this many candles per market
+MIN_MEDIAN_VOLUME = 100      # "tradeable": median lifetime volume per bracket, in contracts
 MIN_USABLE_MONTHS = 2
 
 
@@ -137,6 +138,14 @@ def build(store: Store) -> Dict[str, Any]:
                 months[m]["candles"] += int(e.get("rows") or 0)
                 t0s.append(e.get("t0"))
                 t1s.append(e.get("t1"))
+        if mk is not None and len(mk) and "volume_fp" in mk.columns:
+            cm = mk["close_time"].map(lambda v: str(v)[:7] if not kc.is_empty(v) else None)
+            vol = mk["volume_fp"].fillna(0.0)
+            for m, sub in vol.groupby(cm):
+                if m and m in months:
+                    months[m]["vol_median"] = float(sub.median())
+                    months[m]["vol_p90"] = float(sub.quantile(0.9))
+                    months[m]["vol_zero_share"] = float((sub == 0).mean())
         rec["months"] = dict(sorted(months.items()))
         rec["first_candle"] = kc.epoch_to_iso(min(t0s))[:10] if t0s else None
         rec["last_candle"] = kc.epoch_to_iso(max(t1s))[:10] if t1s else None
@@ -147,6 +156,11 @@ def build(store: Store) -> Dict[str, Any]:
         rec["usable_from"] = live_months[0] if live_months else None
         rec["usable_to"] = live_months[-1] if live_months else None
         rec["usable_months"] = len(live_months)
+        # candle density is quoting, not depth: a TRADEABLE month also needs real volume
+        tradeable = [m for m in live_months
+                     if (rec["months"][m].get("vol_median") or 0.0) >= MIN_MEDIAN_VOLUME]
+        rec["tradeable_segments"] = month_segments(tradeable)
+        rec["tradeable_months"] = len(tradeable)
         # hedgeable only when the DOMINANT settlement source is an exchange
         top = next(iter(rec["settlement_sources"]), None)
         rec["dominant_source"] = top
@@ -172,21 +186,24 @@ def render(f: Dict[str, Any], root: Path) -> str:
     L.append("")
     L.append("## Per series")
     L.append("")
-    L.append("| series | title | settles on | ladder | events | markets | w/ candles | candles | usable window | months |")
-    L.append("|---|---|---|---|---:|---:|---:|---:|---|---:|")
+    L.append("| series | title | settles on | ladder | events | markets | candles | quoted window | tradeable window |")
+    L.append("|---|---|---|---|---:|---:|---:|---|---|")
     for s, r in sorted(f["series"].items(), key=lambda kv: -(kv[1]["candles"] or 0)):
         src = ", ".join(r["settlement_sources"].keys()) or "-"
         win = ", ".join("%s..%s" % seg for seg in r["usable_segments"]) or "none"
-        L.append("| %s | %s | %s | %s | %s | %s | %s | %s | %s | %s |" % (
+        twin = ", ".join("%s..%s" % seg for seg in r["tradeable_segments"]) or "none"
+        L.append("| %s | %s | %s | %s | %s | %s | %s | %s | %s |" % (
             s, (r["title"] or "")[:40], src[:40], r["ladder_kind"] or "?",
             r["n_events"] if r["n_events"] is not None else "?",
             r["n_markets"] if r["n_markets"] is not None else "?",
-            r["ok"], fmt_int(r["candles"]), win, r["usable_months"]))
+            fmt_int(r["candles"]), win, twin))
     L.append("")
-    L.append("`usable window` = contiguous runs of months in which at least %d%% of that month's "
-             "markets returned candles AND the month averaged at least %d candles per market. "
-             "Months outside the runs had markets that existed but barely traded." %
-             (int(100 * USABLE_SHARE), MIN_CANDLES_PER_MARKET))
+    L.append("`quoted window` = contiguous months in which at least %d%% of that month's markets "
+             "returned candles AND the month averaged at least %d candles per market (someone was "
+             "quoting). `tradeable window` = quoted months whose MEDIAN bracket had lifetime volume of "
+             "at least %d contracts (someone was trading). Candle density is not depth: the 2022-24 "
+             "KXWTI era is quoted but mostly not tradeable." %
+             (int(100 * USABLE_SHARE), MIN_CANDLES_PER_MARKET, MIN_MEDIAN_VOLUME))
 
     L.append("")
     L.append("## Series by settlement source")
@@ -206,21 +223,23 @@ def render(f: Dict[str, Any], root: Path) -> str:
     L.append("## Databento shortlist")
     L.append("")
     short = [(s, r) for s, r in f["series"].items()
-             if r["hedgeable_source"] and r["usable_months"] >= MIN_USABLE_MONTHS]
+             if r["hedgeable_source"] and r["tradeable_months"] >= MIN_USABLE_MONTHS]
     if short:
-        L.append("Series whose dominant settlement source is an exchange, with at least %d usable months:" % MIN_USABLE_MONTHS)
+        L.append("Series whose dominant settlement source is an exchange, with at least %d TRADEABLE months "
+                 "(median bracket volume >= %d contracts):" % (MIN_USABLE_MONTHS, MIN_MEDIAN_VOLUME))
         L.append("")
         for s, r in sorted(short, key=lambda kv: -(kv[1]["candles"] or 0)):
-            segs = ", ".join("%s..%s" % seg for seg in r["usable_segments"])
-            L.append("- **%s** (%s) %s; %d live months, %s candles; front-month contracts seen: %s" % (
-                s, r["dominant_source"], segs, r["usable_months"], fmt_int(r["candles"]),
+            segs = ", ".join("%s..%s" % seg for seg in r["tradeable_segments"])
+            qsegs = ", ".join("%s..%s" % seg for seg in r["usable_segments"])
+            L.append("- **%s** (%s) tradeable %s; quoted %s; %s candles; front-month contracts seen: %s" % (
+                s, r["dominant_source"], segs, qsegs, fmt_int(r["candles"]),
                 ", ".join("%s (%d)" % kv for kv in r["front_month_contracts"].items() if kv[0]) or "-"))
         L.append("")
         L.append("Buy CME options history covering those windows (plus a month either side for the "
                  "density fit warm-up). Everything else settles on an aggregated index or has no "
                  "usable window yet.")
     else:
-        L.append("No series meets both criteria yet (dominant exchange settlement source AND >= %d usable months)." % MIN_USABLE_MONTHS)
+        L.append("No series meets both criteria yet (dominant exchange settlement source AND >= %d tradeable months)." % MIN_USABLE_MONTHS)
 
     L.append("")
     L.append("## Month-by-month coverage")
@@ -248,15 +267,20 @@ def render(f: Dict[str, Any], root: Path) -> str:
             det.append("404 on both hosts %d" % r["not_found"])
         L.append("; ".join(det))
         L.append("")
-        L.append("| month | markets | zero-candle | % with candles | candles | per market | live |")
-        L.append("|---|---:|---:|---:|---:|---:|:---:|")
+        L.append("| month | markets | zero-candle | candles | per market | median vol | p90 vol | zero-vol | quoted | tradeable |")
+        L.append("|---|---:|---:|---:|---:|---:|---:|---:|:---:|:---:|")
         live_set = {m for seg in r["usable_segments"] for m in r["months"] if seg[0] <= m <= seg[1]}
+        trade_set = {m for seg in r["tradeable_segments"] for m in r["months"] if seg[0] <= m <= seg[1]}
         for m, v in r["months"].items():
             zero = v["markets"] - v["with_candles"]
-            share = 100.0 * v["with_candles"] / v["markets"] if v["markets"] else 0.0
             per = v["candles"] / v["markets"] if v["markets"] else 0.0
-            L.append("| %s | %d | %d | %.0f%% | %s | %.0f | %s |" % (
-                m, v["markets"], zero, share, fmt_int(v["candles"]), per, "yes" if m in live_set else ""))
+            vm, vp, vz = v.get("vol_median"), v.get("vol_p90"), v.get("vol_zero_share")
+            L.append("| %s | %d | %d | %s | %.0f | %s | %s | %s | %s | %s |" % (
+                m, v["markets"], zero, fmt_int(v["candles"]), per,
+                fmt_int(round(vm)) if vm is not None else "-",
+                fmt_int(round(vp)) if vp is not None else "-",
+                ("%.0f%%" % (100 * vz)) if vz is not None else "-",
+                "yes" if m in live_set else "", "yes" if m in trade_set else ""))
     L.append("")
     return "\n".join(L)
 
