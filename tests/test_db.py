@@ -229,6 +229,40 @@ class TestBasis(unittest.TestCase):
         self.assertEqual(len(t), 0)
 
 
+class TestParseDefinitions(unittest.TestCase):
+    def test_other_products_in_a_parent_pull_are_dropped(self):
+        fake = FakeHistorical()
+        rows = fake.definitions("LO1", date(2026, 3, 1), date(2026, 3, 31))
+        rows.append(dict(rows[0], raw_symbol="BTCF6 C100000", symbol="BTCF6 C100000"))
+        rows.append(dict(rows[0], raw_symbol="XPT4M6 P1.16", symbol="XPT4M6 P1.16"))
+        rows.append(dict(rows[0], raw_symbol="UD:1N: GN 2588613", symbol="UD:1N: GN 2588613"))
+        d = db_pull.parse_definitions(pd.DataFrame(rows), "LO1")
+        self.assertEqual(set(d["root"]), {"LO1"})
+        self.assertEqual(len(d), len(rows) - 3)
+        self.assertEqual(len(db_pull.parse_definitions(pd.DataFrame(rows[-3:]), "LO1")), 0)
+
+
+class TestChunking(unittest.TestCase):
+    def test_month_chunks(self):
+        ch = db_pull.month_chunks("2026-01-01", "2026-03-15")
+        self.assertEqual(ch, [("2026-01-01", "2026-02-01"), ("2026-02-01", "2026-03-01"), ("2026-03-01", "2026-03-15")])
+        self.assertEqual(db_pull.month_chunks("2026-03-05", "2026-03-20"), [("2026-03-05", "2026-03-20")])
+
+    def test_large_tbbo_is_pulled_monthly(self):
+        with tempfile.TemporaryDirectory() as d:
+            fake = FakeHistorical()
+            fake.metadata.get_record_count = lambda *a, **k: 10 ** 7
+            c = dc.DBClient(Path(d) / "cme", max_cost=25, execute=True, client=fake)
+            df = db_pull.pull_tbbo(c, "LO1", "2026-03-01", "2026-05-01", chunk_records=500_000)
+            names = sorted(e["name"] for e in c.manifest.entries.values())
+            self.assertEqual(names, ["tbbo_LO1_2026-03", "tbbo_LO1_2026-04"])
+            self.assertGreater(len(df), 0)
+            fake.metadata.get_record_count = lambda *a, **k: 100
+            c2 = dc.DBClient(Path(d) / "cme2", max_cost=25, execute=True, client=fake)
+            db_pull.pull_tbbo(c2, "LO1", "2026-03-01", "2026-05-01", chunk_records=500_000)
+            self.assertEqual([e["name"] for e in c2.manifest.entries.values()], ["tbbo_LO1"])
+
+
 class TestDensity(unittest.TestCase):
     def _run(self, sparse):
         with tempfile.TemporaryDirectory() as d:

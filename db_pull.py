@@ -52,8 +52,12 @@ def parse_definitions(df, root: str):
     d = df.copy()
     sym_col = "raw_symbol" if "raw_symbol" in d.columns else "symbol"
     parsed = d[sym_col].map(dc.parse_option_symbol)
-    keep = parsed.notna()
+    # a parent request returns other products' instruments too (BTC/ETH/XPT options
+    # arrived inside LO.OPT): keep only symbols whose root is the one requested
+    keep = parsed.map(lambda x: bool(x) and x["root"] == root)
     d = d[keep].copy()
+    if not keep.any():
+        return pd.DataFrame(columns=["root", "raw_symbol", "instrument_id", "expiry_date", "strike", "right"])
     p = pd.DataFrame(list(parsed[keep]))
     d["root"] = p["root"].values
     d["right"] = p["right"].values
@@ -158,6 +162,57 @@ def measure_density(tbbo_by_root: Dict[str, Any], defs, ev, forwards: Dict[Any, 
                         "weekday": r.weekday, "root": root})
             rows.append(rec)
     return pd.DataFrame(rows)
+
+
+# --------------------------------------------------------------------------
+# tbbo pull, chunked by month when large (a 2.2M-record LO request 504'd)
+# --------------------------------------------------------------------------
+
+def month_chunks(start: str, end: str) -> List[Tuple[str, str]]:
+    import pandas as pd
+    s, e = pd.Timestamp(start), pd.Timestamp(end)
+    out = []
+    cur = s
+    while cur < e:
+        nxt = min((cur + pd.offsets.MonthBegin(1)).normalize(), e)
+        if nxt <= cur:
+            nxt = e
+        out.append((cur.strftime("%Y-%m-%d"), nxt.strftime("%Y-%m-%d")))
+        cur = nxt
+    return out
+
+
+def pull_tbbo(dbc, root: str, start: str, end: str, chunk_records: int):
+    """One request per root, or one per calendar month when Databento reports more
+    than `chunk_records` records (the gateway timed out on the 2.2M-record LO pull).
+    Each chunk is its own manifest entry, so a failed month is retried alone."""
+    import pandas as pd
+    sym = root + ".OPT"
+    try:
+        n = dbc.record_count("tbbo", [sym], "parent", start, end)
+    except Exception as e:                                               # noqa: BLE001
+        log.warning("record_count %s failed (%s) - pulling unchunked", sym, str(e)[:80])
+        n = 0
+    if n <= chunk_records:
+        return dbc.pull("tbbo_%s" % root, "tbbo", [sym], "parent", start, end,
+                        parquet_rel="options_tbbo/root=%s/part.parquet" % root)
+    chunks = month_chunks(start, end)
+    log.info("%s tbbo has %s records - pulling in %d monthly chunks", sym, "{:,}".format(n), len(chunks))
+    frames = []
+    missing = 0
+    for c0, c1 in chunks:
+        df = dbc.pull("tbbo_%s_%s" % (root, c0[:7]), "tbbo", [sym], "parent", c0, c1,
+                      parquet_rel="options_tbbo/root=%s/month=%s/part.parquet" % (root, c0[:7]))
+        if df is None:
+            missing += 1
+        elif len(df):
+            frames.append(df)
+    if missing and dbc.execute:
+        log.error("%s: %d monthly chunk(s) missing - density for those months will be understated until re-run",
+                  sym, missing)
+    if not frames:
+        return None
+    return pd.concat(frames, ignore_index=True)
 
 
 # --------------------------------------------------------------------------
@@ -269,6 +324,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     ap.add_argument("--step", choices=["all", "definition", "tbbo", "findings"], default="all")
     ap.add_argument("--max-cost", type=float, default=dc.DEFAULT_MAX_COST)
     ap.add_argument("--execute", action="store_true")
+    ap.add_argument("--chunk-records", type=int, default=500_000,
+                    help="tbbo requests above this many records are pulled month by month")
     ap.add_argument("--client", choices=["real", "fake"], default="real", help=argparse.SUPPRESS)
     a = ap.parse_args(argv)
 
@@ -318,15 +375,14 @@ def main(argv: Optional[List[str]] = None) -> int:
     if defs is not None and len(defs):
         exp_tab = expiry_table(defs)
         m, cov = match_roots(exp_tab, ev)
-        matched_roots = sorted({r for c in cov.values() for r in c["by_root"]})
+        matched_roots = sorted({r for c in cov.values() for r in c["by_root"] if r in roots})
         print("\nroots with an expiry on a Kalshi date: %s" % ", ".join(matched_roots))
 
     # ---- tbbo for matched roots
     tbbo_by_root: Dict[str, Any] = {}
     if a.step in ("all", "tbbo"):
         for root in matched_roots:
-            df = dbc.pull("tbbo_%s" % root, "tbbo", [root + ".OPT"], "parent", start, end,
-                          parquet_rel="options_tbbo/root=%s/part.parquet" % root)
+            df = pull_tbbo(dbc, root, start, end, a.chunk_records)
             if df is not None:
                 df = df.copy()
                 df["ts_event"] = pd.to_datetime(df["ts_event"], utc=True)
@@ -347,10 +403,11 @@ def main(argv: Optional[List[str]] = None) -> int:
             defs = pd.concat([parse_definitions(g, r) for r, g in d.groupby("root")], ignore_index=True)
             exp_tab = expiry_table(defs)
             _, cov = match_roots(exp_tab, ev)
-            matched_roots = sorted({r for c in cov.values() for r in c["by_root"]})
+            matched_roots = sorted({r for c in cov.values() for r in c["by_root"] if r in roots})
     if not tbbo_by_root:
         t = dc.read_all(out / "parquet" / "options_tbbo")
         if t is not None:
+            t = t[t["root"].isin(roots)]
             t["ts_event"] = pd.to_datetime(t["ts_event"], utc=True)
             p = t["symbol"].map(dc.parse_option_symbol)
             t["strike"] = p.map(lambda x: x["strike"] if x else None)

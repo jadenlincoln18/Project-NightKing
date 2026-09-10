@@ -56,11 +56,15 @@ def run(root: Path, strict: bool = False) -> int:
         rep.ok("manifest: raw DBN present")
 
     defs = dc.read_all(root / "parquet" / "options_definition")
+    if defs is not None and "root" in defs.columns:
+        defs = defs[defs["root"].isin(dc.OPTION_ROOTS)]
     if defs is None:
         rep.warn("definitions", "none on disk")
     else:
         symcol = "raw_symbol" if "raw_symbol" in defs.columns else "symbol"
         parsed = defs[symcol].map(dc.parse_option_symbol)
+        # only instruments of the requested WTI roots count; other products ride along in a parent pull
+        parsed = parsed.where(parsed.map(lambda x: bool(x) and x["root"] in dc.OPTION_ROOTS), None)
         n_opt = int(parsed.notna().sum())
         exp = pd.to_datetime(defs["expiration"], utc=True, errors="coerce")
         if n_opt == 0:
@@ -77,6 +81,11 @@ def run(root: Path, strict: bool = False) -> int:
             (rep.fail if bad else rep.ok)("definitions: strike_price > 0", "%d bad" % bad if bad else "")
 
     tb = dc.read_all(root / "parquet" / "options_tbbo")
+    if tb is not None and "root" in tb.columns:
+        stray = sorted(set(tb["root"]) - set(dc.OPTION_ROOTS))
+        if stray:
+            rep.warn("tbbo: stray roots", "ignored non-WTI roots on disk: %s" % stray)
+        tb = tb[tb["root"].isin(dc.OPTION_ROOTS)]
     if tb is None:
         rep.warn("tbbo", "none on disk")
     else:
@@ -87,6 +96,8 @@ def run(root: Path, strict: bool = False) -> int:
             # per FILE: one root stored with an all-null side is the silent failure
             dead = []
             for f in sorted((root / "parquet" / "options_tbbo").rglob("part.parquet")):
+                if f.parent.name.split("=", 1)[-1] not in dc.OPTION_ROOTS:
+                    continue
                 d = pd.read_parquet(f, columns=["bid_px_00", "ask_px_00"])
                 if len(d) and (d["bid_px_00"].isna().all() or d["ask_px_00"].isna().all()):
                     dead.append(f.parent.name)
@@ -108,7 +119,8 @@ def run(root: Path, strict: bool = False) -> int:
         if defs is not None and "symbol" in tb.columns:
             symcol = "raw_symbol" if "raw_symbol" in defs.columns else "symbol"
             known = set(defs[symcol])
-            unknown = sorted(set(tb["symbol"]) - known)
+            wti = tb["symbol"].map(lambda x: bool(dc.parse_option_symbol(x)) and dc.parse_option_symbol(x)["root"] in dc.OPTION_ROOTS)
+            unknown = sorted(set(tb.loc[wti, "symbol"]) - known)
             (rep.fail if unknown else rep.ok)("tbbo: symbols map to definitions",
                                               "%d unknown e.g. %s" % (len(unknown), unknown[:3]) if unknown else "%d symbols" % tb["symbol"].nunique())
         rep.ok("tbbo: rows", "{:,}".format(len(tb)))
@@ -118,6 +130,9 @@ def run(root: Path, strict: bool = False) -> int:
         rep.warn("futures_stats", "none on disk")
     else:
         st = fs[fs["stat_type"] == dc.STAT_SETTLEMENT] if "stat_type" in fs.columns else fs.iloc[0:0]
+        # spreads (CLJ6-CLF7, CL:C1 ...) settle at any sign; only outright contracts are checked
+        outright = st["symbol"].map(lambda x: x == "CL.c.0" or dc.parse_future_symbol(x) is not None)
+        st = st[outright]
         if st.empty:
             rep.fail("futures_stats: settlement records", "no stat_type=%d rows; types: %s" % (dc.STAT_SETTLEMENT, sorted(fs["stat_type"].unique().tolist()) if "stat_type" in fs.columns else "?"))
         else:
