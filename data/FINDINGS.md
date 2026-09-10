@@ -1,6 +1,6 @@
 # FINDINGS - Kalshi commodity ladder history
 
-Generated 2026-09-10T17:58:46+00:00 from `data` (period = 1 min). Numbers come from the manifest and the markets/events tables, not from logs.
+Generated 2026-09-10T18:36:27+00:00 from `data` (period = 1 min). Numbers come from the manifest and the markets/events tables, not from logs.
 
 Manifest: ok=52378 empty=3789 not_found=0 error=0, candles=58,917,335.
 
@@ -264,16 +264,16 @@ Brackets are classified by their median mid over the tradeable months. Lifetime 
 
 | band | mid | brackets | vol p25 | vol median | vol p90 | < unit | spread median | spread p75 |
 |---|---|---:|---:|---:|---:|---:|---:|---:|
-| deep tail | 0-5c | 2 | 361,459 | 389,838 | 435,244 | 0% | 0.0c | 0.0c |
+| deep tail | 0-5c | 1 | 446,595 | 446,595 | 446,595 | 0% | 1.0c | 1.0c |
 | moderate tail | 5-20c | 0 | - | - | - | - | - | - |
 | near the money | 20-80c | 0 | - | - | - | - | - | - |
-| deep in the money | 80-100c | 0 | - | - | - | - | - | - |
+| deep in the money | 80-100c | 1 | 333,080 | 333,080 | 333,080 | 0% | 1.0c | 1.0c |
 
 ### KXBTCVSGOLD - 2026-01..2026-01 - 2 brackets
 
 | band | mid | brackets | vol p25 | vol median | vol p90 | < unit | spread median | spread p75 |
 |---|---|---:|---:|---:|---:|---:|---:|---:|
-| deep tail | 0-5c | 1 | 446,595 | 446,595 | 446,595 | 0% | 0.0c | 0.0c |
+| deep tail | 0-5c | 1 | 446,595 | 446,595 | 446,595 | 0% | 1.0c | 1.0c |
 | moderate tail | 5-20c | 0 | - | - | - | - | - | - |
 | near the money | 20-80c | 1 | 268,944 | 268,944 | 268,944 | 0% | 3.0c | 3.0c |
 | deep in the money | 80-100c | 0 | - | - | - | - | - | - |
@@ -282,73 +282,73 @@ Brackets are classified by their median mid over the tradeable months. Lifetime 
 
 | band | mid | brackets | vol p25 | vol median | vol p90 | < unit | spread median | spread p75 |
 |---|---|---:|---:|---:|---:|---:|---:|---:|
-| deep tail | 0-5c | 669 | 40 | 819 | 3,312 | 44% | 0.0c | 0.0c |
-| moderate tail | 5-20c | 0 | - | - | - | - | - | - |
-| near the money | 20-80c | 0 | - | - | - | - | - | - |
+| deep tail | 0-5c | 59 | 0 | 162 | 1,231 | 73% | 3.0c | 4.0c |
+| moderate tail | 5-20c | 452 | 26 | 641 | 2,954 | 47% | 4.0c | 4.0c |
+| near the money | 20-80c | 158 | 784 | 1,698 | 4,797 | 22% | 5.0c | 11.0c |
 | deep in the money | 80-100c | 0 | - | - | - | - | - | - |
 
 ### KXWTI - 2023-02..2023-03 - 354 brackets
 
 | band | mid | brackets | vol p25 | vol median | vol p90 | < unit | spread median | spread p75 |
 |---|---|---:|---:|---:|---:|---:|---:|---:|
-| deep tail | 0-5c | 354 | 0 | 296 | 1,950 | 56% | 0.0c | 0.1c |
-| moderate tail | 5-20c | 0 | - | - | - | - | - | - |
-| near the money | 20-80c | 0 | - | - | - | - | - | - |
+| deep tail | 0-5c | 28 | 0 | 0 | 315 | 93% | 3.0c | 3.2c |
+| moderate tail | 5-20c | 183 | 58 | 513 | 1,888 | 49% | 3.0c | 4.0c |
+| near the money | 20-80c | 143 | 0 | 69 | 2,209 | 59% | 87.0c | 99.0c |
 | deep in the money | 80-100c | 0 | - | - | - | - | - | - |
 
 ### KXWTI - 2026-03..2026-09 - 3096 brackets
 
 | band | mid | brackets | vol p25 | vol median | vol p90 | < unit | spread median | spread p75 |
 |---|---|---:|---:|---:|---:|---:|---:|---:|
-| deep tail | 0-5c | 1745 | 3,536 | 15,176 | 106,869 | 8% | 0.0c | 0.1c |
-| moderate tail | 5-20c | 220 | 5,029 | 9,804 | 60,176 | 1% | 1.0c | 2.0c |
-| near the money | 20-80c | 520 | 12,687 | 29,325 | 80,043 | 6% | 2.0c | 3.0c |
-| deep in the money | 80-100c | 611 | 645 | 1,847 | 14,528 | 19% | 1.0c | 2.0c |
+| deep tail | 0-5c | 340 | 819 | 3,066 | 13,005 | 19% | 1.0c | 2.0c |
+| moderate tail | 5-20c | 515 | 5,608 | 12,089 | 61,300 | 2% | 2.0c | 3.0c |
+| near the money | 20-80c | 1161 | 17,002 | 39,923 | 124,217 | 4% | 2.0c | 4.0c |
+| deep in the money | 80-100c | 1080 | 940 | 3,162 | 37,109 | 15% | 2.0c | 3.0c |
 
 ### KXWTIMAX - 2023-11..2023-12 - 4 brackets
 
 | band | mid | brackets | vol p25 | vol median | vol p90 | < unit | spread median | spread p75 |
 |---|---|---:|---:|---:|---:|---:|---:|---:|
-| deep tail | 0-5c | 4 | 9,180 | 16,015 | 22,242 | 0% | 0.0c | 0.0c |
-| moderate tail | 5-20c | 0 | - | - | - | - | - | - |
+| deep tail | 0-5c | 2 | 13,166 | 16,015 | 20,573 | 0% | 2.5c | 2.8c |
+| moderate tail | 5-20c | 1 | 22,469 | 22,469 | 22,469 | 0% | 6.0c | 6.0c |
 | near the money | 20-80c | 0 | - | - | - | - | - | - |
-| deep in the money | 80-100c | 0 | - | - | - | - | - | - |
+| deep in the money | 80-100c | 1 | 5,767 | 5,767 | 5,767 | 0% | 2.0c | 2.0c |
 
 ### KXWTIMAX - 2024-12..2024-12 - 9 brackets
 
 | band | mid | brackets | vol p25 | vol median | vol p90 | < unit | spread median | spread p75 |
 |---|---|---:|---:|---:|---:|---:|---:|---:|
-| deep tail | 0-5c | 9 | 2,220 | 9,061 | 296,285 | 0% | 1.0c | 1.0c |
-| moderate tail | 5-20c | 0 | - | - | - | - | - | - |
-| near the money | 20-80c | 0 | - | - | - | - | - | - |
+| deep tail | 0-5c | 0 | - | - | - | - | - | - |
+| moderate tail | 5-20c | 2 | 3,059 | 3,898 | 5,241 | 0% | 14.0c | 15.5c |
+| near the money | 20-80c | 7 | 5,349 | 11,878 | 553,917 | 0% | 96.0c | 96.8c |
 | deep in the money | 80-100c | 0 | - | - | - | - | - | - |
 
 ### KXWTIMAX - 2025-09..2025-09 - 5 brackets
 
 | band | mid | brackets | vol p25 | vol median | vol p90 | < unit | spread median | spread p75 |
 |---|---|---:|---:|---:|---:|---:|---:|---:|
-| deep tail | 0-5c | 5 | 11,878 | 19,718 | 811,550 | 0% | 0.3c | 0.8c |
-| moderate tail | 5-20c | 0 | - | - | - | - | - | - |
-| near the money | 20-80c | 0 | - | - | - | - | - | - |
-| deep in the money | 80-100c | 0 | - | - | - | - | - | - |
+| deep tail | 0-5c | 0 | - | - | - | - | - | - |
+| moderate tail | 5-20c | 2 | 13,838 | 15,798 | 18,934 | 0% | 14.5c | 16.8c |
+| near the money | 20-80c | 2 | 360,693 | 682,734 | 1,197,999 | 0% | 85.2c | 88.6c |
+| deep in the money | 80-100c | 1 | 1,637 | 1,637 | 1,637 | 0% | 33.0c | 33.0c |
 
 ### KXWTIMAX - 2025-12..2025-12 - 4 brackets
 
 | band | mid | brackets | vol p25 | vol median | vol p90 | < unit | spread median | spread p75 |
 |---|---|---:|---:|---:|---:|---:|---:|---:|
-| deep tail | 0-5c | 4 | 17,758 | 29,185 | 940,366 | 0% | 0.0c | 0.2c |
-| moderate tail | 5-20c | 0 | - | - | - | - | - | - |
-| near the money | 20-80c | 0 | - | - | - | - | - | - |
+| deep tail | 0-5c | 2 | 13,838 | 15,798 | 18,934 | 0% | 1.5c | 1.8c |
+| moderate tail | 5-20c | 1 | 1,326,815 | 1,326,815 | 1,326,815 | 0% | 5.0c | 5.0c |
+| near the money | 20-80c | 1 | 38,652 | 38,652 | 38,652 | 0% | 57.0c | 57.0c |
 | deep in the money | 80-100c | 0 | - | - | - | - | - | - |
 
 ### KXWTIMAX - 2026-03..2026-04 - 17 brackets
 
 | band | mid | brackets | vol p25 | vol median | vol p90 | < unit | spread median | spread p75 |
 |---|---|---:|---:|---:|---:|---:|---:|---:|
-| deep tail | 0-5c | 7 | 42,893 | 146,822 | 359,331 | 0% | 0.0c | 0.1c |
+| deep tail | 0-5c | 0 | - | - | - | - | - | - |
 | moderate tail | 5-20c | 2 | 702,042 | 759,929 | 852,547 | 0% | 1.4c | 1.5c |
-| near the money | 20-80c | 8 | 640,102 | 679,880 | 1,101,533 | 0% | 2.9c | 3.0c |
-| deep in the money | 80-100c | 0 | - | - | - | - | - | - |
+| near the money | 20-80c | 10 | 501,858 | 656,188 | 981,150 | 0% | 3.0c | 3.0c |
+| deep in the money | 80-100c | 5 | 53,121 | 176,015 | 394,773 | 0% | 3.9c | 9.0c |
 
 ### KXWTIMAX - 2026-07..2026-09 - 114 brackets
 
@@ -363,16 +363,16 @@ Brackets are classified by their median mid over the tradeable months. Lifetime 
 
 | band | mid | brackets | vol p25 | vol median | vol p90 | < unit | spread median | spread p75 |
 |---|---|---:|---:|---:|---:|---:|---:|---:|
-| deep tail | 0-5c | 4 | 248 | 343 | 5,134 | 75% | 0.1c | 0.1c |
-| moderate tail | 5-20c | 0 | - | - | - | - | - | - |
-| near the money | 20-80c | 0 | - | - | - | - | - | - |
+| deep tail | 0-5c | 0 | - | - | - | - | - | - |
+| moderate tail | 5-20c | 1 | 238 | 238 | 238 | 100% | 5.0c | 5.0c |
+| near the money | 20-80c | 3 | 343 | 435 | 5,805 | 67% | 5.0c | 5.5c |
 | deep in the money | 80-100c | 0 | - | - | - | - | - | - |
 
 ### KXWTIMIN - 2023-12..2023-12 - 2 brackets
 
 | band | mid | brackets | vol p25 | vol median | vol p90 | < unit | spread median | spread p75 |
 |---|---|---:|---:|---:|---:|---:|---:|---:|
-| deep tail | 0-5c | 2 | 2,113 | 3,792 | 6,477 | 50% | 0.0c | 0.0c |
+| deep tail | 0-5c | 2 | 2,113 | 3,792 | 6,477 | 50% | 1.5c | 1.8c |
 | moderate tail | 5-20c | 0 | - | - | - | - | - | - |
 | near the money | 20-80c | 0 | - | - | - | - | - | - |
 | deep in the money | 80-100c | 0 | - | - | - | - | - | - |
@@ -381,82 +381,82 @@ Brackets are classified by their median mid over the tradeable months. Lifetime 
 
 | band | mid | brackets | vol p25 | vol median | vol p90 | < unit | spread median | spread p75 |
 |---|---|---:|---:|---:|---:|---:|---:|---:|
-| deep tail | 0-5c | 6 | 1,374 | 2,412 | 14,996 | 17% | 0.9c | 0.9c |
-| moderate tail | 5-20c | 0 | - | - | - | - | - | - |
-| near the money | 20-80c | 0 | - | - | - | - | - | - |
+| deep tail | 0-5c | 0 | - | - | - | - | - | - |
+| moderate tail | 5-20c | 1 | 2,905 | 2,905 | 2,905 | 0% | 30.0c | 30.0c |
+| near the money | 20-80c | 5 | 1,193 | 1,918 | 16,457 | 20% | 93.0c | 95.0c |
 | deep in the money | 80-100c | 0 | - | - | - | - | - | - |
 
 ### KXWTIMIN - 2025-11..2025-12 - 4 brackets
 
 | band | mid | brackets | vol p25 | vol median | vol p90 | < unit | spread median | spread p75 |
 |---|---|---:|---:|---:|---:|---:|---:|---:|
-| deep tail | 0-5c | 4 | 975 | 4,443 | 17,918 | 25% | 0.1c | 0.2c |
-| moderate tail | 5-20c | 0 | - | - | - | - | - | - |
-| near the money | 20-80c | 0 | - | - | - | - | - | - |
-| deep in the money | 80-100c | 0 | - | - | - | - | - | - |
+| deep tail | 0-5c | 0 | - | - | - | - | - | - |
+| moderate tail | 5-20c | 1 | 7,693 | 7,693 | 7,693 | 0% | 8.0c | 8.0c |
+| near the money | 20-80c | 2 | 5,816 | 11,310 | 20,102 | 50% | 27.0c | 36.5c |
+| deep in the money | 80-100c | 1 | 1,193 | 1,193 | 1,193 | 0% | 8.0c | 8.0c |
 
 ### KXWTIMIN - 2026-04..2026-04 - 8 brackets
 
 | band | mid | brackets | vol p25 | vol median | vol p90 | < unit | spread median | spread p75 |
 |---|---|---:|---:|---:|---:|---:|---:|---:|
-| deep tail | 0-5c | 4 | 90,910 | 120,202 | 151,969 | 0% | 0.1c | 0.1c |
+| deep tail | 0-5c | 0 | - | - | - | - | - | - |
 | moderate tail | 5-20c | 3 | 36,150 | 37,892 | 43,086 | 0% | 6.0c | 7.0c |
-| near the money | 20-80c | 1 | 58,609 | 58,609 | 58,609 | 0% | 20.0c | 20.0c |
-| deep in the money | 80-100c | 0 | - | - | - | - | - | - |
+| near the money | 20-80c | 4 | 69,285 | 84,888 | 129,509 | 0% | 12.5c | 17.0c |
+| deep in the money | 80-100c | 1 | 155,611 | 155,611 | 155,611 | 0% | 2.0c | 2.0c |
 
 ### KXWTIMIN - 2026-06..2026-09 - 71 brackets
 
 | band | mid | brackets | vol p25 | vol median | vol p90 | < unit | spread median | spread p75 |
 |---|---|---:|---:|---:|---:|---:|---:|---:|
-| deep tail | 0-5c | 12 | 3,093 | 6,066 | 94,524 | 0% | 1.0c | 1.2c |
+| deep tail | 0-5c | 9 | 2,623 | 4,890 | 8,503 | 0% | 1.0c | 2.0c |
 | moderate tail | 5-20c | 25 | 384 | 1,685 | 9,637 | 32% | 4.0c | 10.0c |
-| near the money | 20-80c | 33 | 570 | 1,834 | 4,233 | 24% | 8.0c | 14.0c |
+| near the money | 20-80c | 36 | 670 | 1,967 | 51,497 | 22% | 8.0c | 13.2c |
 | deep in the money | 80-100c | 1 | 14,296 | 14,296 | 14,296 | 0% | 4.0c | 4.0c |
 
 ### KXWTIMINM - 2026-04..2026-06 - 31 brackets
 
 | band | mid | brackets | vol p25 | vol median | vol p90 | < unit | spread median | spread p75 |
 |---|---|---:|---:|---:|---:|---:|---:|---:|
-| deep tail | 0-5c | 17 | 12,877 | 31,154 | 258,742 | 0% | 0.0c | 0.1c |
-| moderate tail | 5-20c | 2 | 1,855 | 2,121 | 2,546 | 0% | 1.5c | 1.8c |
-| near the money | 20-80c | 8 | 1,768 | 2,170 | 9,160 | 0% | 20.5c | 24.2c |
-| deep in the money | 80-100c | 4 | 3,869 | 4,071 | 4,210 | 0% | 1.0c | 1.0c |
+| deep tail | 0-5c | 5 | 14,006 | 23,661 | 44,194 | 0% | 1.0c | 3.0c |
+| moderate tail | 5-20c | 10 | 10,198 | 11,837 | 99,205 | 0% | 5.5c | 7.8c |
+| near the money | 20-80c | 11 | 1,942 | 5,724 | 238,751 | 0% | 17.0c | 22.5c |
+| deep in the money | 80-100c | 5 | 4,033 | 4,108 | 174,938 | 0% | 1.0c | 1.0c |
 
 ### KXWTIW - 2022-09..2022-11 - 135 brackets
 
 | band | mid | brackets | vol p25 | vol median | vol p90 | < unit | spread median | spread p75 |
 |---|---|---:|---:|---:|---:|---:|---:|---:|
-| deep tail | 0-5c | 135 | 10 | 263 | 2,990 | 59% | 0.0c | 0.0c |
-| moderate tail | 5-20c | 0 | - | - | - | - | - | - |
-| near the money | 20-80c | 0 | - | - | - | - | - | - |
+| deep tail | 0-5c | 35 | 0 | 15 | 530 | 89% | 3.0c | 4.0c |
+| moderate tail | 5-20c | 96 | 40 | 500 | 3,212 | 50% | 4.0c | 4.0c |
+| near the money | 20-80c | 4 | 2,716 | 4,806 | 8,082 | 0% | 5.0c | 5.0c |
 | deep in the money | 80-100c | 0 | - | - | - | - | - | - |
 
 ### KXWTIW - 2023-02..2023-02 - 75 brackets
 
 | band | mid | brackets | vol p25 | vol median | vol p90 | < unit | spread median | spread p75 |
 |---|---|---:|---:|---:|---:|---:|---:|---:|
-| deep tail | 0-5c | 75 | 0 | 190 | 2,815 | 61% | 0.0c | 0.1c |
-| moderate tail | 5-20c | 0 | - | - | - | - | - | - |
-| near the money | 20-80c | 0 | - | - | - | - | - | - |
+| deep tail | 0-5c | 5 | 0 | 0 | 33 | 100% | 2.0c | 3.0c |
+| moderate tail | 5-20c | 53 | 100 | 661 | 3,616 | 45% | 3.0c | 4.0c |
+| near the money | 20-80c | 17 | 0 | 0 | 140 | 100% | 99.0c | 99.0c |
 | deep in the money | 80-100c | 0 | - | - | - | - | - | - |
 
 ### KXWTIW - 2024-04..2024-04 - 75 brackets
 
 | band | mid | brackets | vol p25 | vol median | vol p90 | < unit | spread median | spread p75 |
 |---|---|---:|---:|---:|---:|---:|---:|---:|
-| deep tail | 0-5c | 75 | 0 | 154 | 4,994 | 64% | 0.0c | 0.1c |
-| moderate tail | 5-20c | 0 | - | - | - | - | - | - |
-| near the money | 20-80c | 0 | - | - | - | - | - | - |
+| deep tail | 0-5c | 30 | 0 | 302 | 3,613 | 63% | 3.0c | 4.0c |
+| moderate tail | 5-20c | 36 | 0 | 12 | 5,300 | 69% | 4.0c | 10.2c |
+| near the money | 20-80c | 9 | 12 | 511 | 6,348 | 44% | 4.0c | 56.0c |
 | deep in the money | 80-100c | 0 | - | - | - | - | - | - |
 
 ### KXWTIW - 2025-12..2026-09 - 704 brackets
 
 | band | mid | brackets | vol p25 | vol median | vol p90 | < unit | spread median | spread p75 |
 |---|---|---:|---:|---:|---:|---:|---:|---:|
-| deep tail | 0-5c | 606 | 1,827 | 11,069 | 85,496 | 12% | 0.0c | 1.0c |
-| moderate tail | 5-20c | 97 | 12,407 | 24,420 | 66,083 | 0% | 1.0c | 1.0c |
-| near the money | 20-80c | 1 | 102,569 | 102,569 | 102,569 | 0% | 1.0c | 1.0c |
-| deep in the money | 80-100c | 0 | - | - | - | - | - | - |
+| deep tail | 0-5c | 425 | 1,163 | 6,818 | 63,472 | 16% | 1.0c | 2.0c |
+| moderate tail | 5-20c | 232 | 10,386 | 24,265 | 97,879 | 2% | 1.0c | 3.0c |
+| near the money | 20-80c | 46 | 22,155 | 70,216 | 277,621 | 4% | 4.5c | 6.0c |
+| deep in the money | 80-100c | 1 | 316,689 | 316,689 | 316,689 | 0% | 1.0c | 1.0c |
 
 ### KXWTIWHEN - 2026-07..2026-09 - 17 brackets
 

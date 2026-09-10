@@ -370,6 +370,16 @@
       ],
       "smoke": false,
       "workers": 3
+    },
+    {
+      "at": "2026-09-10T18:34:34+00:00",
+      "elapsed_s": 1607.3,
+      "markets": 52378,
+      "missing_raw": 0,
+      "period": 1,
+      "reparse": true,
+      "row_count_changed": 0,
+      "rows": 58917335
     }
   ],
   "series": {
@@ -1508,6 +1518,6 @@
       "rows": 12914
     }
   },
-  "updated": "2026-09-10T16:59:24+00:00",
+  "updated": "2026-09-10T18:34:34+00:00",
   "version": 2
 }
