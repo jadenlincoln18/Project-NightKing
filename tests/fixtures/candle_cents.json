@@ -1,0 +1,8 @@
+{
+  "end_period_ts": 1735689600,
+  "yes_bid": {"open": 12, "high": 14, "low": 11, "close": 13},
+  "yes_ask": {"open": 15, "high": 16, "low": 14, "close": 15},
+  "price": {"open": 13, "high": 15, "low": 13, "close": 14},
+  "volume": 42,
+  "open_interest": 100
+}

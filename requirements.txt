@@ -1,0 +1,4 @@
+pandas>=2.0
+pyarrow>=12
+# optional, only needed if the Python build has an empty certificate store (python.org macOS builds):
+# certifi

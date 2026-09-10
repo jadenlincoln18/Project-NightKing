@@ -244,7 +244,7 @@ def kalshi_books_bulk(tickers: list[str]) -> dict[str, Book]:
     books: dict[str, Book] = {}
     for i in range(0, len(tickers), 100):
         chunk = tickers[i:i + 100]
-        raw = get(f"{KALSHI}/markets/orderbooks", {"tickers": ",".join(chunk)})
+        raw = get(f"{KALSHI}/markets/orderbooks", {"market_tickers": ",".join(chunk)})
         time.sleep(PAUSE)
         if not raw:
             for tk in chunk:                       # fallback: one at a time

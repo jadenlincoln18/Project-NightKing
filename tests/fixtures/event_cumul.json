@@ -1,0 +1,6 @@
+{"event_ticker": "KXBRENTD-26SEP0217", "series_ticker": "KXBRENTD", "title": "Brent oil price today",
+ "mutually_exclusive": false, "strike_date": "2026-09-02T21:00:00Z",
+ "settlement_sources": [{"name": "Pyth - Brent", "url": "https://app.pyth.com/price-feeds/commodities/brent"}],
+ "markets": [{"ticker": "KXBRENTD-26SEP0217-T87", "yes_sub_title": "Above $87"},
+             {"ticker": "KXBRENTD-26SEP0217-T87.50", "yes_sub_title": "Above $87.50"},
+             {"ticker": "KXBRENTD-26SEP0217-T88", "yes_sub_title": "Above $88"}]}
