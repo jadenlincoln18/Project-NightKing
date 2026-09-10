@@ -554,8 +554,10 @@ def main(argv: Optional[List[str]] = None) -> int:
     ssl_ctx, env = kc.preflight(a.live_base)
 
     probe_path = Path(a.out) / "probe.json"
+    looked = [probe_path]
     if a.smoke and not probe_path.exists():
         probe_path = out / "probe.json"
+        looked.append(probe_path)
     probe: Optional[dict] = None
     if probe_path.exists():
         probe = json.loads(probe_path.read_text())
@@ -568,7 +570,9 @@ def main(argv: Optional[List[str]] = None) -> int:
             log.error("probe recorded candle field style %r - the parser may store nulls; "
                       "verify.py will catch it, but look at probe.json first", fs)
     elif not a.no_probe:
-        print("no %s - run `python3 probe.py` first (or pass --no-probe)" % probe_path)
+        print("probe.json not found (looked in %s)\n"
+              "run `python3 probe.py --out %s` first, or pass --no-probe"
+              % (", ".join(str(p) for p in looked), a.out))
         return 2
 
     if a.pause is None:
