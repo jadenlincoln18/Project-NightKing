@@ -82,13 +82,17 @@ def build(store: Store) -> Dict[str, Any]:
             rec["me_missing_share"] = float(mk["mutually_exclusive"].isna().mean())
             settled = mk[mk["status"].isin(["settled", "finalized"])]
             rec["n_settled"] = int(len(settled))
-            rec["settled_with_value"] = int(settled["expiration_value"].map(lambda v: not kc.is_empty(v)).sum()) if len(settled) else 0
+            has_val = settled[settled["expiration_value"].map(lambda v: not kc.is_empty(v))] if len(settled) else settled
+            rec["settled_with_value"] = int(len(has_val))
+            months = has_val["close_time"].dropna().map(lambda v: str(v)[:7]) if len(has_val) else []
+            rec["expiration_value_window"] = (min(months), max(months)) if len(months) else None
             fm = mk["custom_strike.front_month_contract"].dropna() if "custom_strike.front_month_contract" in mk.columns else []
             rec["front_month_contracts"] = dict(Counter(fm).most_common(3))
             rec["ticker_formats"] = dict(Counter(mk["ticker_format"]))
         else:
             rec.update({"settlement_sources": {}, "ladder_kind": None, "ladder_kinds": {},
                         "me_missing_share": None, "n_settled": None, "settled_with_value": None,
+                        "expiration_value_window": None,
                         "front_month_contracts": {}, "ticker_formats": {}})
         se = [e for e in ents if e.get("series") == s]
         c = Counter(e.get("status") for e in se)
@@ -201,7 +205,10 @@ def render(f: Dict[str, Any], root: Path) -> str:
         if r["ladder_kinds"]:
             det.append("ladder %s" % json.dumps(r["ladder_kinds"]))
         if r["n_settled"] is not None:
-            det.append("settled %d (with expiration_value %d)" % (r["n_settled"], r["settled_with_value"]))
+            win = r.get("expiration_value_window")
+            det.append("settled %d, with expiration_value %d%s" % (
+                r["n_settled"], r["settled_with_value"],
+                (" (markets closing %s .. %s)" % win) if win else ""))
         if r["ticker_formats"]:
             det.append("ticker formats %s" % json.dumps(r["ticker_formats"]))
         if r["error"]:

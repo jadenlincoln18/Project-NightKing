@@ -411,11 +411,19 @@ def pull_candles(client: Client, store: Store, caps: CapHolder, tk: str,
                     prog.counts["empty"] += 1
                     continue
                 prog.add(res)
-                n_market = res.rows                      # before the bodies are freed below
+                raw_n = res.rows                         # before the bodies are freed below
+                n_market = 0
+                n_dupes = 0
                 label = str(m.get("yes_sub_title") or m.get("subtitle") or m["ticker"])
                 if res.status == "ok":
-                    frames.append(kc.candles_to_frame(res.candles, tk, et, m["ticker"], label,
-                                                      kind, a.period, res.source))
+                    frame = kc.candles_to_frame(res.candles, tk, et, m["ticker"], label,
+                                                kind, a.period, res.source)
+                    n_market = len(frame)                # what is STORED, after de-duplication
+                    n_dupes = int(frame.attrs.get("dupes_dropped", 0))
+                    if n_market:
+                        frames.append(frame)
+                    else:
+                        res.status = "empty"             # candles without usable timestamps
                 # raw first (exact responses), then free the bodies - a 100-bracket
                 # weekly event would otherwise hold ~1M candle dicts in memory
                 store.save_raw(Path("candles") / tk / et / ("%s.p%d.json.gz" % (m["ticker"], a.period)),
@@ -426,7 +434,8 @@ def pull_candles(client: Client, store: Store, caps: CapHolder, tk: str,
                 entries.append({"ticker": m["ticker"], "period": a.period, "series": tk,
                                 "event": et, "status": res.status, "fetch_ok": res.fetch_ok,
                                 "http_live": res.http_live, "http_hist": res.http_hist,
-                                "source": res.source, "rows": n_market, "t0": t0, "t1": t1,
+                                "source": res.source, "rows": n_market, "raw_candles": raw_n,
+                                "dupes_dropped": n_dupes, "t0": t0, "t1": t1,
                                 "chunks": res.chunks, "requests": res.requests, "cap": res.cap,
                                 "error": res.error,
                                 "attempts": int((store.entries.get(kc.manifest_key(m["ticker"], a.period)) or {}).get("attempts", 0)) + 1})

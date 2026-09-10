@@ -69,6 +69,16 @@ class TestCandleDollars(unittest.TestCase):
         self.assertEqual(df["source"].iloc[0], "live")
         self.assertEqual(df["period_min"].iloc[0], 1)
 
+    def test_duplicate_timestamp_is_dropped_and_counted(self):
+        a = dict(self.c)
+        b = dict(self.c, yes_bid={"close_dollars": "0.0300"})       # same ts, later, differs
+        df = kc.candles_to_frame([a, b, dict(self.c, end_period_ts=1787961660)],
+                                 "S", "E", "T", "b", "RANGE", 1, "live")
+        self.assertEqual(len(df), 2)
+        self.assertEqual(df.attrs["dupes_dropped"], 1)
+        self.assertEqual(df.attrs["raw_candles"], 3)
+        self.assertEqual(df["yes_bid_close"].iloc[0], 3.0, "last occurrence wins")
+
     def test_frame_drops_rows_without_ts(self):
         bad = dict(self.c)
         bad.pop("end_period_ts")

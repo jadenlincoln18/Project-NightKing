@@ -570,11 +570,24 @@ def candles_to_frame(raw: Iterable[dict], series: str, event: str, ticker: str,
     if not recs:
         return empty_candle_frame()
     df = pd.DataFrame(recs)
+    n_dupes = int(df.duplicated("ts", keep="last").sum())
+    if n_dupes:
+        # the live API hands back one repeated timestamp on open markets; keep
+        # the last occurrence and say so, with whether the two rows agreed
+        both = df[df.duplicated("ts", keep=False)].sort_values("ts")
+        a, b = both.iloc[0], both.iloc[1]
+        cols = [c for c in df.columns if c.startswith(("yes_bid_", "yes_ask_", "price_"))]
+        identical = bool(all((a[c] == b[c]) or (pd.isna(a[c]) and pd.isna(b[c])) for c in cols))
+        log.info("%s: %d duplicate timestamp(s) in the API response, kept the last "
+                 "(first at ts=%s, rows identical=%s)", ticker, n_dupes, int(a["ts"]), identical)
     df = df.drop_duplicates("ts", keep="last").sort_values("ts").reset_index(drop=True)
     # DERIVED - never the source of truth; bid/ask stay as stored above
     df["spread"] = df["yes_ask_close"] - df["yes_bid_close"]
     df["half_spread"] = df["spread"] / 2.0
-    return coerce_candle_dtypes(df)
+    df = coerce_candle_dtypes(df)
+    df.attrs["dupes_dropped"] = n_dupes
+    df.attrs["raw_candles"] = len(recs)
+    return df
 
 
 # --------------------------------------------------------------------------
