@@ -469,6 +469,77 @@ def pull_candles(client: Client, store: Store, caps: CapHolder, tk: str,
     return stats
 
 
+def reparse(store: Store, a: argparse.Namespace) -> int:
+    """Rebuild every candle parquet from the stored raw responses with the
+    CURRENT parser. This is what the raw files are for: a parsing bug is fixed
+    here in minutes instead of an eight-hour re-pull. Bracket labels and ladder
+    kinds are taken from the existing parquet; row counts are re-recorded."""
+    import pandas as pd
+    only = {x.strip().upper() for x in (a.series or "").split(",") if x.strip()}
+    entries = [e for e in store.entries.values()
+               if e.get("status") == "ok" and e.get("period") == a.period
+               and (not only or e.get("series") in only)]
+    by_event: Dict[Tuple[str, str], List[dict]] = defaultdict(list)
+    for e in entries:
+        by_event[(e["series"], e["event"])].append(e)
+    log.info("reparse: %d ok markets in %d events (period=%d)", len(entries), len(by_event), a.period)
+    t_start = time.monotonic()
+    n_done = n_missing = n_changed = 0
+    rows_before = rows_after = 0
+    for i, ((series, event), es) in enumerate(sorted(by_event.items()), 1):
+        old = store.read_event_candles(a.period, series, event)
+        labels = (old.drop_duplicates("ticker").set_index("ticker")[["bracket", "ladder_kind"]]
+                  if not old.empty else None)
+        frames = []
+        for e in es:
+            raw = store.load_raw(Path("candles") / series / event / ("%s.p%d.json.gz" % (e["ticker"], a.period)))
+            if not raw:
+                n_missing += 1
+                log.error("reparse: raw response missing for %s - left as is", e["ticker"])
+                continue
+            cands: List[dict] = []
+            for ch in raw.get("chunks") or []:
+                body = ch.get("body")
+                if ch.get("status") == 200 and isinstance(body, dict):
+                    cands.extend(body.get("candlesticks") or [])
+            if labels is not None and e["ticker"] in labels.index:
+                bracket, kind = labels.loc[e["ticker"], "bracket"], labels.loc[e["ticker"], "ladder_kind"]
+            else:
+                bracket, kind = e["ticker"], "UNKNOWN"
+            df = kc.candles_to_frame(cands, series, event, e["ticker"], str(bracket), str(kind),
+                                     a.period, e.get("source") or raw.get("source") or "none")
+            before = int(e.get("rows") or 0)
+            rows_before += before
+            rows_after += len(df)
+            if len(df) != before:
+                n_changed += 1
+                log.warning("reparse: %s rows %d -> %d", e["ticker"], before, len(df))
+            entry = dict(e)
+            entry["rows"] = len(df)
+            entry["reparsed_at"] = now_iso()
+            store.record(entry)
+            if len(df):
+                frames.append(df)
+            n_done += 1
+        if frames:
+            store.write_event_candles(pd.concat(frames, ignore_index=True), a.period, series, event,
+                                      merge_existing=False)
+        if i % 100 == 0 or i == len(by_event):
+            el = time.monotonic() - t_start
+            log.info("reparse: %d/%d events  %s markets  %s rows  %.0fs  eta %s",
+                     i, len(by_event), fmt_int(n_done), fmt_int(rows_after), el,
+                     _hms(el / i * (len(by_event) - i)))
+    store.snapshot({"run": {"at": now_iso(), "reparse": True, "period": a.period,
+                            "markets": n_done, "rows": rows_after, "missing_raw": n_missing,
+                            "row_count_changed": n_changed,
+                            "elapsed_s": round(time.monotonic() - t_start, 1)}})
+    store.close()
+    print("\nreparse: %s markets rebuilt from raw, %s rows (was %s), %d row-count changes, %d raw files missing"
+          % (fmt_int(n_done), fmt_int(rows_after), fmt_int(rows_before), n_changed, n_missing))
+    print("next: python3 verify.py --out %s" % store.root)
+    return 1 if n_missing else 0
+
+
 def series_summary_row(store: Store, tk: str, info: Dict[str, Any], period: int) -> Dict[str, Any]:
     c = {"ok": 0, "empty": 0, "not_found": 0, "error": 0, "rows": 0}
     t0s, t1s = [], []
@@ -548,6 +619,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     ap.add_argument("--smoke", action="store_true",
                     help="~20 markets of one series into <out>_smoke, then verify")
     ap.add_argument("--findings-only", action="store_true")
+    ap.add_argument("--reparse", action="store_true",
+                    help="rebuild candle parquet from the stored raw responses with the current parser (no network)")
     ap.add_argument("--tails", action="store_true",
                     help="with --findings-only: add the tail-depth section (reads candles)")
     ap.add_argument("--no-probe", action="store_true", help="run without probe.json (not advised)")
@@ -564,6 +637,9 @@ def main(argv: Optional[List[str]] = None) -> int:
     out.mkdir(parents=True, exist_ok=True)
     kc.setup_logging(a.log or str(out / "collect.log"))
     store = Store(out)
+
+    if a.reparse:
+        return reparse(store, a)
 
     if a.findings_only:
         import findings

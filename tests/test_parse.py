@@ -91,6 +91,32 @@ class TestCandleDollars(unittest.TestCase):
         self.assertEqual(len(df), 0)
 
 
+class TestCandleHistoricalBare(unittest.TestCase):
+    """The historical host: bare keys, decimal-DOLLAR strings. Captured from
+    WTI-22OCT10-B89.495. Treating these as cents stored 58.9M candles 100x too small."""
+
+    def setUp(self):
+        self.c = fixture("candle_hist_bare.json")
+
+    def test_style(self):
+        self.assertEqual(kc.candle_field_style(self.c), "dollars_bare")
+
+    def test_bare_dollar_strings_are_scaled_to_cents(self):
+        r = kc.candle_row(self.c)
+        self.assertEqual(r["yes_bid_close"], 4.0)
+        self.assertEqual(r["yes_bid_low"], 3.0)
+        self.assertEqual(r["yes_ask_close"], 7.0)
+        self.assertEqual(r["yes_ask_high"], 100.0)
+        self.assertIsNone(r["price_close"])
+        self.assertEqual(r["volume"], 0.0)
+        self.assertEqual(r["open_interest"], 0.0)
+
+    def test_bare_int_is_still_cents(self):
+        self.assertEqual(kc.ohlc({"close": 7}, "x")["x_close"], 7.0)
+        self.assertEqual(kc.ohlc({"close": "0.0700"}, "x")["x_close"], 7.0)
+        self.assertEqual(kc.ohlc({"close": 7.0}, "x")["x_close"], 7.0)
+
+
 class TestCandleCentsLegacy(unittest.TestCase):
     def test_legacy_integer_cents(self):
         c = fixture("candle_cents.json")

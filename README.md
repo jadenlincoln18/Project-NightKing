@@ -42,6 +42,7 @@ tail -f collect.log
 
 python3 verify.py                           # exit 0 required before using the data
 python3 verify.py --crosscheck data/wtiw    # optional: compare with an old-collector pull
+python3 findings.py --tails                # FINDINGS.md + bracket depth by price band per era (reads candles)
 open FINDINGS.md
 ```
 
@@ -86,6 +87,14 @@ Market columns include `settlement_sources`, `settlement_source_name`,
 `cap_strike`, every timestamp as `<name>_epoch`, and **every other scalar field
 the API returned** as a string column. Nothing needs a re-pull because a field
 was not anticipated.
+
+## If a parsing bug is found after the pull
+
+The raw API responses are stored per market. `python3 collect.py --reparse`
+rebuilds every candle parquet from them with the current parser, with no
+network, in minutes; then run `verify.py`. This is how the historical-host
+candle shape (bare keys holding dollar strings, not `*_dollars`) was fixed
+without re-pulling 58.9M candles.
 
 ## Manifest statuses and resume
 
@@ -132,6 +141,7 @@ collector into `data/wtiw`, `data/wti`, … are neither read nor written nor
 deleted, whether or not those runs are still going. A v1 `data/manifest.json`
 is renamed `manifest.v1.json` on first write, never overwritten. Use
 `verify.py --crosscheck data/wtiw` to compare an old pull with the new store on
+python3 findings.py --tails                # FINDINGS.md + bracket depth by price band per era (reads candles)
 overlapping `(ticker, ts)` rows.
 
 ## Tests

@@ -479,12 +479,20 @@ def ohlc(block: Any, prefix: str) -> Dict[str, Optional[float]]:
         if ("%s_dollars" % k) in block:
             out["%s_%s" % (prefix, k)] = cents(block.get("%s_dollars" % k), dollars=True)
         elif k in block:
-            out["%s_%s" % (prefix, k)] = cents(block.get(k), dollars=False)
+            v = block.get(k)
+            # VERIFIED on the real historical host: bare keys carry decimal-DOLLAR
+            # strings ("0.9900"). Only a bare int/float is legacy integer cents.
+            # Treating the string as cents stored every archived candle 100x too small.
+            out["%s_%s" % (prefix, k)] = cents(v, dollars=isinstance(v, str))
     return out
 
 
 def candle_field_style(c: Any) -> str:
-    """'dollars' | 'cents' | 'unknown' - what a raw candle looks like."""
+    """What a raw candle looks like:
+         'dollars'       {"close_dollars": "0.0200"}   live host (brief section 3)
+         'dollars_bare'  {"close": "0.9900"}           historical host: bare keys, dollar strings
+         'cents'         {"close": 2}                  legacy integer cents
+         'unknown'       nothing recognisable"""
     if not isinstance(c, dict):
         return "unknown"
     for blk in ("yes_bid", "yes_ask", "price"):
@@ -492,8 +500,9 @@ def candle_field_style(c: Any) -> str:
         if isinstance(b, dict) and b:
             if any(k.endswith("_dollars") for k in b):
                 return "dollars"
-            if any(k in b for k in OHLC):
-                return "cents"
+            vals = [b[k] for k in OHLC if k in b and b[k] is not None]
+            if vals:
+                return "dollars_bare" if all(isinstance(v, str) for v in vals) else "cents"
     return "unknown"
 
 

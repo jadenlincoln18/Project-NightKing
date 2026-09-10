@@ -41,6 +41,35 @@ def build_store(root, n=5, ticker="KXWTIW-26JUN2614-T83.99"):
     return st
 
 
+def build_ladder_store(root, n=120, brackets=4):
+    """A 4-bracket ladder with asks from 4c to 60c, enough rows for the scale check."""
+    st = kc.Store(root)
+    c = fixture("candle_dollars.json")
+    t0 = kc.iso_to_epoch("2026-06-19T14:00:00Z")
+    frames, live, hist = [], [], []
+    for j in range(brackets):
+        tk = "KXWTIW-26JUN2614-B%d.50" % (70 + j)
+        bid, ask = 0.02 + 0.15 * j, 0.04 + 0.15 * j
+        blk = lambda v: {k + "_dollars": "%.4f" % v for k in ("open", "high", "low", "close")}
+        rows = [dict(c, end_period_ts=t0 + 60 * (i + 1), yes_bid=blk(bid), yes_ask=blk(ask))
+                for i in range(n)]
+        frames.append(kc.candles_to_frame(rows, "KXWTIW", "KXWTIW-26JUN2614", tk, "$%d.00 to $%d.99" % (70 + j, 70 + j),
+                                          "RANGE", 1, "historical"))
+        st.record({"ticker": tk, "period": 1, "series": "KXWTIW", "event": "KXWTIW-26JUN2614",
+                   "status": "ok", "fetch_ok": True, "http_live": 404, "http_hist": 200,
+                   "source": "historical", "rows": n, "t0": t0, "t1": t0 + 60 * n})
+        m = dict(fixture("market_hist.json"), ticker=tk, yes_sub_title="$%d.00 to $%d.99" % (70 + j, 70 + j))
+        hist.append(m)
+    st.write_event_candles(pd.concat(frames, ignore_index=True), 1, "KXWTIW", "KXWTIW-26JUN2614")
+    st.save_raw(Path("markets") / "KXWTIW.live.json.gz", {"markets": []})
+    st.save_raw(Path("markets") / "KXWTIW.hist.json.gz", {"markets": hist})
+    rows = [kc.market_row(*kc.merge_market(None, m, "a", "b"), fixture("event_range.json"), "KXWTIW") for m in hist]
+    st.write_table(kc.markets_frame(rows), "kalshi_markets", series="KXWTIW")
+    st.write_table(kc.events_frame([fixture("event_range.json")], "KXWTIW"), "kalshi_events", series="KXWTIW")
+    st.snapshot(); st.close()
+    return st
+
+
 def run_quiet(root, **kw):
     buf = io.StringIO()
     with contextlib.redirect_stdout(buf):
@@ -94,6 +123,28 @@ class TestVerify(unittest.TestCase):
         rc, out = run_quiet(self.root)
         self.assertEqual(rc, 1)
         self.assertIn("ask < bid", out)
+
+    def test_dollars_stored_as_cents_fails(self):
+        """The real failure: every price 100x too small passes the [0,100] check."""
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            build_ladder_store(root)
+            pq = next((root / "parquet" / "kalshi_candles").rglob("part.parquet"))
+            df = pd.read_parquet(pq)
+            for c in [c for c in df.columns if c.startswith(("yes_bid_", "yes_ask_"))]:
+                df[c] = df[c] / 100.0
+            df.to_parquet(pq, index=False)
+            rc, out = run_quiet(root)
+            self.assertEqual(rc, 1)
+            self.assertIn("price scale", out)
+
+    def test_ladder_store_passes_scale_check(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            build_ladder_store(root)
+            rc, out = run_quiet(root)
+            self.assertEqual(rc, 0, out)
+            self.assertIn("PASS candles: price scale is cents", out)
 
     def test_out_of_range_fails(self):
         def f(df):

@@ -65,6 +65,7 @@ class TestEndToEnd(unittest.TestCase):
         self.assertEqual(sel["KXFAKEWTIW"]["cadence"], "weekly")
         self.assertEqual(sel["KXFAKEGOLDD"]["cadence"], "daily")
         hm = P["host_matrix"]
+        self.assertEqual(hm["field_style_by_host"], {"live": "dollars", "historical": "dollars_bare"})
         self.assertEqual(hm["archived_market"]["live"]["http"], 404)
         self.assertEqual(hm["archived_market"]["historical"]["http"], 200)
         self.assertEqual(hm["recent_market"]["live"]["http"], 200)
@@ -228,6 +229,34 @@ class TestEndToEnd(unittest.TestCase):
         self.assertIn("overlapping tickers:", out)
         self.assertIn("exact match on", out)
         self.assertIn("100.00%", out)
+
+    def test_08b_reparse_rebuilds_from_raw(self):
+        mf = self.out / "manifest.jsonl"
+        before = {}
+        for l in mf.read_text().splitlines():
+            e = json.loads(l)
+            before[e["key"]] = e
+        files = sorted((self.out / "parquet" / "kalshi_candles").rglob("part.parquet"))
+        sums = {p: pd.read_parquet(p)["yes_bid_close"].sum() for p in files}
+        # corrupt one file the way the real bug did, then rebuild everything from raw
+        p0 = files[0]
+        df = pd.read_parquet(p0)
+        df["yes_bid_close"] = df["yes_bid_close"] / 100.0
+        df.to_parquet(p0, index=False)
+        rc, out = run("collect.py", "--out", self.out, "--reparse", "--series", "KXFAKEGOLDD,KXFAKEWTIW,KXFAKEHEATOIL,KXFAKEWTIH")
+        self.assertEqual(rc, 0, out)
+        self.assertIn("markets rebuilt from raw", out)
+        for p, s0 in sums.items():
+            self.assertAlmostEqual(pd.read_parquet(p)["yes_bid_close"].sum(), s0, places=3, msg=str(p))
+        after = {}
+        for l in mf.read_text().splitlines():
+            e = json.loads(l)
+            after[e["key"]] = e
+        for k, e in before.items():
+            if e["status"] == "ok":
+                self.assertEqual(after[k]["rows"], e["rows"], k)
+                self.assertIn("reparsed_at", after[k], k)
+        self.assertEqual(run("verify.py", "--out", self.out)[0], 0)
 
     def test_09_findings_only_and_markets_source_flag(self):
         rc, out = run("collect.py", "--out", self.out, "--findings-only")

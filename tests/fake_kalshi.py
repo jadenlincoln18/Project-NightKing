@@ -205,7 +205,7 @@ class World:
                                    if t not in self.live_markets and self.candles_on[t] == {"live"}]
 
     # -- candles ------------------------------------------------------------
-    def candles(self, ticker: str, start: int, end: int, period: int) -> List[dict]:
+    def candles(self, ticker: str, start: int, end: int, period: int, host: str = "live") -> List[dict]:
         m = self.markets[ticker]
         t0 = int(datetime.strptime(m["open_time"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc).timestamp())
         t1 = int(datetime.strptime(m["close_time"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc).timestamp())
@@ -218,16 +218,26 @@ class World:
             x = h32(ticker, ts)
             b = 5 + x % 60
             a = b + 1 + x % 3
-            c = {"end_period_ts": ts,
-                 "yes_bid": {"open_dollars": "%.4f" % (b / 100), "high_dollars": "%.4f" % ((b + 2) / 100),
-                             "low_dollars": "%.4f" % (max(0, b - 1) / 100), "close_dollars": "%.4f" % ((b + 1) / 100)},
-                 "yes_ask": {"open_dollars": "%.4f" % (a / 100), "high_dollars": "%.4f" % ((a + 2) / 100),
-                             "low_dollars": "%.4f" % (a / 100), "close_dollars": "%.4f" % ((a + 1) / 100)},
-                 "price": ({"open_dollars": "%.4f" % ((b + 1) / 100), "high_dollars": "%.4f" % ((a) / 100),
-                            "low_dollars": "%.4f" % (b / 100), "close_dollars": "%.4f" % ((b + 1) / 100)}
-                           if x % 5 == 0 else {}),
-                 "volume_fp": "%.2f" % (x % 20 if x % 5 == 0 else 0),
-                 "open_interest_fp": "%.2f" % (x % 500)}
+            bid = {"open": b, "high": b + 2, "low": max(0, b - 1), "close": b + 1}
+            ask = {"open": a, "high": a + 2, "low": a, "close": a + 1}
+            px = {"open": b + 1, "high": a, "low": b, "close": b + 1} if x % 5 == 0 else None
+            vol = x % 20 if x % 5 == 0 else 0
+            if host == "live":
+                # VERIFIED live shape: *_dollars keys, volume_fp / open_interest_fp
+                c = {"end_period_ts": ts,
+                     "yes_bid": {k + "_dollars": "%.4f" % (v / 100) for k, v in bid.items()},
+                     "yes_ask": {k + "_dollars": "%.4f" % (v / 100) for k, v in ask.items()},
+                     "price": ({k + "_dollars": "%.4f" % (v / 100) for k, v in px.items()} if px else {}),
+                     "volume_fp": "%.2f" % vol, "open_interest_fp": "%.2f" % (x % 500)}
+            else:
+                # VERIFIED historical shape: bare keys holding decimal-DOLLAR strings,
+                # price block with nulls + mean/previous, volume / open_interest as strings
+                c = {"end_period_ts": ts,
+                     "yes_bid": {k: "%.4f" % (v / 100) for k, v in bid.items()},
+                     "yes_ask": {k: "%.4f" % (v / 100) for k, v in ask.items()},
+                     "price": ({k: "%.4f" % (v / 100) for k, v in px.items()} if px else
+                               {"open": None, "high": None, "low": None, "close": None, "mean": None, "previous": None}),
+                     "volume": "%.2f" % vol, "open_interest": "%.2f" % (x % 500)}
             out.append(c)
             ts += step
         return out
@@ -325,7 +335,7 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(400, {"error": {"code": "invalid_parameters", "message": "end before start"}})
         if (e - s) / (p * 60) > CAP:
             return self._send(400, {"error": {"code": "invalid_parameters", "message": "max candlesticks: %d" % CAP}})
-        return self._send(200, {"ticker": ticker, "candlesticks": W.candles(ticker, s, e, p)})
+        return self._send(200, {"ticker": ticker, "candlesticks": W.candles(ticker, s, e, p, host)})
 
     def _live(self, path: str, q: Dict[str, str]) -> None:
         W = self.world

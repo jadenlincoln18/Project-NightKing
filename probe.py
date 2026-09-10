@@ -232,10 +232,29 @@ def probe_hosts(client: Client, series: str, archived: Optional[dict], recent: O
                                "close_time": m.get("close_time"), "window": [t0, t1]}
         for host in ("live", "historical"):
             r = client.candles(host, series, m["ticker"], t0, t1, 60)
-            rows = len((r.json or {}).get("candlesticks") or []) if isinstance(r.json, dict) else None
+            cs = (r.json or {}).get("candlesticks") if isinstance(r.json, dict) else None
+            rows = len(cs or []) if cs is not None else None
             rec[host] = {"http": r.status, "rows": rows, "body": (r.text or "")[:120] if not r.ok else None}
-            print("%-16s %-34s %-10s -> HTTP %s  rows=%s" % (label, m.get("ticker"), host, r.status, rows))
+            style = None
+            if cs:
+                c0 = cs[0]
+                style = kc.candle_field_style(c0)
+                parsed = kc.candle_row(c0)
+                rec[host].update({"field_style": style, "first_candle": c0,
+                                  "parsed_bid_close": parsed["yes_bid_close"],
+                                  "parsed_ask_close": parsed["yes_ask_close"]})
+                out.setdefault("field_style_by_host", {})[host] = style
+            print("%-16s %-34s %-10s -> HTTP %s  rows=%s%s" % (
+                label, m.get("ticker"), host, r.status, rows,
+                ("  field style: %s (bid_close=%s ask_close=%s cents)" % (
+                    style, rec[host]["parsed_bid_close"], rec[host]["parsed_ask_close"])) if style else ""))
+            if style == "unknown":
+                print("  !! unrecognised candle shape on the %s host: %s" % (host, json.dumps(cs[0])[:200]))
         out[label] = rec
+    styles = set(out.get("field_style_by_host", {}).values())
+    if len(styles) > 1:
+        print("note: the two hosts serve DIFFERENT candle shapes %s - both are parsed to cents"
+              % sorted(styles))
     return out
 
 
@@ -555,6 +574,11 @@ def main(argv: Optional[List[str]] = None) -> int:
             active = recent
         P["candles"] = probe_candles(client, rep, active, caps)
         P["period_interval"] = probe_periods(client, rep, active)
+        # the live style is verified by the candle step; the host matrix may have
+        # had no live rows in its one-day window
+        if P["candles"].get("field_style"):
+            P["host_matrix"].setdefault("field_style_by_host", {}).setdefault(
+                "live", P["candles"]["field_style"])
     else:
         P["host_matrix"], P["candles"], P["period_interval"] = None, {"cap": caps.cap}, {}
 
@@ -601,6 +625,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         rec = hm.get(label)
         if rec:
             print("%-19s: %s  live=%s hist=%s" % (label, rec["ticker"], rec["live"]["http"], rec["historical"]["http"]))
+    print("field style by host: %s" % json.dumps(hm.get("field_style_by_host", {})))
     print("recommended pause  : %s s" % P["rate"].get("recommended_pause"))
     print("requests made      : %s" % fmt_int(client.stats.get("requests", 0)))
     bad = [tk for tk, ev in events.items() if not ev["ended_cleanly"]]

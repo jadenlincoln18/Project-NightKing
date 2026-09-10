@@ -87,6 +87,8 @@ def check_candles(store: Store, rep: Report, period: Optional[int], markets_df) 
     ts_range: Dict[str, tuple] = {}
     bad_schema = []
     all_null_files = []
+    scale_suspect = []          # a whole ladder whose asks never exceed 1c = dollars stored as cents
+    scale_checked = 0
     lifetimes = {}
     if markets_df is not None and not markets_df.empty:
         for r in markets_df[["ticker", "open_time_epoch", "close_time_epoch"]].itertuples(index=False):
@@ -116,6 +118,10 @@ def check_candles(store: Store, rep: Report, period: Optional[int], markets_df) 
         for col in kc.BIDASK_CLOSE:
             if df[col].isna().all():
                 all_null_files.append("%s/%s %s all null" % (parts.get("series"), parts.get("event"), col))
+        if n >= 100 and df["ticker"].nunique() >= 3:
+            scale_checked += 1
+            if float(df["yes_ask_close"].max()) <= 1.0:
+                scale_suspect.append("%s/%s" % (parts.get("series"), parts.get("event")))
         stats["bidask_cells"] += n * len(BIDASK_COLS)
         stats["null_bidask_cells"] += int(df[BIDASK_COLS].isna().sum().sum())
         ps["null_rows"] += int(df[list(kc.BIDASK_CLOSE)].isna().any(axis=1).sum())
@@ -162,6 +168,11 @@ def check_candles(store: Store, rep: Report, period: Optional[int], markets_df) 
         rep.fail("candles: prices in [0,100]", "%d cells outside" % stats["out_of_range"])
     elif stats["rows"]:
         rep.ok("candles: prices in [0,100]")
+    if scale_suspect:
+        rep.fail("candles: price scale is cents", "%d of %d ladders never have an ask above 1c - "
+                 "dollars stored as cents? e.g. %s" % (len(scale_suspect), scale_checked, scale_suspect[:3]))
+    elif scale_checked:
+        rep.ok("candles: price scale is cents", "%d ladders checked, all have asks above 1c" % scale_checked)
     if stats["spread_rows"]:
         share = stats["neg_spread"] / stats["spread_rows"]
         if share > NEG_SPREAD_SHARE_MAX:
