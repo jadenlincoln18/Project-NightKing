@@ -366,12 +366,22 @@ class DBClient:
         raw = self.out / "raw" / ("%s.dbn.zst" % name)
         cost = self.quote(schema, symbols, stype_in, start, end, dataset)
         if raw.exists() and raw.stat().st_size > 0 and self.execute:
-            # paid for and downloaded, but never recorded: rebuild, do not buy again
-            log.warning("RECOVER %s: raw %s exists without a manifest entry - rebuilding from it (no purchase)",
+            # paid for and downloaded, but never recorded: rebuild, do not buy again -
+            # unless the file is a partial download (a stream that ended prematurely)
+            log.warning("RECOVER %s: raw %s exists without a manifest entry - checking it is complete",
                         name, raw.name)
             t0 = time.monotonic()
             try:
                 df = load_dbn(raw)
+                expected = self.record_count(schema, symbols, stype_in, start, end, dataset)
+                if len(df) < expected:
+                    log.error("RECOVER %s: raw has %s records, Databento reports %s - partial download; re-buying",
+                              name, "{:,}".format(len(df)), "{:,}".format(expected))
+                    raw.unlink()
+                    df = None
+                else:
+                    log.info("RECOVER %s: %s records match the expected count - rebuilt, no purchase",
+                             name, "{:,}".format(len(df)))
             except Exception as e:                                       # noqa: BLE001
                 log.error("RECOVER %s failed to read %s (%s) - will re-buy", name, raw.name, str(e)[:120])
                 df = None

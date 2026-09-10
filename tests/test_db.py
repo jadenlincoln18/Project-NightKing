@@ -141,6 +141,7 @@ class TestCostDiscipline(unittest.TestCase):
         raw.parent.mkdir(parents=True)
         raw.write_bytes(b"paid-for download, process died before the manifest line")
         rows = fake.statistics(["CL.c.0"], "continuous", date(2026, 3, 2), date(2026, 3, 9))
+        fake.metadata.get_record_count = lambda *a, **k: len(rows)
         orig = dc.load_dbn
         dc.load_dbn = lambda path: pd.DataFrame(rows)
         try:
@@ -152,6 +153,25 @@ class TestCostDiscipline(unittest.TestCase):
         e = list(c.manifest.entries.values())[0]
         self.assertTrue(e.get("recovered_from_raw"))
         self.assertEqual(e["status"], "ok")
+
+    def test_partial_raw_is_rebought_not_recovered(self):
+        fake = FakeHistorical()
+        c = dc.DBClient(self.out, max_cost=25, execute=True, client=fake)
+        raw = self.out / "raw" / "stats.dbn.zst"
+        raw.parent.mkdir(parents=True)
+        raw.write_bytes(b"stream ended prematurely")
+        rows = fake.statistics(["CL.c.0"], "continuous", date(2026, 3, 2), date(2026, 3, 9))
+        fake.metadata.get_record_count = lambda *a, **k: len(rows) + 500     # server says more
+        orig = dc.load_dbn
+        dc.load_dbn = lambda path: pd.DataFrame(rows[:10])                   # file holds a fragment
+        try:
+            df = c.pull("stats", "statistics", ["CL.c.0"], "continuous", "2026-03-01", "2026-03-10")
+        finally:
+            dc.load_dbn = orig
+        self.assertEqual(c.run_total, 0.01, "partial file discarded and the request bought properly")
+        self.assertGreater(len(df), 10)
+        e = list(c.manifest.entries.values())[0]
+        self.assertFalse(e.get("recovered_from_raw", False))
 
     def test_failed_request_is_recorded_and_run_continues(self):
         fake = FakeHistorical()
