@@ -2,3 +2,11 @@ __pycache__/
 *.pyc
 data_smoke/
 *.log
+# collector output (large); FINDINGS.md, summary.csv and manifest.json snapshot are kept
+data/parquet/kalshi_candles/
+data/parquet/kalshi_markets/
+data/parquet/kalshi_events/
+data/raw/
+data/manifest.jsonl
+data/manifest.v1.json
+data/probe.json

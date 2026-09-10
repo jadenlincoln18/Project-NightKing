@@ -1,6 +1,1513 @@
 {
-  "created": "2026-09-02T03:46:39.139242+00:00",
-  "kalshi_candles": {},
-  "poly": {},
-  "runs": []
+  "counts": {
+    "empty": 3789,
+    "error": 0,
+    "not_found": 0,
+    "ok": 52378,
+    "rows": 58917335
+  },
+  "created": "2026-09-10T08:57:15+00:00",
+  "entries_file": "manifest.jsonl",
+  "n_entries": 56167,
+  "probe": {
+    "at": "2026-09-10T08:27:48+00:00",
+    "cap": 5000,
+    "cap_observed": null
+  },
+  "runs": [
+    {
+      "at": "2026-09-10T08:54:57+00:00",
+      "cap_observed": null,
+      "elapsed_s": 138.5,
+      "finished_at": "2026-09-10T08:57:15+00:00",
+      "interrupted": true,
+      "markets_source": "markets",
+      "pause": 0.2,
+      "period": 1,
+      "repull": false,
+      "requests": 536,
+      "series": [
+        "KXWTI",
+        "KXWTIDIRY",
+        "KXWTIE",
+        "KXWTIEU",
+        "KXWTIMAX",
+        "KXWTIMAXM",
+        "KXWTIMIN",
+        "KXWTIMINM",
+        "KXWTIVSBRENT",
+        "KXWTIW",
+        "KXWTIWHEN",
+        "KXBRENTD",
+        "KXBRENTMON",
+        "KXBRENTW",
+        "KXBOEGOLD",
+        "KXBTCVSGOLD",
+        "KXDXYVSGOLD",
+        "KXGOLD",
+        "KXGOLDD",
+        "KXGOLDDIRY",
+        "KXGOLDMON",
+        "KXGOLDVSSILVER",
+        "KXGOLDW",
+        "KXINXVSGOLD",
+        "KXRHGOLD",
+        "KXNATGASD",
+        "KXNATGASMON",
+        "KXNATGASW",
+        "KXSILVERD",
+        "KXSILVERMON",
+        "KXSILVERW",
+        "KXCOPPERD",
+        "KXCOPPERMON",
+        "KXCOPPERW",
+        "KXAAAEVM",
+        "KXAAAGASD",
+        "KXAAAGASDAZ",
+        "KXAAAGASDCA",
+        "KXAAAGASDFL",
+        "KXAAAGASDGA",
+        "KXAAAGASDIL",
+        "KXAAAGASDMA",
+        "KXAAAGASDMI",
+        "KXAAAGASDNC",
+        "KXAAAGASDNJ",
+        "KXAAAGASDNY",
+        "KXAAAGASDOH",
+        "KXAAAGASDPA",
+        "KXAAAGASDTN",
+        "KXAAAGASDTX",
+        "KXAAAGASDVA",
+        "KXAAAGASDWA",
+        "KXAAAGASED",
+        "KXAAAGASM",
+        "KXAAAGASMAX",
+        "KXAAAGASMAXCA",
+        "KXAAAGASMAXFL",
+        "KXAAAGASMAXM",
+        "KXAAAGASMAXTX",
+        "KXAAAGASMIN",
+        "KXAAAGASMINCA",
+        "KXAAAGASMINFL",
+        "KXAAAGASMINM",
+        "KXAAAGASMINTX",
+        "KXAAAGASW",
+        "KXAAAGASWNJ",
+        "KXAKCRUDEOIL",
+        "KXAKPFD",
+        "KXB65",
+        "KXB85",
+        "KXBARRELS",
+        "KXCHINAOILINV",
+        "KXCOCOAMON",
+        "KXCOCOAW",
+        "KXCOFFEEMON",
+        "KXCOFFEEW",
+        "KXCORNMON",
+        "KXCORNW",
+        "KXDIESEL",
+        "KXDIESELD",
+        "KXDIESELELECT",
+        "KXDIESELM",
+        "KXDIESELMAXY",
+        "KXDIESELMINY",
+        "KXDIESELMON",
+        "KXDIESELW",
+        "KXDIESELYE",
+        "KXDOESPRTENDER",
+        "KXEIACRUDEW",
+        "KXGBT55OY",
+        "KXGEMINI35OY",
+        "KXGEMINI35Y",
+        "KXGPT55Y",
+        "KXHOILMON",
+        "KXHOILW",
+        "KXIACORN",
+        "KXIAETHANOL",
+        "KXIEAOIL",
+        "KXILNUCLEAR",
+        "KXINCORNYIELD",
+        "KXINXVSBTC",
+        "KXIRANCRUDE",
+        "KXJETFUEL",
+        "KXKEYSTONEFID",
+        "KXKSWHEAT",
+        "KXKYCOAL",
+        "KXLAOILGASEMP",
+        "KXLCATTLEMON",
+        "KXLCATTLEW",
+        "KXLITHIUMMON",
+        "KXLITHIUMW",
+        "KXMARCELLUSGAS",
+        "KXMEXCUBOIL",
+        "KXMSCOTTON",
+        "KXMTCATTLE",
+        "KXNDKOIL",
+        "KXNECOF",
+        "KXNECORNYIELD",
+        "KXNGAS",
+        "KXNGASMAX",
+        "KXNGASMIN",
+        "KXNGASW",
+        "KXNICKELMON",
+        "KXNICKELW",
+        "KXNMCOIL",
+        "KXOIL",
+        "KXOILRIGS",
+        "KXOILW",
+        "KXOKOIL",
+        "KXOPECCUTS",
+        "KXOPUS48OY",
+        "KXOPUS48Y",
+        "KXPAGAS",
+        "KXPJMEMERGENCY",
+        "KXPOWERKWH",
+        "KXRIRESPOWER",
+        "KXRUCRUDEX",
+        "KXSDCATTLE",
+        "KXSDCORNYIELD",
+        "KXSOLAR",
+        "KXSOYBEANMON",
+        "KXSOYBEANW",
+        "KXSPRLVL",
+        "KXSPRMIN",
+        "KXSPRUSE",
+        "KXSTEELMON",
+        "KXSTEELW",
+        "KXSUGARMON",
+        "KXSUGARW",
+        "KXTRUFGAS",
+        "KXTXERCOTPEAK",
+        "KXTXERCOTPEAKD",
+        "KXTXOIL",
+        "KXUSGASCPI",
+        "KXVENEZCRUDE",
+        "KXVERARELEASE",
+        "KXWHEAT",
+        "KXWHEATMON",
+        "KXWHEATW",
+        "KXWICORNYIELD",
+        "KXWVCOAL",
+        "KXWYCOAL"
+      ],
+      "smoke": false,
+      "workers": 3
+    },
+    {
+      "at": "2026-09-10T08:57:18+00:00",
+      "cap_observed": null,
+      "elapsed_s": 28926.3,
+      "finished_at": "2026-09-10T16:59:24+00:00",
+      "interrupted": false,
+      "markets_source": "markets",
+      "pause": 0.2,
+      "period": 1,
+      "repull": false,
+      "requests": 124174,
+      "series": [
+        "KXWTI",
+        "KXWTIDIRY",
+        "KXWTIE",
+        "KXWTIEU",
+        "KXWTIMAX",
+        "KXWTIMAXM",
+        "KXWTIMIN",
+        "KXWTIMINM",
+        "KXWTIVSBRENT",
+        "KXWTIW",
+        "KXWTIWHEN",
+        "KXBRENTD",
+        "KXBRENTMON",
+        "KXBRENTW",
+        "KXBOEGOLD",
+        "KXBTCVSGOLD",
+        "KXDXYVSGOLD",
+        "KXGOLD",
+        "KXGOLDD",
+        "KXGOLDDIRY",
+        "KXGOLDMON",
+        "KXGOLDVSSILVER",
+        "KXGOLDW",
+        "KXINXVSGOLD",
+        "KXRHGOLD",
+        "KXNATGASD",
+        "KXNATGASMON",
+        "KXNATGASW",
+        "KXSILVERD",
+        "KXSILVERMON",
+        "KXSILVERW",
+        "KXCOPPERD",
+        "KXCOPPERMON",
+        "KXCOPPERW",
+        "KXAAAEVM",
+        "KXAAAGASD",
+        "KXAAAGASDAZ",
+        "KXAAAGASDCA",
+        "KXAAAGASDFL",
+        "KXAAAGASDGA",
+        "KXAAAGASDIL",
+        "KXAAAGASDMA",
+        "KXAAAGASDMI",
+        "KXAAAGASDNC",
+        "KXAAAGASDNJ",
+        "KXAAAGASDNY",
+        "KXAAAGASDOH",
+        "KXAAAGASDPA",
+        "KXAAAGASDTN",
+        "KXAAAGASDTX",
+        "KXAAAGASDVA",
+        "KXAAAGASDWA",
+        "KXAAAGASED",
+        "KXAAAGASM",
+        "KXAAAGASMAX",
+        "KXAAAGASMAXCA",
+        "KXAAAGASMAXFL",
+        "KXAAAGASMAXM",
+        "KXAAAGASMAXTX",
+        "KXAAAGASMIN",
+        "KXAAAGASMINCA",
+        "KXAAAGASMINFL",
+        "KXAAAGASMINM",
+        "KXAAAGASMINTX",
+        "KXAAAGASW",
+        "KXAAAGASWNJ",
+        "KXAKCRUDEOIL",
+        "KXAKPFD",
+        "KXB65",
+        "KXB85",
+        "KXBARRELS",
+        "KXCHINAOILINV",
+        "KXCOCOAMON",
+        "KXCOCOAW",
+        "KXCOFFEEMON",
+        "KXCOFFEEW",
+        "KXCORNMON",
+        "KXCORNW",
+        "KXDIESEL",
+        "KXDIESELD",
+        "KXDIESELELECT",
+        "KXDIESELM",
+        "KXDIESELMAXY",
+        "KXDIESELMINY",
+        "KXDIESELMON",
+        "KXDIESELW",
+        "KXDIESELYE",
+        "KXDOESPRTENDER",
+        "KXEIACRUDEW",
+        "KXGBT55OY",
+        "KXGEMINI35OY",
+        "KXGEMINI35Y",
+        "KXGPT55Y",
+        "KXHOILMON",
+        "KXHOILW",
+        "KXIACORN",
+        "KXIAETHANOL",
+        "KXIEAOIL",
+        "KXILNUCLEAR",
+        "KXINCORNYIELD",
+        "KXINXVSBTC",
+        "KXIRANCRUDE",
+        "KXJETFUEL",
+        "KXKEYSTONEFID",
+        "KXKSWHEAT",
+        "KXKYCOAL",
+        "KXLAOILGASEMP",
+        "KXLCATTLEMON",
+        "KXLCATTLEW",
+        "KXLITHIUMMON",
+        "KXLITHIUMW",
+        "KXMARCELLUSGAS",
+        "KXMEXCUBOIL",
+        "KXMSCOTTON",
+        "KXMTCATTLE",
+        "KXNDKOIL",
+        "KXNECOF",
+        "KXNECORNYIELD",
+        "KXNGAS",
+        "KXNGASMAX",
+        "KXNGASMIN",
+        "KXNGASW",
+        "KXNICKELMON",
+        "KXNICKELW",
+        "KXNMCOIL",
+        "KXOIL",
+        "KXOILRIGS",
+        "KXOILW",
+        "KXOKOIL",
+        "KXOPECCUTS",
+        "KXOPUS48OY",
+        "KXOPUS48Y",
+        "KXPAGAS",
+        "KXPJMEMERGENCY",
+        "KXPOWERKWH",
+        "KXRIRESPOWER",
+        "KXRUCRUDEX",
+        "KXSDCATTLE",
+        "KXSDCORNYIELD",
+        "KXSOLAR",
+        "KXSOYBEANMON",
+        "KXSOYBEANW",
+        "KXSPRLVL",
+        "KXSPRMIN",
+        "KXSPRUSE",
+        "KXSTEELMON",
+        "KXSTEELW",
+        "KXSUGARMON",
+        "KXSUGARW",
+        "KXTRUFGAS",
+        "KXTXERCOTPEAK",
+        "KXTXERCOTPEAKD",
+        "KXTXOIL",
+        "KXUSGASCPI",
+        "KXVENEZCRUDE",
+        "KXVERARELEASE",
+        "KXWHEAT",
+        "KXWHEATMON",
+        "KXWHEATW",
+        "KXWICORNYIELD",
+        "KXWVCOAL",
+        "KXWYCOAL"
+      ],
+      "smoke": false,
+      "workers": 3
+    }
+  ],
+  "series": {
+    "KXAAAEVM": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 11,
+      "rows": 1238
+    },
+    "KXAAAGASD": {
+      "empty": 2,
+      "error": 0,
+      "not_found": 0,
+      "ok": 3055,
+      "rows": 682814
+    },
+    "KXAAAGASDAZ": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 34,
+      "rows": 5339
+    },
+    "KXAAAGASDCA": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 309,
+      "rows": 55150
+    },
+    "KXAAAGASDFL": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 376,
+      "rows": 78378
+    },
+    "KXAAAGASDGA": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 182,
+      "rows": 41866
+    },
+    "KXAAAGASDIL": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 309,
+      "rows": 65865
+    },
+    "KXAAAGASDMA": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 34,
+      "rows": 4896
+    },
+    "KXAAAGASDMI": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 34,
+      "rows": 4605
+    },
+    "KXAAAGASDNC": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 180,
+      "rows": 36864
+    },
+    "KXAAAGASDNJ": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 326,
+      "rows": 51470
+    },
+    "KXAAAGASDNY": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 289,
+      "rows": 37456
+    },
+    "KXAAAGASDOH": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 270,
+      "rows": 58356
+    },
+    "KXAAAGASDPA": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 210,
+      "rows": 36682
+    },
+    "KXAAAGASDTN": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 44,
+      "rows": 7848
+    },
+    "KXAAAGASDTX": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 373,
+      "rows": 68928
+    },
+    "KXAAAGASDVA": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 44,
+      "rows": 5387
+    },
+    "KXAAAGASDWA": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 174,
+      "rows": 44876
+    },
+    "KXAAAGASED": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 11,
+      "rows": 98555
+    },
+    "KXAAAGASM": {
+      "empty": 19,
+      "error": 0,
+      "not_found": 0,
+      "ok": 451,
+      "rows": 1545017
+    },
+    "KXAAAGASMAX": {
+      "empty": 1,
+      "error": 0,
+      "not_found": 0,
+      "ok": 19,
+      "rows": 214624
+    },
+    "KXAAAGASMAXCA": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 33,
+      "rows": 272406
+    },
+    "KXAAAGASMAXFL": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 19,
+      "rows": 78912
+    },
+    "KXAAAGASMAXM": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 9,
+      "rows": 12908
+    },
+    "KXAAAGASMAXTX": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 27,
+      "rows": 223577
+    },
+    "KXAAAGASMIN": {
+      "empty": 2,
+      "error": 0,
+      "not_found": 0,
+      "ok": 13,
+      "rows": 78612
+    },
+    "KXAAAGASMINCA": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 12,
+      "rows": 226571
+    },
+    "KXAAAGASMINFL": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 7,
+      "rows": 95651
+    },
+    "KXAAAGASMINM": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 9,
+      "rows": 10498
+    },
+    "KXAAAGASMINTX": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 13,
+      "rows": 184594
+    },
+    "KXAAAGASW": {
+      "empty": 21,
+      "error": 0,
+      "not_found": 0,
+      "ok": 906,
+      "rows": 1171423
+    },
+    "KXAAAGASWNJ": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 74,
+      "rows": 42393
+    },
+    "KXAKCRUDEOIL": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 1,
+      "rows": 3741
+    },
+    "KXAKPFD": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 5,
+      "rows": 28663
+    },
+    "KXB65": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 33,
+      "rows": 18122
+    },
+    "KXB85": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 33,
+      "rows": 14890
+    },
+    "KXBARRELS": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 11,
+      "rows": 102759
+    },
+    "KXBOEGOLD": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 1,
+      "rows": 1677
+    },
+    "KXBRENTD": {
+      "empty": 9,
+      "error": 0,
+      "not_found": 0,
+      "ok": 2494,
+      "rows": 2660847
+    },
+    "KXBRENTMON": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 150,
+      "rows": 1316932
+    },
+    "KXBRENTW": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 520,
+      "rows": 1316294
+    },
+    "KXBTCVSGOLD": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 3,
+      "rows": 105837
+    },
+    "KXCHINAOILINV": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 5,
+      "rows": 775
+    },
+    "KXCOCOAMON": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 24,
+      "rows": 81744
+    },
+    "KXCOCOAW": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 90,
+      "rows": 101407
+    },
+    "KXCOFFEEMON": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 20,
+      "rows": 104835
+    },
+    "KXCOFFEEW": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 126,
+      "rows": 130234
+    },
+    "KXCOPPERD": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 4378,
+      "rows": 2558031
+    },
+    "KXCOPPERMON": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 290,
+      "rows": 1133970
+    },
+    "KXCOPPERW": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 870,
+      "rows": 1884856
+    },
+    "KXCORNMON": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 24,
+      "rows": 125809
+    },
+    "KXCORNW": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 140,
+      "rows": 172571
+    },
+    "KXDIESEL": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 26,
+      "rows": 701
+    },
+    "KXDIESELD": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 894,
+      "rows": 181740
+    },
+    "KXDIESELELECT": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 15,
+      "rows": 34352
+    },
+    "KXDIESELM": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 10,
+      "rows": 722
+    },
+    "KXDIESELMAXY": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 12,
+      "rows": 24876
+    },
+    "KXDIESELMINY": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 12,
+      "rows": 21770
+    },
+    "KXDIESELMON": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 52,
+      "rows": 104750
+    },
+    "KXDIESELW": {
+      "empty": 21,
+      "error": 0,
+      "not_found": 0,
+      "ok": 176,
+      "rows": 186121
+    },
+    "KXDIESELYE": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 19,
+      "rows": 37536
+    },
+    "KXDOESPRTENDER": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 3,
+      "rows": 2607
+    },
+    "KXDXYVSGOLD": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 2,
+      "rows": 51536
+    },
+    "KXEIACRUDEW": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 26,
+      "rows": 2920
+    },
+    "KXGBT55OY": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 4,
+      "rows": 11088
+    },
+    "KXGEMINI35OY": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 4,
+      "rows": 6940
+    },
+    "KXGEMINI35Y": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 4,
+      "rows": 3620
+    },
+    "KXGOLD": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 95,
+      "rows": 10875
+    },
+    "KXGOLDD": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 3873,
+      "rows": 3882597
+    },
+    "KXGOLDDIRY": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 13,
+      "rows": 230859
+    },
+    "KXGOLDMON": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 330,
+      "rows": 2328764
+    },
+    "KXGOLDVSSILVER": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 2,
+      "rows": 48115
+    },
+    "KXGOLDW": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 1050,
+      "rows": 2568873
+    },
+    "KXGPT55Y": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 4,
+      "rows": 3466
+    },
+    "KXHOILMON": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 20,
+      "rows": 60852
+    },
+    "KXHOILW": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 110,
+      "rows": 105710
+    },
+    "KXIACORN": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 1,
+      "rows": 7652
+    },
+    "KXIAETHANOL": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 8,
+      "rows": 14852
+    },
+    "KXIEAOIL": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 1,
+      "rows": 12
+    },
+    "KXILNUCLEAR": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 7,
+      "rows": 36333
+    },
+    "KXINCORNYIELD": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 1,
+      "rows": 7822
+    },
+    "KXINXVSBTC": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 2,
+      "rows": 27725
+    },
+    "KXINXVSGOLD": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 2,
+      "rows": 16911
+    },
+    "KXIRANCRUDE": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 45,
+      "rows": 37115
+    },
+    "KXJETFUEL": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 131,
+      "rows": 67812
+    },
+    "KXKEYSTONEFID": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 4,
+      "rows": 897
+    },
+    "KXKSWHEAT": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 8,
+      "rows": 19986
+    },
+    "KXKYCOAL": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 6,
+      "rows": 9450
+    },
+    "KXLAOILGASEMP": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 1,
+      "rows": 2737
+    },
+    "KXLCATTLEMON": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 24,
+      "rows": 111611
+    },
+    "KXLCATTLEW": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 90,
+      "rows": 94966
+    },
+    "KXLITHIUMMON": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 40,
+      "rows": 167367
+    },
+    "KXLITHIUMW": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 190,
+      "rows": 129341
+    },
+    "KXMARCELLUSGAS": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 6,
+      "rows": 14791
+    },
+    "KXMEXCUBOIL": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 4,
+      "rows": 22287
+    },
+    "KXMSCOTTON": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 6,
+      "rows": 10267
+    },
+    "KXMTCATTLE": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 1,
+      "rows": 1238
+    },
+    "KXNATGASD": {
+      "empty": 26,
+      "error": 0,
+      "not_found": 0,
+      "ok": 7736,
+      "rows": 5094817
+    },
+    "KXNATGASMON": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 240,
+      "rows": 740995
+    },
+    "KXNATGASW": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 949,
+      "rows": 1037258
+    },
+    "KXNDKOIL": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 1,
+      "rows": 3782
+    },
+    "KXNECOF": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 1,
+      "rows": 2169
+    },
+    "KXNECORNYIELD": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 5,
+      "rows": 8671
+    },
+    "KXNGAS": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 16,
+      "rows": 55612
+    },
+    "KXNGASMAX": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 21,
+      "rows": 207483
+    },
+    "KXNGASMIN": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 14,
+      "rows": 55685
+    },
+    "KXNGASW": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 13,
+      "rows": 9744
+    },
+    "KXNICKELMON": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 40,
+      "rows": 165362
+    },
+    "KXNICKELW": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 170,
+      "rows": 140332
+    },
+    "KXNMCOIL": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 1,
+      "rows": 7128
+    },
+    "KXOIL": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 28,
+      "rows": 225762
+    },
+    "KXOILRIGS": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 23,
+      "rows": 144303
+    },
+    "KXOILW": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 30,
+      "rows": 21969
+    },
+    "KXOKOIL": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 1,
+      "rows": 1716
+    },
+    "KXOPECCUTS": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 1,
+      "rows": 19734
+    },
+    "KXOPUS48OY": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 4,
+      "rows": 14048
+    },
+    "KXOPUS48Y": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 4,
+      "rows": 3498
+    },
+    "KXPAGAS": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 1,
+      "rows": 5316
+    },
+    "KXPJMEMERGENCY": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 6,
+      "rows": 33944
+    },
+    "KXPOWERKWH": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 31,
+      "rows": 104237
+    },
+    "KXRHGOLD": {
+      "empty": 5,
+      "error": 0,
+      "not_found": 0,
+      "ok": 42,
+      "rows": 68079
+    },
+    "KXRIRESPOWER": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 7,
+      "rows": 13636
+    },
+    "KXRUCRUDEX": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 1,
+      "rows": 3711
+    },
+    "KXSDCATTLE": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 1,
+      "rows": 1438
+    },
+    "KXSDCORNYIELD": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 8,
+      "rows": 14668
+    },
+    "KXSILVERD": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 3911,
+      "rows": 3894687
+    },
+    "KXSILVERMON": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 280,
+      "rows": 2185738
+    },
+    "KXSILVERW": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 1050,
+      "rows": 2037228
+    },
+    "KXSOLAR": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 10,
+      "rows": 124756
+    },
+    "KXSOYBEANMON": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 20,
+      "rows": 101064
+    },
+    "KXSOYBEANW": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 120,
+      "rows": 122543
+    },
+    "KXSPRLVL": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 140,
+      "rows": 95996
+    },
+    "KXSPRMIN": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 2,
+      "rows": 19534
+    },
+    "KXSPRUSE": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 3,
+      "rows": 7770
+    },
+    "KXSTEELMON": {
+      "empty": 40,
+      "error": 0,
+      "not_found": 0,
+      "ok": 40,
+      "rows": 40
+    },
+    "KXSTEELW": {
+      "empty": 80,
+      "error": 0,
+      "not_found": 0,
+      "ok": 0,
+      "rows": 0
+    },
+    "KXSUGARMON": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 34,
+      "rows": 134021
+    },
+    "KXSUGARW": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 116,
+      "rows": 123844
+    },
+    "KXTRUFGAS": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 165,
+      "rows": 24667
+    },
+    "KXTXERCOTPEAK": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 7,
+      "rows": 30533
+    },
+    "KXTXERCOTPEAKD": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 175,
+      "rows": 25714
+    },
+    "KXTXOIL": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 4,
+      "rows": 40952
+    },
+    "KXUSGASCPI": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 129,
+      "rows": 307392
+    },
+    "KXVENEZCRUDE": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 8,
+      "rows": 7607
+    },
+    "KXVERARELEASE": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 6,
+      "rows": 1956
+    },
+    "KXWHEAT": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 1,
+      "rows": 31
+    },
+    "KXWHEATMON": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 24,
+      "rows": 116986
+    },
+    "KXWHEATW": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 92,
+      "rows": 112115
+    },
+    "KXWICORNYIELD": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 9,
+      "rows": 13688
+    },
+    "KXWTI": {
+      "empty": 3111,
+      "error": 0,
+      "not_found": 0,
+      "ok": 9237,
+      "rows": 8892333
+    },
+    "KXWTIDIRY": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 11,
+      "rows": 92478
+    },
+    "KXWTIE": {
+      "empty": 11,
+      "error": 0,
+      "not_found": 0,
+      "ok": 4,
+      "rows": 10
+    },
+    "KXWTIEU": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 1,
+      "rows": 15
+    },
+    "KXWTIMAX": {
+      "empty": 1,
+      "error": 0,
+      "not_found": 0,
+      "ok": 134,
+      "rows": 1070153
+    },
+    "KXWTIMAXM": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 14,
+      "rows": 30074
+    },
+    "KXWTIMIN": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 83,
+      "rows": 436785
+    },
+    "KXWTIMINM": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 31,
+      "rows": 107739
+    },
+    "KXWTIVSBRENT": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 2,
+      "rows": 19840
+    },
+    "KXWTIW": {
+      "empty": 440,
+      "error": 0,
+      "not_found": 0,
+      "ok": 2679,
+      "rows": 2311548
+    },
+    "KXWTIWHEN": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 17,
+      "rows": 76994
+    },
+    "KXWVCOAL": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 7,
+      "rows": 12178
+    },
+    "KXWYCOAL": {
+      "empty": 0,
+      "error": 0,
+      "not_found": 0,
+      "ok": 8,
+      "rows": 12914
+    }
+  },
+  "updated": "2026-09-10T16:59:24+00:00",
+  "version": 2
 }

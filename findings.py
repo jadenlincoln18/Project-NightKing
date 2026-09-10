@@ -19,14 +19,39 @@ import sys
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import kalshi_common as kc
 from kalshi_common import Store, fmt_int
 
+import re
+
 HEDGEABLE_HINTS = ("ICE", "CME", "NYMEX", "COMEX", "CBOT", "CBOE")
-USABLE_SHARE = 0.5      # a month is "live" when >= 50% of its markets have candles
+USABLE_SHARE = 0.5          # a month is "live" when >= 50% of its markets have candles ...
+MIN_CANDLES_PER_MARKET = 50  # ... AND the month averages at least this many candles per market
 MIN_USABLE_MONTHS = 2
+
+
+def is_exchange_source(name: Any) -> bool:
+    """Whole-word match: 'ICE' must not match 'Office' or 'Price'."""
+    if not isinstance(name, str):
+        return False
+    return any(re.search(r"(?<![A-Za-z])%s(?![A-Za-z])" % h, name) for h in HEDGEABLE_HINTS)
+
+
+def month_segments(months: List[str]) -> List[Tuple[str, str]]:
+    """Contiguous runs of YYYY-MM strings -> [(first, last), ...]."""
+    out: List[Tuple[str, str]] = []
+    for m in sorted(months):
+        y, mo = int(m[:4]), int(m[5:7])
+        if out:
+            ly, lmo = int(out[-1][1][:4]), int(out[-1][1][5:7])
+            nxt = (ly + (lmo // 12), (lmo % 12) + 1)
+            if (y, mo) == nxt:
+                out[-1] = (out[-1][0], m)
+                continue
+        out.append((m, m))
+    return out
 
 
 def month_of_epoch(ts: Any) -> Optional[str]:
@@ -116,12 +141,16 @@ def build(store: Store) -> Dict[str, Any]:
         rec["first_candle"] = kc.epoch_to_iso(min(t0s))[:10] if t0s else None
         rec["last_candle"] = kc.epoch_to_iso(max(t1s))[:10] if t1s else None
         live_months = [m for m, v in rec["months"].items()
-                       if v["markets"] and v["with_candles"] / v["markets"] >= USABLE_SHARE]
+                       if v["markets"] and v["with_candles"] / v["markets"] >= USABLE_SHARE
+                       and v["candles"] / v["markets"] >= MIN_CANDLES_PER_MARKET]
+        rec["usable_segments"] = month_segments(live_months)
         rec["usable_from"] = live_months[0] if live_months else None
         rec["usable_to"] = live_months[-1] if live_months else None
         rec["usable_months"] = len(live_months)
-        rec["hedgeable_source"] = any(h in (src or "").upper() for src in rec["settlement_sources"]
-                                      for h in HEDGEABLE_HINTS)
+        # hedgeable only when the DOMINANT settlement source is an exchange
+        top = next(iter(rec["settlement_sources"]), None)
+        rec["dominant_source"] = top
+        rec["hedgeable_source"] = is_exchange_source(top)
         by_series[s] = rec
     return {"period": period, "series": by_series, "counts": store.counts(period)}
 
@@ -147,15 +176,17 @@ def render(f: Dict[str, Any], root: Path) -> str:
     L.append("|---|---|---|---|---:|---:|---:|---:|---|---:|")
     for s, r in sorted(f["series"].items(), key=lambda kv: -(kv[1]["candles"] or 0)):
         src = ", ".join(r["settlement_sources"].keys()) or "-"
-        win = ("%s .. %s" % (r["usable_from"], r["usable_to"])) if r["usable_from"] else "none"
+        win = ", ".join("%s..%s" % seg for seg in r["usable_segments"]) or "none"
         L.append("| %s | %s | %s | %s | %s | %s | %s | %s | %s | %s |" % (
             s, (r["title"] or "")[:40], src[:40], r["ladder_kind"] or "?",
             r["n_events"] if r["n_events"] is not None else "?",
             r["n_markets"] if r["n_markets"] is not None else "?",
             r["ok"], fmt_int(r["candles"]), win, r["usable_months"]))
     L.append("")
-    L.append("`usable window` = first through last month in which at least %d%% of that month's "
-             "markets returned candles. Markets before the window existed but did not trade." % int(100 * USABLE_SHARE))
+    L.append("`usable window` = contiguous runs of months in which at least %d%% of that month's "
+             "markets returned candles AND the month averaged at least %d candles per market. "
+             "Months outside the runs had markets that existed but barely traded." %
+             (int(100 * USABLE_SHARE), MIN_CANDLES_PER_MARKET))
 
     L.append("")
     L.append("## Series by settlement source")
@@ -168,8 +199,7 @@ def render(f: Dict[str, Any], root: Path) -> str:
         else:
             groups["(none recorded)"].append(s)
     for src, ss in sorted(groups.items(), key=lambda kv: -len(kv[1])):
-        tag = " (exchange-settled: CME/ICE option is a candidate hedge)" if any(
-            h in (src or "").upper() for h in HEDGEABLE_HINTS) else ""
+        tag = " (exchange-settled: CME/ICE option is a candidate hedge)" if is_exchange_source(src) else ""
         L.append("- **%s**%s: %s" % (src, tag, ", ".join(sorted(ss))))
 
     L.append("")
@@ -178,18 +208,19 @@ def render(f: Dict[str, Any], root: Path) -> str:
     short = [(s, r) for s, r in f["series"].items()
              if r["hedgeable_source"] and r["usable_months"] >= MIN_USABLE_MONTHS]
     if short:
-        L.append("Series settling on an exchange source with a usable window of at least %d months:" % MIN_USABLE_MONTHS)
+        L.append("Series whose dominant settlement source is an exchange, with at least %d usable months:" % MIN_USABLE_MONTHS)
         L.append("")
         for s, r in sorted(short, key=lambda kv: -(kv[1]["candles"] or 0)):
-            L.append("- **%s** %s .. %s (%d months, %s candles); front-month contracts seen: %s" % (
-                s, r["usable_from"], r["usable_to"], r["usable_months"], fmt_int(r["candles"]),
-                ", ".join("%s (%d)" % kv for kv in r["front_month_contracts"].items()) or "-"))
+            segs = ", ".join("%s..%s" % seg for seg in r["usable_segments"])
+            L.append("- **%s** (%s) %s; %d live months, %s candles; front-month contracts seen: %s" % (
+                s, r["dominant_source"], segs, r["usable_months"], fmt_int(r["candles"]),
+                ", ".join("%s (%d)" % kv for kv in r["front_month_contracts"].items() if kv[0]) or "-"))
         L.append("")
         L.append("Buy CME options history covering those windows (plus a month either side for the "
                  "density fit warm-up). Everything else settles on an aggregated index or has no "
                  "usable window yet.")
     else:
-        L.append("No series meets both criteria yet (exchange settlement source AND >= %d usable months)." % MIN_USABLE_MONTHS)
+        L.append("No series meets both criteria yet (dominant exchange settlement source AND >= %d usable months)." % MIN_USABLE_MONTHS)
 
     L.append("")
     L.append("## Month-by-month coverage")
@@ -217,12 +248,15 @@ def render(f: Dict[str, Any], root: Path) -> str:
             det.append("404 on both hosts %d" % r["not_found"])
         L.append("; ".join(det))
         L.append("")
-        L.append("| month | markets | zero-candle | %% live | candles |")
-        L.append("|---|---:|---:|---:|---:|")
+        L.append("| month | markets | zero-candle | % with candles | candles | per market | live |")
+        L.append("|---|---:|---:|---:|---:|---:|:---:|")
+        live_set = {m for seg in r["usable_segments"] for m in r["months"] if seg[0] <= m <= seg[1]}
         for m, v in r["months"].items():
             zero = v["markets"] - v["with_candles"]
-            live = 100.0 * v["with_candles"] / v["markets"] if v["markets"] else 0.0
-            L.append("| %s | %d | %d | %.0f%% | %s |" % (m, v["markets"], zero, live, fmt_int(v["candles"])))
+            share = 100.0 * v["with_candles"] / v["markets"] if v["markets"] else 0.0
+            per = v["candles"] / v["markets"] if v["markets"] else 0.0
+            L.append("| %s | %d | %d | %.0f%% | %s | %.0f | %s |" % (
+                m, v["markets"], zero, share, fmt_int(v["candles"]), per, "yes" if m in live_set else ""))
     L.append("")
     return "\n".join(L)
 
