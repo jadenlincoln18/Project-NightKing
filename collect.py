@@ -548,6 +548,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     ap.add_argument("--smoke", action="store_true",
                     help="~20 markets of one series into <out>_smoke, then verify")
     ap.add_argument("--findings-only", action="store_true")
+    ap.add_argument("--tails", action="store_true",
+                    help="with --findings-only: add the tail-depth section (reads candles)")
     ap.add_argument("--no-probe", action="store_true", help="run without probe.json (not advised)")
     ap.add_argument("--markets-source", choices=["auto", "markets", "nested"], default="auto")
     ap.add_argument("--live-base", default=kc.LIVE)
@@ -565,7 +567,7 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     if a.findings_only:
         import findings
-        p = findings.write_findings(store, out / "FINDINGS.md")
+        p = findings.write_findings(store, out / "FINDINGS.md", tails=a.tails)
         print("wrote %s" % p)
         return 0
 

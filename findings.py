@@ -6,9 +6,10 @@ candles, and a month-by-month coverage table. Then series grouped by
 settlement source and a Databento-purchase shortlist.
 
 Reads the manifest (per-market fetch outcome), the markets/events tables and
-probe.json (series titles). Does not read candle parquet - the manifest already
-carries rows per market - so it is cheap to re-run:
+probe.json (series titles). Without --tails it does not read candle parquet - the
+manifest already carries rows per market - so it is cheap to re-run:
     python3 findings.py --out data
+    python3 findings.py --out data --tails   # + bracket depth by price band (reads candles)
 """
 
 from __future__ import annotations
@@ -31,6 +32,9 @@ USABLE_SHARE = 0.5          # a month is "live" when >= 50% of its markets have 
 MIN_CANDLES_PER_MARKET = 50  # ... AND the month averages at least this many candles per market
 MIN_MEDIAN_VOLUME = 100      # "tradeable": median lifetime volume per bracket, in contracts
 MIN_USABLE_MONTHS = 2
+TAIL_BANDS = (("deep tail", 0.0, 5.0), ("moderate tail", 5.0, 20.0), ("near the money", 20.0, 80.0),
+              ("deep in the money", 80.0, 100.01))
+UNIT_CONTRACTS = 500         # the standard hedged unit the brief sizes against
 
 
 def is_exchange_source(name: Any) -> bool:
@@ -169,6 +173,94 @@ def build(store: Store) -> Dict[str, Any]:
     return {"period": period, "series": by_series, "counts": store.counts(period)}
 
 
+def tail_depth(store: Store, f: Dict[str, Any], period: Optional[int] = None) -> Dict[str, Any]:
+    """For every shortlisted series: brackets classified by their MEDIAN mid over
+    the tradeable months, with lifetime volume (markets table) and median spread
+    (candles). This is the number the purchase turns on: is the ladder liquid
+    where the strategy trades (5-20c), or only at the money?"""
+    import pandas as pd
+    period = period or f.get("period") or 1
+    markets = store.read_all("kalshi_markets")
+    vol = (markets.set_index("ticker")["volume_fp"] if markets is not None and not markets.empty
+           else pd.Series(dtype="float64"))
+    out: Dict[str, Any] = {}
+    for s, r in f["series"].items():
+        if not (r.get("hedgeable_source") and r.get("tradeable_months", 0) >= MIN_USABLE_MONTHS):
+            continue
+        all_months = {m for seg in r["tradeable_segments"] for m in r["months"] if seg[0] <= m <= seg[1]}
+        base = store.pq / "kalshi_candles" / ("period=%d" % period) / ("series=%s" % s)
+        files = sorted(base.rglob("part.parquet")) if base.exists() else []
+        if not files:
+            continue
+        frames = []
+        for p in files:
+            d = pd.read_parquet(p, columns=["ticker", "dt", "yes_bid_close", "yes_ask_close"])
+            d["month"] = d["dt"].dt.strftime("%Y-%m")
+            d = d[d["month"].isin(all_months)]
+            if len(d):
+                frames.append(d)
+        if not frames:
+            continue
+        c = pd.concat(frames, ignore_index=True)
+        c["mid"] = (c["yes_bid_close"] + c["yes_ask_close"]) / 2.0
+        c["spread"] = c["yes_ask_close"] - c["yes_bid_close"]
+        segments = []
+        # one table per contiguous tradeable segment: the eras must not be pooled
+        for seg in r["tradeable_segments"]:
+            cs = c[(c["month"] >= seg[0]) & (c["month"] <= seg[1])]
+            if not len(cs):
+                continue
+            per = cs.groupby("ticker").agg(med_mid=("mid", "median"), med_spread=("spread", "median"),
+                                           candles=("mid", "size")).reset_index()
+            per["life_vol"] = per["ticker"].map(vol).fillna(0.0)
+            bands = []
+            for name, lo, hi in TAIL_BANDS:
+                g = per[(per["med_mid"] >= lo) & (per["med_mid"] < hi)]
+                if not len(g):
+                    bands.append({"band": name, "lo": lo, "hi": hi, "brackets": 0})
+                    continue
+                q = g["life_vol"].quantile
+                bands.append({"band": name, "lo": lo, "hi": hi, "brackets": int(len(g)),
+                              "vol_p25": float(q(0.25)), "vol_median": float(q(0.5)),
+                              "vol_p90": float(q(0.9)),
+                              "share_under_unit": float((g["life_vol"] < UNIT_CONTRACTS).mean()),
+                              "spread_median": float(g["med_spread"].median()),
+                              "spread_p75": float(g["med_spread"].quantile(0.75))})
+            segments.append({"from": seg[0], "to": seg[1], "brackets": int(len(per)), "bands": bands})
+        if segments:
+            out[s] = {"segments": segments}
+    return out
+
+
+def render_tails(t: Dict[str, Any]) -> List[str]:
+    L: List[str] = ["", "## Tail depth on the shortlist (--tails)", ""]
+    if not t:
+        L.append("No shortlisted series with candles in tradeable months.")
+        return L
+    L.append("Brackets are classified by their median mid over the tradeable months. Lifetime volume "
+             "is contracts traded over the bracket's life (markets table); spread is the median "
+             "close-to-close spread (candles). `< unit` = share of brackets with lifetime volume "
+             "below the %d-contract standard unit. Spreads below 5c are unreliable: an empty book is "
+             "served as a 0 ask." % UNIT_CONTRACTS)
+    for s, r in t.items():
+        for seg in r["segments"]:
+            L.append("")
+            L.append("### %s - %s..%s - %d brackets" % (s, seg["from"], seg["to"], seg["brackets"]))
+            L.append("")
+            L.append("| band | mid | brackets | vol p25 | vol median | vol p90 | < unit | spread median | spread p75 |")
+            L.append("|---|---|---:|---:|---:|---:|---:|---:|---:|")
+            for b in seg["bands"]:
+                rng = "%d-%dc" % (b["lo"], min(100, b["hi"]))
+                if not b["brackets"]:
+                    L.append("| %s | %s | 0 | - | - | - | - | - | - |" % (b["band"], rng))
+                    continue
+                L.append("| %s | %s | %d | %s | %s | %s | %.0f%% | %.1fc | %.1fc |" % (
+                    b["band"], rng, b["brackets"], fmt_int(round(b["vol_p25"])),
+                    fmt_int(round(b["vol_median"])), fmt_int(round(b["vol_p90"])),
+                    100 * b["share_under_unit"], b["spread_median"], b["spread_p75"]))
+    return L
+
+
 def render(f: Dict[str, Any], root: Path) -> str:
     L: List[str] = []
     L.append("# FINDINGS - Kalshi commodity ladder history")
@@ -241,6 +333,8 @@ def render(f: Dict[str, Any], root: Path) -> str:
     else:
         L.append("No series meets both criteria yet (dominant exchange settlement source AND >= %d tradeable months)." % MIN_USABLE_MONTHS)
 
+    if f.get("tails") is not None:
+        L.extend(render_tails(f["tails"]))
     L.append("")
     L.append("## Month-by-month coverage")
     for s, r in sorted(f["series"].items(), key=lambda kv: -(kv[1]["candles"] or 0)):
@@ -285,9 +379,11 @@ def render(f: Dict[str, Any], root: Path) -> str:
     return "\n".join(L)
 
 
-def write_findings(store: Store, path: Optional[Path] = None) -> Path:
+def write_findings(store: Store, path: Optional[Path] = None, tails: bool = False) -> Path:
     path = Path(path) if path else store.root / "FINDINGS.md"
     f = build(store)
+    if tails:
+        f["tails"] = tail_depth(store, f)
     kc.atomic_write_text(path, render(f, store.root))
     return path
 
@@ -296,8 +392,10 @@ def main(argv: Optional[List[str]] = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--out", default="data")
+    ap.add_argument("--tails", action="store_true",
+                    help="add the tail-depth section for shortlisted series (reads candles)")
     a = ap.parse_args(argv)
-    p = write_findings(Store(Path(a.out)))
+    p = write_findings(Store(Path(a.out)), tails=a.tails)
     print("wrote %s" % p)
     return 0
 

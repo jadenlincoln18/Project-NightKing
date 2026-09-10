@@ -155,6 +155,32 @@ class TestVerify(unittest.TestCase):
         self.assertIn("ICE", txt)
         self.assertIn("2026-06", txt)
         self.assertIn("Databento shortlist", txt)
+        self.assertNotIn("Tail depth", txt, "tails section is opt-in")
+
+    def test_findings_tails(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            build_store(root, n=60)                     # 60 candles: quoted; volume 512: tradeable
+            st = kc.Store(root)
+            f = findings.build(st)
+            r = f["series"]["KXWTIW"]
+            self.assertEqual(r["tradeable_months"], 1)
+            findings.MIN_USABLE_MONTHS, keep = 1, findings.MIN_USABLE_MONTHS
+            try:
+                t = findings.tail_depth(st, f)
+                p = findings.write_findings(st, root / "FINDINGS.md", tails=True)
+            finally:
+                findings.MIN_USABLE_MONTHS = keep
+            self.assertIn("KXWTIW", t)
+            self.assertEqual(len(t["KXWTIW"]["segments"]), 1)
+            bands = {b["band"]: b for b in t["KXWTIW"]["segments"][0]["bands"]}
+            self.assertEqual(bands["deep tail"]["brackets"], 1)       # mid = (2+4)/2 = 3c
+            self.assertEqual(bands["moderate tail"]["brackets"], 0)
+            self.assertEqual(bands["deep tail"]["vol_median"], 512.0)
+            self.assertEqual(bands["deep tail"]["spread_median"], 2.0)
+            txt = p.read_text()
+            self.assertIn("Tail depth on the shortlist", txt)
+            self.assertIn("| deep tail | 0-5c | 1 |", txt)
 
     def test_crosscheck_report(self):
         old = self.root / "old"
