@@ -19,7 +19,8 @@ class TestRetries(unittest.TestCase):
         r = c.get("https://live.test/x")
         self.assertEqual(r.status, 200)
         self.assertEqual(len(ff.calls), 2)
-        self.assertEqual(c.stats["retries"], 1)
+        self.assertEqual(c.stats["throttled"], 1)
+        self.assertEqual(c.stats.get("retries", 0), 0, "429 waits do not consume the 5xx budget")
 
     def test_5xx_then_200(self):
         c, ff = client_with([(r"/x", [(503, "down"), ok({"a": 1})])])

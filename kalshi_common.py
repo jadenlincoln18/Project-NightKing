@@ -69,6 +69,10 @@ CANDIDATE_CATEGORIES = [
     "Entertainment", "Sports", "Health",
 ]
 
+# keyword hits outside the Commodities category are only accepted from these
+# categories: a "gold" hit in Entertainment is the Golden Globes, not bullion
+KEYWORD_CATEGORIES = ("Economics", "Financials", "Climate and Weather")
+
 CADENCE_ORDER = ["15min", "hourly", "daily", "weekly", "monthly", "longer", "unknown"]
 INTRADAY = ("15min", "hourly")
 
@@ -285,36 +289,46 @@ class Client:
         with self._stats_lock:
             self.stats[key] = self.stats.get(key, 0) + 1
 
+    MAX_429 = 8          # throttling waits per request, separate from the 5xx/network budget
+
     def get(self, url: str, params: Optional[dict] = None,
             retries: Optional[int] = None) -> Resp:
-        """One logical request. 429 and 5xx/network are retried; 4xx return
-        immediately WITH the body text (the candle-cap message lives there)."""
+        """One logical request. 429 waits (own budget, growing sleeps) and
+        5xx/network retries; other 4xx return immediately WITH the body text
+        (the candle-cap message lives there)."""
         full = url + ("?" + urllib.parse.urlencode(params) if params else "")
-        n = self.retries if retries is None else retries
+        n = max(1, self.retries if retries is None else retries)
+        attempt = 0
+        throttled = 0
         r = Resp(0, None, "not attempted", {}, full)
-        for attempt in range(max(1, n)):
+        while True:
             self.limiter.wait()
             self._count("requests")
             r = self.fetch(full)
             self._count("http_%d" % r.status)
             if r.status == 429:
-                ra = _retry_after(r.headers)
-                wait = max(ra, 2.0 * (attempt + 1))
-                log.warning("429 on %s - sleeping %.1fs", _short(full), wait)
-                self._count("retries")
+                throttled += 1
+                if throttled > self.MAX_429:
+                    log.error("429 x%d on %s - giving up on this request", throttled, _short(full))
+                    return r
+                wait = max(_retry_after(r.headers), min(30.0, 2.0 * throttled))
+                log.warning("429 on %s - sleeping %.1fs (%d/%d)", _short(full), wait,
+                            throttled, self.MAX_429)
+                self._count("throttled")
                 time.sleep(wait)
                 continue
             if r.status >= 500 or r.status == 0:
+                attempt += 1
                 log.warning("HTTP %s on %s (%s) - attempt %d/%d", r.status, _short(full),
-                            (r.text or "")[:80], attempt + 1, n)
-                if attempt + 1 < n:                       # no point sleeping after the last try
-                    self._count("retries")
-                    time.sleep(0.8 * (attempt + 1))
+                            (r.text or "")[:80], attempt, n)
+                if attempt >= n:
+                    return r
+                self._count("retries")
+                time.sleep(0.8 * attempt)
                 continue
             if not r.ok:
                 log.info("HTTP %s on %s %s", r.status, _short(full), (r.text or "")[:120])
             return r
-        return r
 
     # -- paging ----------------------------------------------------------
     def page(self, url: str, params: dict, key: str, limit: int) -> PageResult:
@@ -1151,11 +1165,29 @@ def events_frame(events: List[dict], series: str, source: str = "live"):
 # series selection
 # --------------------------------------------------------------------------
 
+def keyword_hit(ticker: str, title: str, tags: Any, keywords: Iterable[str]) -> Optional[str]:
+    """Whole-word match on title and tags ('gold' must not match 'Golden Globe',
+    'corn' must not match 'Corners', 'oil' must not match 'Poilievre'); on the
+    ticker only as a prefix after the KX namespace (KXOILRIGS, KXWTIVSBRENT)."""
+    text = " ".join([str(title or ""), " ".join(str(t) for t in (tags or []))]).lower()
+    tk = (ticker or "").lower()
+    for k in keywords:
+        k = k.lower()
+        if re.search(r"(?<![a-z])%s(?![a-z])" % re.escape(k), text):
+            return k
+        if re.match(r"^(kx)?%s" % re.escape(k.replace(" ", "")), tk):
+            return k
+    return None
+
+
 def select_series(all_series: List[dict], keywords: Iterable[str] = COMMODITY_KEYWORDS,
-                  primary_category: str = "Commodities") -> List[dict]:
-    """Everything in the Commodities category, plus keyword hits elsewhere.
-    Each selected record says why it was selected. Never a hardcoded list."""
+                  primary_category: str = "Commodities",
+                  keyword_categories: Iterable[str] = KEYWORD_CATEGORIES) -> List[dict]:
+    """Everything in the Commodities category, plus whole-word keyword hits in
+    the economics/financial categories. Each selected record says why it was
+    selected. Never a hardcoded list."""
     kws = [k.lower() for k in keywords]
+    kcats = {c.lower() for c in keyword_categories}
     out: List[dict] = []
     seen = set()
     for s in all_series:
@@ -1163,13 +1195,11 @@ def select_series(all_series: List[dict], keywords: Iterable[str] = COMMODITY_KE
         if not tk or tk in seen:
             continue
         cat = str(s.get("category") or "")
-        hay = " ".join([tk, str(s.get("title") or ""),
-                        " ".join(str(t) for t in (s.get("tags") or []))]).lower()
         reason = None
         if cat.lower() == primary_category.lower():
             reason = "category:%s" % cat
-        else:
-            hit = next((k for k in kws if k in hay), None)
+        elif cat.lower() in kcats:
+            hit = keyword_hit(tk, s.get("title"), s.get("tags"), kws)
             if hit:
                 reason = "keyword:%s" % hit
         if reason:

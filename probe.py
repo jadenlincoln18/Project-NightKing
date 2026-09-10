@@ -524,7 +524,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         warn = ""
         for host in ("live", "historical"):
             if mk[host]["truncation_warning"]:
-                warn += " !!%s count is a multiple of page size" % host
+                warn += " (%s count is a multiple of page size)" % host
             if not mk[host]["ended_cleanly"] and mk[host]["http"] not in (404,):
                 warn += " !!%s paging ended HTTP %s" % (host, mk[host]["http"])
         if nested_n is not None:
@@ -565,7 +565,25 @@ def main(argv: Optional[List[str]] = None) -> int:
     for mk in markets.values():
         mk.pop("_markets", None)
     P["markets"] = markets
-    P["series"] = {"all": all_series, "selected": selected}
+    # 429s seen anywhere in this run (paging is where they showed up on the real
+    # API, not in the burst) push the recommended pause up
+    n429 = client.stats.get("http_429", 0)
+    if n429:
+        bumped = round(max(P["rate"].get("recommended_pause", a.pause), a.pause * 2), 2)
+        print("\n%d throttling responses (429) during this probe at pause %.2fs -> "
+              "recommended pause raised to %.2fs" % (n429, a.pause, bumped))
+        P["rate"]["throttled_during_probe"] = n429
+        P["rate"]["recommended_pause"] = bumped
+    # series with neither events nor markets (retired pre-KX tickers) are kept in
+    # probe.json but not in the collect list
+    empty = [s for s in selected if events.get(s["ticker"], {}).get("n", 0) == 0
+             and markets.get(s["ticker"], {}).get("union", 0) == 0]
+    selected = [s for s in selected if s not in empty]
+    P["series"] = {"all": all_series, "selected": selected,
+                   "dropped_empty": [s["ticker"] for s in empty]}
+    if empty:
+        print("\n%d selected series have no events and no markets (retired tickers) - dropped: %s"
+              % (len(empty), ", ".join(s["ticker"] for s in empty)))
     P["estimate"] = build_estimate(selected, markets, caps.cap, P["rate"]["recommended_pause"])
     P["client_stats"] = client.stats
 
@@ -585,11 +603,17 @@ def main(argv: Optional[List[str]] = None) -> int:
             print("%-19s: %s  live=%s hist=%s" % (label, rec["ticker"], rec["live"]["http"], rec["historical"]["http"]))
     print("recommended pause  : %s s" % P["rate"].get("recommended_pause"))
     print("requests made      : %s" % fmt_int(client.stats.get("requests", 0)))
-    bad = [tk for tk, ev in events.items() if not ev["ended_cleanly"] or ev["truncation_warning"]]
+    bad = [tk for tk, ev in events.items() if not ev["ended_cleanly"]]
     bad += [tk for tk, mk in markets.items()
-            if any(mk[h]["truncation_warning"] for h in ("live", "historical"))]
+            if any(not mk[h]["ended_cleanly"] and mk[h]["http"] != 404 for h in ("live", "historical"))]
+    multiples = [tk for tk, mk in markets.items()
+                 if any(mk[h]["truncation_warning"] for h in ("live", "historical"))]
     if bad:
-        print("!! review these series before pulling: %s" % sorted(set(bad)))
+        print("!! paging did not end cleanly - review before pulling: %s" % sorted(set(bad)))
+    if multiples:
+        print("note: %d series have a market count that is an exact multiple of the page size "
+              "(%s); paging ended cleanly so this is a coincidence, not the old 8,000 truncation"
+              % (len(multiples), ", ".join(sorted(multiples)[:6])))
     print("\nnext: review the output above, then   python3 collect.py --smoke")
     return 0
 

@@ -585,6 +585,13 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     series = discover_series(client, probe)
     kept, excluded = apply_filters(series, a)
+    est_known = ((probe or {}).get("estimate") or {}).get("series") or {}
+    if est_known and not a.series:
+        empty = [s for s in kept if (est_known.get(s["ticker"]) or {}).get("markets") == 0]
+        if empty:
+            log.info("skipping %d series the probe found no markets for: %s", len(empty),
+                     ", ".join(s["ticker"] for s in empty))
+            kept = [s for s in kept if s not in empty]
     if not kept:
         print("no series selected")
         return 2

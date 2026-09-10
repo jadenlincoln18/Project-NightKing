@@ -108,3 +108,39 @@ class TestFilters(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+SERIES_LIST = [
+    {"ticker": "KXWTIW", "title": "WTI oil weekly range", "category": "Commodities", "tags": []},
+    {"ticker": "KXGGDIR", "title": "Golden Globe for Best Director", "category": "Entertainment", "tags": []},
+    {"ticker": "KXEPLCORNERS", "title": "EPL Corners", "category": "Sports", "tags": []},
+    {"ticker": "KXPOILIEVREOUT", "title": "poilievre out as leader", "category": "Elections", "tags": []},
+    {"ticker": "KXIRANCRUDE", "title": "Iran crude oil production in [month]", "category": "Economics", "tags": []},
+    {"ticker": "KXWTIVSBRENT", "title": "Will the WTI outperform Brent this year?", "category": "Financials", "tags": []},
+    {"ticker": "KXOILRIGS", "title": "Oil rigs", "category": "Economics", "tags": []},
+    {"ticker": "KXAAAGASDTX", "title": "TX gas price", "category": "Economics", "tags": ["Oil"]},
+    {"ticker": "KXGOLDCARDS", "title": "Gold cards sold", "category": "Politics", "tags": []},
+    {"ticker": "KXCOTTONCANDY", "title": "ill event be confirmed", "category": "Entertainment", "tags": []},
+    {"ticker": "KXKSWHEAT", "title": "Kansas wheat production", "category": "Economics", "tags": []},
+]
+
+
+class TestSelectSeries(unittest.TestCase):
+    def test_whole_word_and_category_gates(self):
+        sel = {s["ticker"]: s["selected_by"] for s in kc.select_series(SERIES_LIST)}
+        self.assertEqual(sel["KXWTIW"], "category:Commodities")
+        self.assertIn("KXIRANCRUDE", sel)
+        self.assertIn("KXWTIVSBRENT", sel)
+        self.assertIn("KXOILRIGS", sel)
+        self.assertIn("KXAAAGASDTX", sel, "tag hit in Economics")
+        self.assertIn("KXKSWHEAT", sel)
+        for junk in ("KXGGDIR", "KXEPLCORNERS", "KXPOILIEVREOUT", "KXGOLDCARDS", "KXCOTTONCANDY"):
+            self.assertNotIn(junk, sel, junk)
+
+    def test_keyword_hit(self):
+        self.assertEqual(kc.keyword_hit("KXGGDIR", "Golden Globe for Best Director", [], ["gold"]), None)
+        self.assertEqual(kc.keyword_hit("KXEPLCORNERS", "EPL Corners", [], ["corn"]), None)
+        self.assertEqual(kc.keyword_hit("KXX", "Price of gold", [], ["gold"]), "gold")
+        self.assertEqual(kc.keyword_hit("KXHEAT", "Heating oil price this month", [], ["heating oil"]), "heating oil")
+        self.assertEqual(kc.keyword_hit("KXOILRIGS", "Rigs", [], ["oil"]), "oil")
+        self.assertEqual(kc.keyword_hit("KXPOILIEVRE", "x", [], ["oil"]), None)
