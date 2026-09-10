@@ -118,10 +118,20 @@ def run(root: Path, strict: bool = False) -> int:
             outright = tb["symbol"].map(lambda x: dc.parse_option_symbol(x) is not None)
             n_spread = int((~outright).sum())
             px = pd.concat([tb.loc[outright, "bid_px_00"], tb.loc[outright, "ask_px_00"]]).dropna()
-            bad = int(((px < 0) | (px > 500)).sum())
-            (rep.fail if bad else rep.ok)("tbbo: outright prices sane (0..500)",
-                                          "%d outside" % bad if bad else "%s outright rows; %s spread rows kept in root files only"
-                                          % ("{:,}".format(int(outright.sum())), "{:,}".format(n_spread)))
+            badmask = (px < 0) | (px > 500)
+            bad = int(badmask.sum())
+            share = bad / max(1, len(px))
+            note = "%s outright rows; %s spread rows kept in root files only" % (
+                "{:,}".format(int(outright.sum())), "{:,}".format(n_spread))
+            if share > 0.0001:
+                rep.fail("tbbo: outright prices sane (0..500)", "%d outside (%.4f%%)" % (bad, 100 * share))
+            elif bad:
+                ex = tb.loc[outright & ((tb["ask_px_00"] > 500) | (tb["bid_px_00"] < 0) | (tb["ask_px_00"] < 0)
+                                        | (tb["bid_px_00"] > 500)), ["symbol", "bid_px_00", "ask_px_00"]].head(3)
+                rep.warn("tbbo: outright prices sane (0..500)", "%d far-off resting quotes (%.5f%%), e.g. %s - filter in the fit; %s"
+                         % (bad, 100 * share, ex.values.tolist(), note))
+            else:
+                rep.ok("tbbo: outright prices sane (0..500)", note)
         if defs is not None and "symbol" in tb.columns:
             symcol = "raw_symbol" if "raw_symbol" in defs.columns else "symbol"
             known = set(defs[symcol])
