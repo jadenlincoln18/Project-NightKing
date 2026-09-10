@@ -142,6 +142,35 @@ def kalshi_front_month_to_cl(fm: Any) -> Optional[str]:
     return "CL%s%s" % (m.group("mc"), m.group("yy")[-1])
 
 
+RULES_RE = re.compile(r"\((January|February|March|April|May|June|July|August|September|October|November|December)"
+                      r"\s+(\d{4})\s+contract\)", re.I)
+MONTH_NAMES = {m: i for i, m in enumerate(["january", "february", "march", "april", "may", "june", "july",
+                                            "august", "september", "october", "november", "december"], 1)}
+
+
+def rules_contract(rules_text: Any) -> Optional[str]:
+    """Kalshi rules_primary: '... WTI crude oil(September 2026 contract) on ...' -> 'CLU6'.
+    Present on every 2026 event from June on; the earlier wording is 'the front-month
+    settle price' with no month named."""
+    if not isinstance(rules_text, str):
+        return None
+    m = RULES_RE.search(rules_text)
+    if not m:
+        return None
+    mo = MONTH_NAMES[m.group(1).lower()]
+    return "CL%s%s" % (CODE_OF_MONTH[mo], m.group(2)[-1])
+
+
+def kalshi_calendar_contract(d: date) -> str:
+    """Kalshi's observed convention (VERIFIED on the 98 events that name a contract,
+    98/98): from the 16th of month M the reference contract is delivery month M+2,
+    before the 16th it is M+1. Kalshi rolls weeks before either exchange's expiry."""
+    m = d.month + (2 if d.day >= 16 else 1)
+    y = d.year + (1 if m > 12 else 0)
+    m = ((m - 1) % 12) + 1
+    return "CL%s%s" % (CODE_OF_MONTH[m], str(y)[-1])
+
+
 def year_digit_ambiguity_note() -> str:
     return ("CME raw symbols carry a single year digit (CLV6 = Oct 2026); within a 2026 window "
             "that is unambiguous.")
@@ -160,17 +189,19 @@ def kalshi_settlements(kalshi_root: Path = Path("data"), series: Iterable[str] =
     files = sorted((Path(kalshi_root) / "parquet" / "kalshi_markets").rglob("part.parquet"))
     if not files:
         sys.exit("no Kalshi markets table under %s - run the Kalshi collector first" % kalshi_root)
-    cols = ["series", "event_ticker", "close_time", "expiration_value", "custom_strike.front_month_contract"]
+    cols = ["series", "event_ticker", "close_time", "expiration_value", "custom_strike.front_month_contract",
+            "rules_primary"]
     frames = []
     for f in files:
-        d = pd.read_parquet(f, columns=[c for c in cols if c in pd.read_parquet(f).columns])
-        frames.append(d)
+        have = set(pd.read_parquet(f).columns)
+        frames.append(pd.read_parquet(f, columns=[c for c in cols if c in have]))
     mk = pd.concat(frames, ignore_index=True)
     mk = mk[mk["series"].isin(list(series))].copy()
     mk["close"] = pd.to_datetime(mk["close_time"], utc=True, errors="coerce")
     mk = mk[mk["close"] >= pd.Timestamp(since, tz="UTC")]
-    if "custom_strike.front_month_contract" not in mk.columns:
-        mk["custom_strike.front_month_contract"] = None
+    for c in ("custom_strike.front_month_contract", "rules_primary"):
+        if c not in mk.columns:
+            mk[c] = None
 
     def first_value(s):
         for v in s:
@@ -181,6 +212,7 @@ def kalshi_settlements(kalshi_root: Path = Path("data"), series: Iterable[str] =
             .agg(settle_ts=("close", "min"),
                  expiration_value=("expiration_value", first_value),
                  front_month=("custom_strike.front_month_contract", first_value),
+                 rules=("rules_primary", first_value),
                  n_markets=("event_ticker", "size"))
             .reset_index())
     ev["expiration_value"] = pd.to_numeric(ev["expiration_value"], errors="coerce")
@@ -188,7 +220,17 @@ def kalshi_settlements(kalshi_root: Path = Path("data"), series: Iterable[str] =
     ev["settle_date"] = et.dt.date
     ev["settle_time_et"] = et.dt.strftime("%H:%M")
     ev["weekday"] = et.dt.day_name()
-    ev["cl_contract"] = ev["front_month"].map(kalshi_front_month_to_cl)
+    ev["contract_rules"] = ev["rules"].map(rules_contract)
+    ev["contract_named"] = ev["front_month"].map(kalshi_front_month_to_cl)
+    ev["contract_calendar"] = ev["settle_date"].map(kalshi_calendar_contract)
+    # authority: the rules text > custom_strike > Kalshi's calendar convention
+    ev["cl_contract"] = ev["contract_rules"].where(ev["contract_rules"].notna(), ev["contract_named"])
+    ev["front_month_source"] = ev["contract_rules"].map(lambda v: "rules" if isinstance(v, str) else None)
+    ev.loc[ev["front_month_source"].isna() & ev["contract_named"].notna(), "front_month_source"] = "named"
+    fill = ev["cl_contract"].isna()
+    ev.loc[fill, "cl_contract"] = ev.loc[fill, "contract_calendar"]
+    ev.loc[fill, "front_month_source"] = "calendar"
+    ev = ev.drop(columns=["rules"])
     return ev.sort_values(["series", "settle_ts"]).reset_index(drop=True)
 
 
@@ -364,7 +406,12 @@ def write_parquet(df, path: Path) -> Path:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_name(path.name + ".tmp")
-    df.to_parquet(tmp, index=False, compression="snappy")
+    saved = dict(df.attrs)                     # attrs are working notes, not parquet metadata
+    try:
+        df.attrs = {}
+        df.to_parquet(tmp, index=False, compression="snappy")
+    finally:
+        df.attrs = saved
     os.replace(tmp, path)
     return path
 

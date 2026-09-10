@@ -79,7 +79,14 @@ class TestKalshiDates(unittest.TestCase):
             self.assertEqual(int((ev["series"] == "KXWTI").sum()), 20)
             self.assertEqual(int((ev["series"] == "KXWTIW").sum()), 4)
             self.assertTrue((ev["settle_time_et"] == "14:30").all())
-            self.assertEqual(ev["cl_contract"].dropna().unique().tolist(), ["CLK6"])
+            self.assertEqual(ev["contract_named"].dropna().unique().tolist(), ["CLK6"])
+            self.assertTrue(ev["cl_contract"].notna().all(), "calendar fallback fills the rest")
+            self.assertEqual(set(ev["front_month_source"]), {"named", "calendar"})
+            self.assertEqual(dc.kalshi_calendar_contract(date(2026, 6, 15)), "CLN6")
+            self.assertEqual(dc.kalshi_calendar_contract(date(2026, 6, 16)), "CLQ6")
+            self.assertEqual(dc.kalshi_calendar_contract(date(2026, 12, 20)), "CLG7")
+            self.assertEqual(dc.rules_contract("If the daily settlement price for WTI crude oil(September 2026 contract) on August 03"), "CLU6")
+            self.assertIsNone(dc.rules_contract("If the front-month settle price for a barrel of West Texas Intermediate oil"))
             self.assertTrue(ev["expiration_value"].notna().all())
 
 
@@ -144,7 +151,8 @@ class TestBasis(unittest.TestCase):
             fut = pd.DataFrame(fake.statistics(["CL.FUT"], "parent", date(2026, 2, 26), date(2026, 3, 28)))
             j, c0t, futt = db_basis.build(ev, c0, fut)
             self.assertTrue(j["nymex_c0"].notna().all(), "every Kalshi date has a c.0 settlement")
-            named = j[j["cl_contract"].notna()]
+            self.assertEqual(len(j), len(ev), "no duplicated events after the join")
+            named = j[j["front_month_source"] == "named"]
             self.assertTrue(named["nymex_fm"].notna().all(), "named contract joins to CL.FUT")
             # fake: ICE == NYMEX exactly, so basis vs c.0 is 0 where contracts agree
             agree = j[~j["roll_mismatch"] & j["nymex_c0"].notna()]
