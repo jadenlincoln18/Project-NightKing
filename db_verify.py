@@ -113,9 +113,15 @@ def run(root: Path, strict: bool = False) -> int:
             crossed = int((tb.loc[both, "ask_px_00"] < tb.loc[both, "bid_px_00"]).sum())
             share = crossed / max(1, int(both.sum()))
             (rep.fail if share > 0.001 else rep.ok)("tbbo: ask >= bid", "%d crossed (%.4f%%)" % (crossed, 100 * share))
-            px = pd.concat([tb["bid_px_00"], tb["ask_px_00"]]).dropna()
+            # a parent pull also delivers user-defined spreads (UD:...), which trade at
+            # net credits (negative prices); the sanity range applies to outright options
+            outright = tb["symbol"].map(lambda x: dc.parse_option_symbol(x) is not None)
+            n_spread = int((~outright).sum())
+            px = pd.concat([tb.loc[outright, "bid_px_00"], tb.loc[outright, "ask_px_00"]]).dropna()
             bad = int(((px < 0) | (px > 500)).sum())
-            (rep.fail if bad else rep.ok)("tbbo: prices sane (0..500 $/bbl)", "%d outside" % bad if bad else "")
+            (rep.fail if bad else rep.ok)("tbbo: outright prices sane (0..500)",
+                                          "%d outside" % bad if bad else "%s outright rows; %s spread rows kept in root files only"
+                                          % ("{:,}".format(int(outright.sum())), "{:,}".format(n_spread)))
         if defs is not None and "symbol" in tb.columns:
             symcol = "raw_symbol" if "raw_symbol" in defs.columns else "symbol"
             known = set(defs[symcol])

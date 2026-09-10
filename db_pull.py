@@ -300,6 +300,14 @@ def render_chain(cov: Dict[str, Any], exp_tab, dens, roots_used: List[str], cost
             L.append("bbo-1m scoped to the %d matched dates for roots %s: **$%.2f quoted** (%d requests)." % (
                 upgrade_quote["dates"], ",".join(upgrade_quote["roots"]), upgrade_quote["total"], upgrade_quote["requests"]))
     L.append("")
+    L.append("## Store notes")
+    L.append("")
+    L.append("`parquet/options_tbbo/root=R/` holds every record the parent request returned, including "
+             "user-defined spread instruments (`UD:...`) that trade at net credits, so negative prices appear "
+             "there. `parquet/options_tbbo_by_expiry/root=R/expiry=D/` is the outright-only view, joined to the "
+             "definitions, which is what the smile fit should read. Bid and ask are `bid_px_00` / `ask_px_00` "
+             "with sizes `bid_sz_00` / `ask_sz_00`; no mid is stored.")
+    L.append("")
     L.append("## Timestamp alignment (UNVERIFIED item 4)")
     L.append("")
     L.append("Databento TBBO rows carry `ts_event` (matching-engine time) and `ts_recv` (capture time). "
