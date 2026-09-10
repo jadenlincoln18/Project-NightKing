@@ -392,7 +392,16 @@ def pull_candles(client: Client, store: Store, caps: CapHolder, tk: str,
                     return m, None, "no open_time/close_time"
                 if t1 is None:
                     return m, None, "close_time <= open_time"
-                res = kc.fetch_market_candles(client, tk, m["ticker"], t0, t1, a.period, caps)
+                # a market only the historical listing knows about almost always
+                # serves its candles there: ask that host first, live stays the
+                # fallback (the brief's live-only archived market still works)
+                meta = m.get("_meta") or {}
+                if meta.get("seen_hist") and not meta.get("seen_live"):
+                    hosts = ("historical", "live")
+                else:
+                    hosts = ("live", "historical")
+                res = kc.fetch_market_candles(client, tk, m["ticker"], t0, t1, a.period, caps,
+                                              hosts=hosts)
                 return m, res, ""
 
             futures = [pool.submit(work, m) for m in todo]
