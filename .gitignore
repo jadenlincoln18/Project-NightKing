@@ -15,3 +15,4 @@ data/probe.json
 data_cme/raw/
 data_cme/parquet/
 data_cme/db.log
+synth/results/*.pkl

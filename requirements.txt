@@ -1,4 +1,8 @@
 pandas>=2.0
 pyarrow>=12
+# synthetic validation (synth/, test_synthetic.py)
+numpy>=1.24
+scipy>=1.10
+matplotlib>=3.7
 # optional, only needed if the Python build has an empty certificate store (python.org macOS builds):
 # certifi

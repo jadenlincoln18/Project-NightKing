@@ -88,6 +88,36 @@ Market columns include `settlement_sources`, `settlement_source_name`,
 the API returned** as a string column. Nothing needs a re-pull because a field
 was not anticipated.
 
+## Synthetic validation of the density extractor (`synth/`)
+
+Step 1 of the build order: does the extraction pipeline recover a planted
+risk-neutral density, with honest error bars, from quotes that look like the
+real CME chain? Verdict and tables in `FINDINGS_SYNTHETIC.md`, plots in
+`synth/plots/`.
+
+| file | role |
+|---|---|
+| `synth/geometry.py` | real strike grids + per-strike half-spreads from `data_cme/` TBBO, cached in `synth/geometry.json` (committed, so the harness runs without the data store) |
+| `synth/densities.py` | planted densities (crude-like skew, lognormal, bimodal, heavy tails, sharp peak, spike) with exact pricing and $1 Kalshi-style bracket integrals |
+| `synth/noise.py` | half-spread model fitted on the tape (power law in price, lognormal scatter, tick floor), bid/ask rounding |
+| `synth/stage6.py` | put-call-parity forward and discount factor with MAD outlier flags |
+| `synth/black76.py`, `synth/act2.py` | Black-76 inversion, weighted SVI fit with Lee bound and g(k) check, fine-grid second difference |
+| `synth/act3.py` | exp-B-spline density, P-spline roughness prior with τ integrated out, integrate-forward likelihood, martingale constraint, hand-rolled NUTS (dense metric), R̂/ESS/divergences, Laplace fallback |
+| `synth/harness.py` | one run: plant → price → quote → Stage 6 → Act II + Act III → coverage indicators; failure-mode injections |
+| `synth/runner.py`, `synth/report.py` | the study (≈1,800 runs, resumable, 7 workers, ~6 h) and its aggregation into `FINDINGS_SYNTHETIC.md` |
+| `test_synthetic.py` | CI tests (~10 s) with the Laplace fallback |
+
+```bash
+python3 -m unittest test_synthetic -v          # fast, no data_cme/ needed
+python3 -m synth.geometry                      # rebuild geometry.json from data_cme/ (optional)
+python3 -m synth.runner --quick                # smoke: 6 runs per config, Laplace sampler
+nohup caffeinate -is python3 -m synth.runner --workers 7 > synth/results/run.log 2>&1 &
+python3 -m synth.runner --report               # re-render FINDINGS + plots from what is on disk
+```
+
+`import synth` pins BLAS to one thread; the forward map is thousands of tiny
+matrix products and multithreaded OpenBLAS makes the study 3-100x slower.
+
 ## If a parsing bug is found after the pull
 
 The raw API responses are stored per market. `python3 collect.py --reparse`
