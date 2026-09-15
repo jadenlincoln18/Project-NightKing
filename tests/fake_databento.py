@@ -127,12 +127,14 @@ class FakeHistorical:
             if d.weekday() < 5:
                 ts = settle_utc(d, 14, 35)
                 contracts = [_cl_contract_for(d)] if stype_in == "continuous" else sorted({_cl_contract_for(d + timedelta(days=k)) for k in (0, 30, 60)})
+                ts_ref = datetime(d.year, d.month, d.day, tzinfo=timezone.utc)      # midnight UTC of the trade date
                 for ct in contracts:
                     px = self.nymex_settle(d) + (0.4 if ct != _cl_contract_for(d) else 0.0)
                     for st, val in ((3, px), (9, 100000.0), (6, 5000.0)):
-                        rows.append({"ts_recv": ts, "ts_event": ts, "ts_ref": ts, "symbol": ct, "stat_type": st,
+                        rows.append({"ts_recv": ts, "ts_event": ts, "ts_ref": ts_ref,
+                                     "symbol": "CL.c.0" if stype_in == "continuous" else ct, "stat_type": st,
                                      "price": val if st == 3 else float("nan"), "quantity": val if st != 3 else float("nan"),
-                                     "instrument_id": 1000 + hash(ct) % 1000})
+                                     "instrument_id": 1000 + sum(ord(ch) for ch in ct)})
             d += timedelta(days=1)
         return rows
 
