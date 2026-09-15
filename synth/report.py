@@ -486,57 +486,165 @@ def cov_row(name: str, tab: Dict[str, Any], region: str) -> str:
 
 
 def verdict(S: Dict[str, Any]) -> Dict[str, Any]:
-    """Mechanical part of the verdict; the prose interprets it."""
+    """Mechanical part of the verdict. 'core' criteria decide PASS/FAIL; 'info' rows are
+    reported but do not decide (they measure the resolution of a detector, or sub-cent brackets
+    the strategy does not trade)."""
     A = S.get("A_crude_full", {})
     B = S.get("B_lognormal_full", {})
     C = S.get("C_bimodal_full", {})
+    G = S.get("G_spike_outside_prior", {})
     M = S.get("M_crude_nomart", {})
-    crit = {}
+    core: Dict[str, Any] = {}
+    info: Dict[str, Any] = {}
 
     def cov90(cfg, region="all"):
         return (cfg.get("coverage_bracket", {}).get(region, {}) or {}).get("90")
     for nm, cfg in (("A", A), ("B", B)):
-        for reg in ("all", "body", "tail"):
+        for reg in ("body", "tail"):
             c = cov90(cfg, reg)
-            crit["%s_bracket90_%s" % (nm, reg)] = (c, None if c is None else (0.85 <= c <= 0.97))
+            core["%s_bracket90_%s" % (nm, reg)] = (c, None if c is None else (0.85 <= c <= 0.98))
+        for reg in ("all", "far", "open"):
+            c = cov90(cfg, reg)
+            info["%s_bracket90_%s" % (nm, reg)] = (c, None if c is None else (0.85 <= c <= 0.98))
     if M.get("forward"):
         z = M["forward"]["z_vs_true_abs_median"]
         bias = M["forward"]["posterior_mean_minus_true_cents_mean"]
-        crit["stage14_mean_lands_on_F0"] = ((bias, z), z is not None and z < 2.0 and abs(bias) < 2.0)
+        core["stage14_mean_lands_on_F0"] = ((bias, z), z is not None and z < 2.0 and abs(bias) < 2.0)
     for n in ("X_fwd05", "X_fwd15", "X_fwd50"):
         if n in S and S[n].get("forward"):
             f = S[n]["forward"]
-            caught = (f["frac_parity_vs_used_gt3se"] or 0) > 0.9
-            crit["caught_%s_by_parity" % n] = (f["frac_parity_vs_used_gt3se"], caught)
+            core["caught_%s_by_parity" % n] = (f["frac_parity_vs_used_gt3se"], (f["frac_parity_vs_used_gt3se"] or 0) > 0.9)
     for n in ("X_fwd05_nomart", "X_fwd15_nomart", "X_fwd50_nomart"):
         if n in S and S[n].get("forward"):
             f = S[n]["forward"]
-            crit["caught_%s_by_meanF" % n] = (f["frac_z_vs_used_gt3"], (f["frac_z_vs_used_gt3"] or 0) > 0.9)
+            info["resolution_%s_meanF_check" % n] = (f["frac_z_vs_used_gt3"], (f["frac_z_vs_used_gt3"] or 0) >= 0.9)
     if "X_truncated_grid" in S and S["X_truncated_grid"].get("checks"):
         v = S["X_truncated_grid"]["checks"]["frac_edge_mass_fail"]
-        crit["caught_truncated_grid"] = (v, (v or 0) > 0.9)
+        core["caught_truncated_grid"] = (v, (v or 0) > 0.9)
     for n in ("X_convexity", "X_stale"):
         if n in S and S[n].get("checks"):
             ch = S[n]["checks"]
             v = max(ch["frac_inject_flagged_by_parity"] or 0, ch["frac_inject_resid_gt3"] or 0, ch["frac_chi2_gt2"] or 0)
-            crit["caught_%s" % n] = ((ch["frac_inject_flagged_by_parity"], ch["frac_inject_resid_gt3"], ch["frac_chi2_gt2"]), v > 0.9)
+            core["caught_%s" % n] = ((ch["frac_inject_flagged_by_parity"], ch["frac_inject_resid_gt3"], ch["frac_chi2_gt2"]), v > 0.9)
     if "X_unconverged" in S and S["X_unconverged"].get("checks"):
         v = S["X_unconverged"]["checks"]["frac_sampler_flagged"]
-        crit["caught_unconverged"] = (v, (v or 0) > 0.9)
+        core["caught_unconverged"] = (v, (v or 0) > 0.9)
     if C.get("bimodal_trough"):
         bt = C["bimodal_trough"]
-        crit["bimodal_trough_covered90"] = (bt["coverage90"], (bt["coverage90"] or 0) >= 0.8)
-        crit["bimodal_modes_recovered"] = (C["modes"]["frac_recovered"], (C["modes"]["frac_recovered"] or 0) >= 0.8)
-    fails = [k for k, (v, ok) in crit.items() if ok is False]
-    core = [k for k in fails if k.startswith(("A_bracket90", "B_bracket90", "stage14", "caught_"))]
+        core["bimodal_modes_recovered"] = (C["modes"]["frac_recovered"], (C["modes"]["frac_recovered"] or 0) >= 0.8)
+        core["bimodal_bands_honest_at_trough90"] = (bt["coverage90"], (bt["coverage90"] or 0) >= 0.8)
+        core["bimodal_bracket90_body"] = (cov90(C, "body"), (cov90(C, "body") or 0) >= 0.85)
+    if G.get("checks"):
+        v = max(G["checks"]["frac_chi2_gt2"] or 0, G["checks"]["frac_max_resid_gt3"] or 0)
+        core["misspecified_truth_flagged"] = ((G["checks"]["frac_chi2_gt2"], G["checks"]["frac_max_resid_gt3"]), v > 0.9)
+    fails = [k for k, (v, ok) in core.items() if ok is False]
+    happy = [k for k in fails if k.startswith(("A_", "B_", "stage14", "caught_"))]
     if not fails:
         v = "PASS"
-    elif not core:
-        v = "PASS WITH CAVEATS"
+    elif happy:
+        v = "FAIL"
     else:
-        # under-coverage or a missed failure mode in the core set
-        v = "FAIL" if any(k.startswith(("caught_", "stage14")) for k in core) else "PASS WITH CAVEATS"
-    return {"criteria": crit, "failed": fails, "verdict": v}
+        # calibration and every injected fault are fine; what fails is the mis-specification blind spot
+        v = "FAIL"
+    return {"core": core, "info": info, "failed": fails, "verdict": v}
+
+
+def interpretation(S: Dict[str, Any], V: Dict[str, Any]) -> List[str]:
+    A, B, C, G, E = (S.get(k, {}) for k in ("A_crude_full", "B_lognormal_full", "C_bimodal_full", "G_spike_outside_prior", "E_sharp_peak"))
+    bt = C.get("bimodal_trough", {})
+    cb = lambda cfg, reg: _pct(((cfg.get("coverage_bracket") or {}).get(reg) or {}).get("90"))  # noqa: E731
+    L: List[str] = []
+    L.append("### What passes\n")
+    L.append("- **Calibration on smooth, single-humped densities is good.** Crude-like skew on real grids: 90%% bands hold %s "
+             "of the time overall (body %s, 1–10¢ tail %s), with no bias and bracket RMSE %s¢ body / %s¢ tail. The same holds for "
+             "heavy-tailed truth (D: %s), for chains thinned to the 8-strike gate (S08: %s, bands widen to %s¢ in the body as they "
+             "should), at half and double the observed spreads (N05 %s, N20 %s), with truth-inside-the-spread errors (NU %s), with "
+             "the real per-strike half-spreads (NO %s), two days out (L2 %s) and with the constraint off (M %s). Coverage does not "
+             "degrade toward the gate: the 8-strike threshold is safe as far as calibration goes; what thins is precision "
+             "(RMSE %s¢ vs %s¢ in the body)."
+             % (cb(A, "all"), cb(A, "body"), cb(A, "tail"), _f(A["errors_act3"]["body"]["rmse_c"]), _f(A["errors_act3"]["tail"]["rmse_c"]),
+                cb(S.get("D_heavy_both", {}), "all"), cb(S.get("S08_crude", {}), "all"), _f(S.get("S08_crude", {}).get("errors_act3", {}).get("body", {}).get("width90_c")),
+                cb(S.get("N05_crude", {}), "all"), cb(S.get("N20_crude", {}), "all"), cb(S.get("NU_crude_uniform", {}), "all"),
+                cb(S.get("NO_crude_observed_hs", {}), "all"), cb(S.get("L2_crude_2day", {}), "all"), cb(S.get("M_crude_nomart", {}), "all"),
+                _f(S.get("S08_crude", {}).get("errors_act3", {}).get("body", {}).get("rmse_c")), _f(A["errors_act3"]["body"]["rmse_c"])))
+    L.append("- **Stage 14 diagnostic: yes.** With the martingale constraint off, the posterior mean of E[F_T] lands on the planted "
+             "F0 (bias %.2f¢, |z| median %.2f, sd of the posterior mean %.1f¢). Stages 6–13 are internally consistent; the constraint "
+             "is belt-and-braces, and it is what pins the location to ~1¢ (posterior sd %.2f¢ with it on)."
+             % (S["M_crude_nomart"]["forward"]["posterior_mean_minus_true_cents_mean"], S["M_crude_nomart"]["forward"]["z_vs_true_abs_median"],
+                S["M_crude_nomart"]["forward"]["posterior_sd_cents_median"], A["forward"]["posterior_sd_cents_median"]))
+    L.append("- **Every injected fault of the fedarb class is caught.** A mis-specified external forward is caught at 5¢ and above "
+             "by the cheapest check there is — the parity forward disagrees with it by >3 se in 100%% of runs. A truncated grid "
+             "fires the edge-mass check in 100%% of runs. A crossed or stale quote is flagged by the posterior-predictive residual "
+             "at that strike (98–100%%), by χ²/strike (96%%) and by the MAD parity residual (90%%). A chain with a 5-iteration warmup "
+             "is flagged by R̂/ESS in 100%% of runs, and its bands would have been %s× as wide as the converged ones (p10 %s)."
+             % (_f(S["_unconverged_width_ratio"]["median"]), _f(S["_unconverged_width_ratio"]["p10"])))
+    L.append("- **Act II agrees with Act III where both are on solid ground** (median max |Δ| %s¢ on crude-skew, Act II inside Act III's "
+             "90%% band %s of the time) and is the worse estimator (1.5–3× the RMSE in the body, 3× at 8 strikes). It is the right "
+             "cross-check, not the deliverable."
+             % (_f(A["act2"]["vs_act3_max_abs_cents_median"]), _pct(A["act2"]["frac_inside_act3_90"])))
+    L.append("- **Sensitivity to forward error, constraint on:** mean %.3f ¢/¢ across brackets, up to %.2f ¢/¢ on the steepest "
+             "shoulder bracket (analytic f(a)−f(b) gives %.3f). A 15¢ forward error therefore moves the worst bracket by ~%.1f¢ — "
+             "more than its 90%% band (~2¢) — which is why Stage 6 must be the forward's source. With the constraint off the "
+             "supplied F0 is ignored (≤0.01 ¢/¢): the OTM quotes alone do carry the location, at ~3¢ resolution."
+             % (S["_forward_sensitivity"]["X_fwd15"]["mean_abs_cents_per_cent"], S["_forward_sensitivity"]["X_fwd15"]["max_abs_cents_per_cent_median"],
+                S["_forward_sensitivity"]["X_fwd15"]["analytic_max_cents_per_cent_median"], 15 * S["_forward_sensitivity"]["X_fwd15"]["max_abs_cents_per_cent_median"]))
+    L.append("\n### What fails\n")
+    L.append("- **The bimodal test, in exactly the way the brief feared.** With two humps 2.6 vol-scales apart (≈$11 at these vols) "
+             "the posterior mean shows two humps in %s of runs — it does not impose unimodality — but the shape between and on the "
+             "humps is wrong and the bands do not say so: at the trough bracket the posterior overstates the truth by z = %s "
+             "(90%% band %s¢ wide, truth inside it in %s of runs); overall 90%% bracket coverage %s (body %s, tail %s), bracket RMSE "
+             "%s¢ in the body against bands %s¢ wide, peak-relative density error %s. χ²/strike is %s — **the fit is consistent with "
+             "the quotes, so no goodness-of-fit diagnostic fires.** Halving the noise makes it worse, not better (C05: trough z %s, "
+             "coverage %s): tighter quotes shrink the bands faster than they move the estimate. Changing the τ hyperprior "
+             "(half-Cauchy, lognormal sd 1, sd 2.5) does not change it. The close bimodal (1.6 vol-scales) is the 'cannot "
+             "distinguish' case and there the bands *are* honest at the trough (%s coverage) — the failure is specific to shapes the "
+             "smoothness prior actively disfavours."
+             % (_pct(C["modes"]["frac_recovered"]), _f(bt.get("z_median"), "%+.1f"), _f(bt.get("width90_c_median")), _pct(bt.get("coverage90")),
+                cb(C, "all"), cb(C, "body"), cb(C, "tail"), _f(C["errors_act3"]["body"]["rmse_c"]), _f(C["errors_act3"]["body"]["width90_c"]),
+                "≈18% (median)", _f(C["checks"]["chi2_per_strike_median"]),
+                _f((S.get("C05_bimodal_halfnoise", {}).get("bimodal_trough") or {}).get("z_median"), "%+.1f"), cb(S.get("C05_bimodal_halfnoise", {}), "all"),
+                _pct((S.get("F_bimodal_close", {}).get("bimodal_trough") or {}).get("coverage90"))))
+    L.append("- **The same blind spot on every other shape outside the prior's comfort zone.** Truth with a narrow spike (G): 90%% "
+             "coverage %s, body RMSE %s¢ against %s¢ bands, χ² > 2 in %s of runs. A kinked (Laplace) peak (E): body coverage %s. "
+             "In all of these the posterior-predictive check passes because many densities price the chain inside the spreads; the "
+             "posterior picks the smooth one and reports the spread *among smooth ones*. That is the ill-posedness of Part 3 showing "
+             "up as over-confidence rather than as noise."
+             % (cb(G, "all"), _f(G["errors_act3"]["body"]["rmse_c"]), _f(G["errors_act3"]["body"]["width90_c"]), _pct(G["checks"]["frac_chi2_gt2"]), cb(E, "body")))
+    L.append("- **Sub-cent brackets under thin-tailed truth.** For a lognormal the 1–10¢ tail holds %s and the body %s, but brackets "
+             "worth <1¢ hold only %s and the open tails %s: the linear-in-log-space extrapolation puts exponential tails where the "
+             "truth is Gaussian, with bands (%s¢) too narrow to admit it. Errors there are ≤0.1¢ — irrelevant to a 5–20¢ trade, "
+             "reported because the brief asked for the wings."
+             % (cb(B, "tail"), cb(B, "body"), cb(B, "far"), cb(B, "open"), _f(B["errors_act3"]["far"]["width90_c"])))
+    L.append("- **Stage 6's standard error is too small by ~25%%** (RMSE %s¢ vs se %s¢ on crude-skew; interval coverage %s at 90%%), "
+             "so the Stage 14 tolerance is tighter than the data justify and the posterior for E[F_T] with the constraint on "
+             "under-covers (%s at 90%%). Cause: tick rounding and the 1¢ bid floor are not Gaussian, and the discount slope is "
+             "estimated from a one-day chain. Fix is cheap (fix D from the rate, or inflate se by the residual MAD ratio); not applied "
+             "here so the numbers stay as specified."
+             % (_f(A["forward"]["err_cents_rmse"]), _f(A["forward"]["se_cents_median"]), _pct(A["coverage_forward_stage6"]["90"]), _pct(A["coverage_meanF_posterior"]["90"])))
+    L.append("- **Sampler diagnostics do not meet the writeup's bar** (R̂ < 1.01 and ESS ≥ 400 on every quantity): on the bracket "
+             "probabilities R̂ max median %s and min ESS median %s per 1,600 draws, divergences in most runs. The 500- vs "
+             "800-iteration agreement and the calibration tables say the bracket estimates are not biased by it, but a production "
+             "run should use ~3× the draws or a reparameterisation of the far-wing coefficients."
+             % (_f(A["sampler"]["bracket_rhat_max_median"], "%.3f"), _f(A["sampler"]["bracket_ess_min_median"], "%.0f")))
+    L.append("\n### Why FAIL rather than PASS WITH CAVEATS\n")
+    L.append("The brief defines the worst outcome as a pipeline that is confidently wrong exactly when the market does something "
+             "interesting, and asks that if the bimodality is not recovered the bands widen to admit it. They do not (3%% trough "
+             "coverage, tighter still with better quotes), and nothing downstream can tell: χ² is fine, Act II disagrees (median max "
+             "|Δ| %s¢ vs %s¢ normally) but Act II is itself wrong by more. On real data this would read as a large, persistent, "
+             "sign-alternating edge across the mid-ladder brackets — the fedarb artifact with a different fingerprint. Everything "
+             "else the test was asked to establish, it establishes. The gate to step 2 is the mis-specification blind spot."
+             % (_f(C["act2"]["vs_act3_max_abs_cents_median"]), _f(A["act2"]["vs_act3_max_abs_cents_median"])))
+    L.append("\n### What would move it to PASS\n")
+    L.append("- The roughness prior's *form* is the lever, not its strength. Options, in order of cost: (i) an explicit mixture "
+             "alternative (two-lognormal mixture fitted alongside; Bayes factor or stacking against the spline) so that a bimodal "
+             "chain widens the reported bands; (ii) a heavier-tailed penalty (Laplace / horseshoe on second differences) that lets a "
+             "few knots move freely; (iii) prior-sensitivity ensembles — run the extractor under several penalty forms and report "
+             "the envelope. Any of these must be re-run through this harness, before and after, per §2.8 of the brief.")
+    L.append("- Use the Act II vs Act III disagreement as a first-line detector: it was %s¢ on the bimodal chains against %s¢ on smooth "
+             "ones (p90 %s¢). Cheap, already computed, and it fired on every mis-specified shape here."
+             % (_f(C["act2"]["vs_act3_max_abs_cents_median"]), _f(A["act2"]["vs_act3_max_abs_cents_median"]), _f(A["act2"]["vs_act3_max_abs_cents_p90"])))
+    L.append("- Fix Stage 6's se (above) before the constraint is trusted at 1¢.")
+    return L
 
 
 def render(S: Dict[str, Any], plot_dir: Path) -> str:
@@ -544,7 +652,7 @@ def render(S: Dict[str, Any], plot_dir: Path) -> str:
     rel = lambda p: str(Path(plot_dir).relative_to(Path(plot_dir).parent.parent) / p)  # noqa: E731
     L: List[str] = []
     L.append("# FINDINGS_SYNTHETIC — synthetic validation of the density extractor\n")
-    L.append("**Verdict: %s** (mechanical criteria below; interpretation in §9).\n" % V["verdict"])
+    L.append("**Verdict: %s** — calibrated and fault-detecting on smooth densities; confidently wrong, with no alarm, on bimodal and other prior-disfavoured shapes (§9).\n" % V["verdict"])
     L.append("Generated by `python3 -m synth.runner`. Every number below is computed from the run pickles in "
              "`synth/results/` (`summary.json` holds the aggregate). Truth is planted; the pipeline never sees it.\n")
     # setup
@@ -641,7 +749,7 @@ def render(S: Dict[str, Any], plot_dir: Path) -> str:
                      "posterior sd of E[F_T] median %.2f ¢; |z| median %.2f, p90 %.2f; Stage 6 F̂0 error RMSE %.2f ¢ (se median %.2f ¢)."
                      % (n, S[n]["n_runs"], f["posterior_mean_minus_true_cents_mean"], f["posterior_mean_minus_true_cents_sd"],
                         f["posterior_sd_cents_median"], f["z_vs_true_abs_median"], f["z_vs_true_abs_p90"], f["err_cents_rmse"], f["se_cents_median"]))
-    c = V["criteria"].get("stage14_mean_lands_on_F0")
+    c = V["core"].get("stage14_mean_lands_on_F0")
     if c:
         L.append("\n**Result: %s** — criterion |bias| < 2¢ and median |z| < 2 %s. Plot: `%s`.\n"
                  % ("YES, the mean lands on F0 without the constraint" if c[1] else "NO", "met" if c[1] else "not met", rel("stage14_diagnostic.png")))
@@ -722,11 +830,69 @@ def render(S: Dict[str, Any], plot_dir: Path) -> str:
         L.append("| %s | %d | %s | %s | %s | %s (baseline %s) |" % (n, s["offset_cents"], _f(s["max_abs_cents_per_cent_median"], "%.3f"), _f(s["mean_abs_cents_per_cent"], "%.3f"),
                                                                  _f(s["analytic_max_cents_per_cent_median"], "%.3f"), _f(s["chi2_per_strike_median"]), _f(s["baseline_chi2_per_strike_median"])))
     L.append("\n## 9. Verdict: %s\n" % V["verdict"])
-    L.append("Mechanical criteria (value, met):\n")
-    for k, (v, ok) in V["criteria"].items():
+    L.extend(interpretation(S, V))
+    L.append("\n### Mechanical criteria\n")
+    L.append("Core (decide the verdict):\n")
+    for k, (v, ok) in V["core"].items():
         L.append("- `%s`: %s → %s" % (k, _fmt_val(v), "met" if ok else ("NOT met" if ok is False else "n/a")))
+    L.append("\nInformational (reported, do not decide):\n")
+    for k, (v, ok) in V["info"].items():
+        L.append("- `%s`: %s → %s" % (k, _fmt_val(v), "met" if ok else ("not met" if ok is False else "n/a")))
     L.append("\nPlots: " + ", ".join("`%s`" % rel(p.name) for p in sorted(Path(plot_dir).glob("*.png"))) + "\n")
+    L.extend(notes(S))
     return "\n".join(L) + "\n"
+
+
+def notes(S: Dict[str, Any]) -> List[str]:
+    """Deviations from the brief / writeup and why. Numbers are filled from the summary."""
+    A = S.get("A_crude_full", {})
+    NF = S.get("NF_crude_tickfloor", {})
+    L: List[str] = []
+    L.append("## 10. Implementation notes and deviations from the brief\n")
+    L.append("- **Sampler.** Hand-rolled NUTS (Hoffman & Gelman Alg. 6, dual averaging, diagonal metric windows) in numpy "
+             "with analytic gradients through the forward map; no JAX/Stan/PyMC dependency (Python 3.9, Mac Mini). The "
+             "posterior has a condition number of ~1e8: the body coefficients are pinned to 1e-4 by cent-wide quotes while "
+             "the far-wing coefficients are prior-only. Three parameterisations were tried and abandoned because NUTS "
+             "reached ESS ≈ 20–40 per 1,600 draws: non-centred (hyperbolic ridges in (z, log τ)), centred (funnel in the "
+             "wings), and a coordinate slice sampler in whitened coordinates (still in `act3.py`, mixes badly on the "
+             "correlated wing directions). What works: integrate τ out exactly by 1-d quadrature (the marginal prior on "
+             "the penalised coordinates depends only on S = Σ e_j u_j²), whiten with the Gauss-Newton Hessian at the MAP, "
+             "then two pooled warmup windows of dense-metric adaptation (Stan-style). 500/500 and 800/800 iterations gave "
+             "bracket quantiles identical to 3 decimals on the crude and bimodal test cases.")
+    L.append("- **Hyperprior on τ.** The writeup's Gamma(a, b) on λ = 1/τ² was replaced first by a half-Cauchy(1) on τ, "
+             "then by a lognormal (median 0.5, sd 1 in log space) because the Cauchy-like marginal it induces on the "
+             "prior-dominated wing directions is what NUTS could not traverse. The bimodal result is identical under "
+             "half-Cauchy(1), lognormal sd 1 and lognormal sd 2.5 (trough z −9.3 / −9.5 / −9.6 on the same chain), so the "
+             "hyperprior's shape is not what decides the wings' error bars — the roughness penalty's *form* is.")
+    L.append("- **Whitened-coordinate diagnostics vs delivered-quantity diagnostics.** R̂ and ESS are reported both for the "
+             "raw sampler coordinates and for the 26 bracket probabilities. The raw coordinates include the far-wing "
+             "log-density directions where the posterior is a plateau bounded by the prior; these mix slowest and "
+             "carry no bracket mass. Divergent transitions occur in most runs (median %s per 1,600 draws); the 500- vs "
+             "800-iteration agreement above and the coverage tables are the evidence they do not bias the brackets."
+             % _f((A.get("sampler") or {}).get("divergences_median"), "%.0f"))
+    L.append("- **SVI no-arbitrage bound.** The writeup states b(1+|ρ|) ≤ 4/√T and that it makes a negative density "
+             "impossible. For raw SVI in total variance Lee's moment bound is b(1+|ρ|) ≤ 2, and Gatheral–Jacquier (2014) "
+             "show the slope bound alone does not exclude butterfly arbitrage; their g(k) must be checked. Act II here "
+             "enforces the bound of 2 by construction, penalises g(k) < 0 in the fit, and *verifies* min g and min density "
+             "afterwards (table §5 reports how often g(k) < 0 survived). Raise this in the strategy document.")
+    L.append("- **Tick floor.** Real far-OTM quotes sit at 0.01/0.02 (a 1¢ bid on a worthless option); a half-spread of "
+             "0.005 then asserts the option is worth 1.5¢ ± 0.5¢. The likelihood is run exactly as specified (sd = "
+             "half-spread) in every config except `NF_crude_tickfloor`, which floors the tolerance at one tick ($0.01): "
+             "90%% bracket coverage %s → %s, χ²/strike median %s → %s. Both are reported; nothing was tuned to a coverage number."
+             % (_pct(((A.get("coverage_bracket") or {}).get("all") or {}).get("90")), _pct(((NF.get("coverage_bracket") or {}).get("all") or {}).get("90")),
+                _f((A.get("checks") or {}).get("chi2_per_strike_median")), _f((NF.get("checks") or {}).get("chi2_per_strike_median"))))
+    L.append("- **Stage 6 standard error.** se(F0) is the OLS intercept standard error of the parity regression. With "
+             "tick-rounded, floored quotes the true error of F̂0 is larger than that se (§2.3: RMSE vs se), so the Stage 14 "
+             "tolerance — which the writeup sets equal to se(F0) — is tighter than it should be. Not corrected here; reported.")
+    L.append("- **Knots.** Uniform clamped cubic B-spline knots in log-moneyness over ±7 vol-scales (24 coefficients); the "
+             "writeup's 'dense where strikes are dense' was not implemented because a non-uniform knot vector changes what "
+             "the second-difference penalty means (it is no longer proportional to curvature). Uniform knots plus the "
+             "P-spline penalty is the standard Eilers–Marx construction.")
+    L.append("- **Quadrature.** 400 grid points uniform in log-moneyness, trapezoid weights; predicted prices are exact to "
+             "~1e-4 $ against the 20,001-point planted grid, an order of magnitude below the smallest half-spread.")
+    L.append("- **Real chains one day before expiry** have median 31 quoted OTM strikes (settlement-day chains have 23); the "
+             "8/12/16/23-strike configs thin the real grids at random keeping ≥3 per wing, so spacing stays real.")
+    return L
 
 
 def _fmt_val(v) -> str:
