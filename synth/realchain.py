@@ -1,24 +1,31 @@
-"""Step 2: the extractor on real KXWTIW chains, descriptively only.
+"""Step 2 (V2): the extractor on real KXWTIW chains, descriptively only, with the three
+changes of NightKing/HANDOFF_forward_and_sync_fix.md run as separate arms so that each
+change's effect is attributable:
 
-No Kalshi prices are read, no gap is computed, nothing is evaluated as a trade. For
-every KXWTIW settlement date that clears Gate 0 (same-day weekly expiry, >= 8 strikes
-with 3+ per wing in the final hour — `data_cme/parquet/chain_density`) the chain is
-snapshotted at four times, and the full pipeline (Stage 6 -> Act II -> Act III with and
-without the martingale constraint -> Gate 4 detector) is run on the three with time
-left on the clock:
+    base   V1 exactly: parity forward from the raw window, no synchronisation
+    fwd    forward from the NYMEX settlement of the option's own underlying (T-2d, T-1d,
+           T-0 at 14:30 ET); parity demoted to a check. T-4h has no futures print at
+           10:30 ET, so it keeps the parity forward there.
+    sync   fwd + every quote in the window moved to the snapshot instant and to one
+           underlying level before fitting (synth/sync.py, sticky-strike)
+    sync_m the same with the sticky-moneyness shift; T-1d / 60 min only (sensitivity)
+
+All arms carry the new Gate 4 (synth/detector.py: split-half Act III consistency, Laplace
+leave-one-out residuals, Act II reported), so the detector change is also before/after.
+
+No Kalshi prices are read, no gap is computed, nothing is evaluated as a trade. Dates,
+snapshots, windows and sampler settings are those of FINDINGS_REALCHAIN.md:
 
     T-2d   14:30 ET two business days before settlement
     T-1d   14:30 ET one business day before
     T-4h   10:30 ET on settlement day
     T-0    14:30 ET on settlement day: parity forward only (the chain is at intrinsic)
 
-The 14:30 snapshots coincide with the NYMEX settlement window, so Stage 6's parity
-forward is compared with the CME settlement of the option's own underlying contract
-that day — the independent check the synthetic study could not provide.
-
-    python3 -m synth.realchain                 # run (resumable), then report
-    python3 -m synth.realchain --report        # re-render from what is on disk
-    python3 -m synth.realchain --only 2026-03-13 --snap T-1d
+    python3 -m synth.realchain                        # run every arm (resumable), then report
+    python3 -m synth.realchain --arms sync            # one arm
+    python3 -m synth.realchain --report               # re-render from what is on disk
+    python3 -m synth.realchain --only 2026-03-13 --snap T-1d --arms sync
+    python3 -m synth.realchain --calibrate            # split-half null on synthetic chains
 """
 
 from __future__ import annotations
@@ -42,14 +49,25 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 DATA_CME = ROOT / "data_cme" / "parquet"
 RESULTS = HERE / "results_real"
-PLOTS = HERE / "plots_real"
+PLOTS = HERE / "plots_real_v2"
+RUNS_V1 = RESULTS / "runs.pkl"
+RUNS_V2 = RESULTS / "runs_v2.pkl"
 ET = "America/New_York"
 FRESH_MIN = 60
 SNAPS = ("T-2d", "T-1d", "T-4h", "T-0")
+SETTLE_SNAPS = ("T-2d", "T-1d", "T-0")   # 14:30 ET: a NYMEX settlement exists for the snapshot instant
 NUTS = {"n_chains": 4, "n_warmup": 400, "n_samples": 400}
 SERIES = "KXWTIW"
 WINDOWS = (60, 10)   # minutes: Gate 0's own window, and a near-synchronous one (the underlying moves)
-RATE = 0.04          # D = exp(-r T): at T <= 2 days the chain cannot identify D (it returned 0.947 at T-0)
+RATE = 0.04          # D = exp(-r T): fixed analytically. At T <= 2 days D is within 2e-4 of 1, i.e. < 0.02c on any
+                     # price here; the chain cannot identify it (V1: 0.947 at expiry) and the forward no longer
+                     # depends on the regression slope, so there is nothing left for the slope to do.
+ARMS = ("base", "fwd", "sync", "sync_m")
+ARM_SNAPS = {"sync_m": {("T-1d", 60)}}   # sensitivity arm: T-1d / 60 min only
+SE_FLOOR_FUTURES = 0.02   # 2c floor on the Stage 14 tolerance when the forward comes from the futures
+ANCHOR_MIN = 1.0          # the NYMEX settlement is the VWAP of 14:28-14:30; anchor the path at 14:29
+PARITY_Z = 3.0            # parity check: flag |parity - futures| > PARITY_Z se and > PARITY_ABS_CENTS
+PARITY_ABS_CENTS = 10.0
 
 
 # --------------------------------------------------------------------------
@@ -105,10 +123,15 @@ def snapshot_times(settle_ts) -> Dict[str, Any]:
     }
 
 
+def window_events(tb, snap_ts, window_min: int = FRESH_MIN):
+    """Every TBBO record in the trailing window (the path estimator uses all of them)."""
+    import pandas as pd
+    return tb[(tb["ts_event"] <= snap_ts) & (tb["ts_event"] > snap_ts - pd.Timedelta(minutes=window_min))]
+
+
 def snapshot(tb, snap_ts, window_min: int = FRESH_MIN):
     """Last quote per instrument in the trailing window with a real two-sided market."""
-    import pandas as pd
-    w = tb[(tb["ts_event"] <= snap_ts) & (tb["ts_event"] > snap_ts - pd.Timedelta(minutes=window_min))]
+    w = window_events(tb, snap_ts, window_min)
     if w.empty:
         return None
     last = w.sort_values("ts_event").groupby("instrument_id").tail(1).copy()
@@ -122,15 +145,31 @@ def snapshot(tb, snap_ts, window_min: int = FRESH_MIN):
     return last.sort_values(["strike", "right"])
 
 
+def parity_on(q, D_fixed: float):
+    """Stage 6 on the strikes quoting both sides. Returns (result dict or None, free-D result or None, n_both)."""
+    from . import stage6
+    piv = q.pivot_table(index="strike", columns="right", values=["mid", "hs", "age_min"])
+    if ("mid", "C") not in piv.columns or ("mid", "P") not in piv.columns:
+        return None, None, 0
+    both = piv.dropna(subset=[("mid", "C"), ("mid", "P")])
+    if len(both) < 2:
+        return None, None, int(len(both))
+    wts = 1.0 / (both[("hs", "C")].values ** 2 + both[("hs", "P")].values ** 2)
+    st6 = stage6.parity_forward(both.index.values, both[("mid", "C")].values, both[("mid", "P")].values, weights=wts, fixed_D=D_fixed)
+    st6_free = (stage6.parity_forward(both.index.values, both[("mid", "C")].values, both[("mid", "P")].values, weights=wts)
+                if len(both) >= 3 else None)
+    return st6, st6_free, int(len(both))
+
+
 # --------------------------------------------------------------------------
-# one (date, snapshot)
+# one (date, snapshot, window, arm)
 # --------------------------------------------------------------------------
 
 def run_one(job: Dict[str, Any]) -> Dict[str, Any]:
     import pandas as pd
-    from . import act2, act3, densities, detector, geometry, harness, stage6
-    d, label, window = job["date"], job["snap"], int(job.get("window", 60))
-    out: Dict[str, Any] = {"settle_date": d["settle_date"], "root": d["root"], "snap": label, "window_min": window,
+    from . import act2, act3, densities, detector, geometry, harness, sync
+    d, label, window, arm = job["date"], job["snap"], int(job.get("window", 60)), job.get("arm", "base")
+    out: Dict[str, Any] = {"settle_date": d["settle_date"], "root": d["root"], "snap": label, "window_min": window, "arm": arm,
                            "event_ticker": d["event_ticker"], "cl_contract_kalshi": d["cl_contract"], "ice_settle": d["ice_settle"],
                            "error": None}
     t0 = time.time()
@@ -139,47 +178,112 @@ def run_one(job: Dict[str, Any]) -> Dict[str, Any]:
         tb = pd.read_parquet(p, columns=["ts_event", "instrument_id", "bid_px_00", "ask_px_00", "strike", "right"])
         times = snapshot_times(d["settle_ts"])
         snap_ts = times[label]
+        snap_utc = snap_ts.tz_convert("UTC")
         out["snap_time_et"] = snap_ts.strftime("%Y-%m-%d %H:%M")
-        T = max((pd.Timestamp(d["settle_ts"]) - snap_ts.tz_convert("UTC")).total_seconds() / (365.0 * 86400.0), 0.0)
+        T = max((pd.Timestamp(d["settle_ts"]) - snap_utc).total_seconds() / (365.0 * 86400.0), 0.0)
         out["T_years"] = T
-        q = snapshot(tb, snap_ts.tz_convert("UTC"), window)
-        D_fixed = float(np.exp(-RATE * T))
+        D = float(np.exp(-RATE * T))
+        out["D_used"] = D
+        q = snapshot(tb, snap_utc, window)
         if q is None:
             out["gate0"] = False
             out["gate0_reason"] = "no two-sided quotes in the window"
             return out
         out["n_quoted_strikes"] = int(q["strike"].nunique())  # Gate 0's own count: any side, any strike
         out["gate0_pooled"] = bool(out["n_quoted_strikes"] >= 8)
-        # Stage 6 on strikes with both sides
-        piv = q.pivot_table(index="strike", columns="right", values=["mid", "hs", "age_min"])
-        both = piv.dropna(subset=[("mid", "C"), ("mid", "P")]) if ("mid", "C") in piv.columns and ("mid", "P") in piv.columns else piv.iloc[0:0]
-        st6 = None
-        if len(both) >= 2:
-            wts = 1.0 / (both[("hs", "C")].values ** 2 + both[("hs", "P")].values ** 2)
-            st6 = stage6.parity_forward(both.index.values, both[("mid", "C")].values, both[("mid", "P")].values, weights=wts, fixed_D=D_fixed)
-            st6_free = stage6.parity_forward(both.index.values, both[("mid", "C")].values, both[("mid", "P")].values, weights=wts) if len(both) >= 3 else None
-            out["D_chain"] = float(st6_free["D"]) if st6_free and st6_free["ok"] else None
-            out["F0_parity_freeD"] = float(st6_free["F0"]) if st6_free and st6_free["ok"] else None
-        if st6 is None or not st6["ok"] or not np.isfinite(st6["F0"]):
-            out["gate0"] = False
-            out["gate0_reason"] = "fewer than 2 two-sided strikes for parity"
-            return out
-        F0, D, se = float(st6["F0"]), D_fixed, float(st6["se_F0"])
-        if len(both) < 3:
-            se = max(se, 0.10)  # two pairs: no residual degrees of freedom; a nominal 10c
-        out.update({"F0_parity": F0, "se_F0": se, "D_used": D, "parity_pairs": int(st6["n_pairs"]), "parity_flagged": int(st6["flagged"].sum()),
-                    "parity_resid_sd": float(st6["resid_sd"]), "two_sided_strikes": int(len(both))})
-        # independent forward checks
+        # the independent forward: NYMEX settlement of the option's own underlying, same instant
         under = job["underlying"].get((d["root"], d["settle_date"]))
         out["underlying"] = under
         out["contract_month_match"] = (under == d["cl_contract"]) if under else None
         snap_date = snap_ts.strftime("%Y-%m-%d")
-        nymex = job["settles"].get((snap_date, under)) if under else None
-        out["nymex_settle_same_day"] = nymex
-        if nymex is not None and label in ("T-2d", "T-1d", "T-0"):
-            out["parity_minus_nymex_cents"] = 100.0 * (F0 - nymex)
-        if label == "T-0" and d["ice_settle"] is not None:
-            out["parity_minus_ice_cents"] = 100.0 * (F0 - d["ice_settle"])
+        F_settle = job["settles"].get((snap_date, under)) if (under and label in SETTLE_SNAPS) else None
+        out["nymex_settle_same_day"] = F_settle
+        # Stage 6 on the raw window (every arm reports it)
+        st6, st6_free, n_both = parity_on(q, D)
+        out["two_sided_strikes"] = n_both
+        out["D_chain"] = float(st6_free["D"]) if st6_free and st6_free["ok"] else None
+        out["F0_parity_freeD"] = float(st6_free["F0"]) if st6_free and st6_free["ok"] else None
+        have_parity = bool(st6 is not None and st6["ok"] and np.isfinite(st6["F0"]))
+        if have_parity:
+            se_raw = float(st6["se_F0"])
+            if n_both < 3:
+                se_raw = max(se_raw, 0.10)  # two pairs: no residual degrees of freedom; a nominal 10c
+            out.update({"F0_parity": float(st6["F0"]), "se_F0_parity": se_raw, "parity_pairs": int(st6["n_pairs"]),
+                        "parity_flagged": int(st6["flagged"].sum()), "parity_resid_sd": float(st6["resid_sd"])})
+            if F_settle is not None:
+                out["parity_minus_nymex_cents"] = 100.0 * (out["F0_parity"] - F_settle)
+            if label == "T-0" and d["ice_settle"] is not None:
+                out["parity_minus_ice_cents"] = 100.0 * (out["F0_parity"] - d["ice_settle"])
+        # --- the forward, by arm ---------------------------------------------------
+        sync_mode = {"sync": "strike", "sync_m": "moneyness"}.get(arm)
+        if arm == "base" or (arm == "fwd" and F_settle is None):
+            if not have_parity:
+                out["gate0"] = False
+                out["gate0_reason"] = "fewer than 2 two-sided strikes for parity"
+                return out
+            F0, se = out["F0_parity"], out["se_F0_parity"]
+            out["forward_source"] = "parity"
+        elif arm == "fwd":
+            F0 = float(F_settle)
+            se = max(out.get("se_F0_parity", SE_FLOOR_FUTURES), SE_FLOOR_FUTURES) if have_parity else 0.10
+            out["forward_source"] = "futures"
+        else:  # sync arms
+            if F_settle is not None:
+                anchor, anchor_min = float(F_settle), ANCHOR_MIN
+            elif have_parity:
+                anchor, anchor_min = out["F0_parity"], 0.0
+            else:
+                out["gate0"] = False
+                out["gate0_reason"] = "no futures print and fewer than 2 two-sided strikes for parity"
+                return out
+            asig0 = act3.atm_sigma(q["strike"].values, q["right"].values, q["mid"].values, anchor, D, T)
+            events = window_events(tb, snap_utc, window)
+            path = sync.estimate_path(events, snap_utc, T, anchor, D, asig0, window, anchor_min=anchor_min)
+            adj = sync.adjust(q["strike"].values, q["right"].values, q["bid_px_00"].values, q["ask_px_00"].values,
+                              q["age_min"].values, path, path["F_at_ref"], T, D, mode=sync_mode)
+            q = q.copy()
+            q["bid_px_00"], q["ask_px_00"], q["mid"], q["hs"] = adj["bid"], adj["ask"], adj["mid"], adj["hs"]
+            out["sync"] = {"ok": bool(path["ok"]), "reason": path.get("reason"), "n_events": path["n_events"],
+                           "n_informative": path.get("n_informative"), "n_used": path.get("n_used"),
+                           "path_range_dollars": path.get("range_dollars"), "path_rms_resid_dollars": path.get("rms_resid_dollars"),
+                           "level_offset_cents": path.get("level_offset_cents"), "anchor_drift_cents": path.get("anchor_drift_cents"),
+                           "anchor": anchor, "anchor_min": anchor_min, "mode": sync_mode,
+                           "adj_rms_cents": float(100.0 * np.sqrt(np.mean(adj["adj"] ** 2))),
+                           "adj_max_abs_cents": float(100.0 * np.abs(adj["adj"]).max()),
+                           "adj_theta_rms_cents": float(100.0 * np.sqrt(np.mean(adj["adj_theta"] ** 2))),
+                           "adj_delta_rms_cents": float(100.0 * np.sqrt(np.mean(adj["adj_delta"] ** 2))),
+                           "how": {k: int(v) for k, v in zip(*np.unique(adj["how"].astype(str), return_counts=True))},
+                           "path_knots_min": path["knots_min"], "path_values": path["values"]}
+            st6a, _, n_both_a = parity_on(q, D)
+            have_adj = bool(st6a is not None and st6a["ok"] and np.isfinite(st6a["F0"]))
+            if have_adj:
+                se_adj = float(st6a["se_F0"])
+                if n_both_a < 3:
+                    se_adj = max(se_adj, 0.10)
+                out.update({"F0_parity_sync": float(st6a["F0"]), "se_F0_parity_sync": se_adj, "parity_pairs_sync": int(st6a["n_pairs"]),
+                            "parity_flagged_sync": int(st6a["flagged"].sum())})
+                if F_settle is not None:
+                    out["parity_sync_minus_nymex_cents"] = 100.0 * (out["F0_parity_sync"] - F_settle)
+                    out["parity_sync_minus_F0_cents"] = 100.0 * (out["F0_parity_sync"] - path["F_at_ref"])
+                if label == "T-0" and d["ice_settle"] is not None:
+                    out["parity_sync_minus_ice_cents"] = 100.0 * (out["F0_parity_sync"] - d["ice_settle"])
+            if F_settle is not None:
+                F0 = float(path["F_at_ref"])
+                se = max(se_adj, SE_FLOOR_FUTURES) if have_adj else 0.10
+                out["forward_source"] = "futures+path"
+            else:
+                if not have_adj:
+                    out["gate0"] = False
+                    out["gate0_reason"] = "fewer than 2 two-sided strikes for parity (synchronised)"
+                    return out
+                F0, se = out["F0_parity_sync"], se_adj
+                out["forward_source"] = "parity (synchronised)"
+        out.update({"F0": float(F0), "se_F0": float(se)})
+        # the parity check (every arm): raw parity vs the futures, and the arm's own chain vs its forward
+        if have_parity and F_settle is not None:
+            diff = out["parity_minus_nymex_cents"]
+            z = diff / (100.0 * out["se_F0_parity"])
+            out["parity_check"] = {"diff_cents": diff, "z": z, "flagged": bool(abs(z) > PARITY_Z and abs(diff) > PARITY_ABS_CENTS)}
         # OTM chain
         otm = q[np.where(q["right"] == "C", q["strike"] >= F0, q["strike"] < F0)]
         otm = otm.sort_values(["strike", "hs"]).drop_duplicates("strike", keep="first")
@@ -222,10 +326,13 @@ def run_one(job: Dict[str, Any]) -> Dict[str, Any]:
         # Act III, constrained then unconstrained
         asig = act3.atm_sigma(K, R, mid, F0, D, T)
         out["atm_sigma"] = asig
+        psi_map = None
         for mart, tag in ((True, "act3"), (False, "act3u")):
             model = act3.Model(K, R, mid, hs, F0, D, T, asig, se_F0=se, martingale=mart)
             rng = np.random.default_rng(1 if mart else 2)
             res = act3.sample(model, rng, sampler="nuts", **NUTS)
+            if mart:
+                psi_map = res["psi_map"]
             summ = model.summarise(res["thetas"], edges)
             br = summ["bracket"]
             n_ch = NUTS["n_chains"]
@@ -241,9 +348,10 @@ def run_one(job: Dict[str, Any]) -> Dict[str, Any]:
             skew = float((p_mean @ (model.s - mean_s) ** 3) / sd_s ** 3)
             out.update({
                 tag + "_bracket_mean": br.mean(axis=0), tag + "_bracket_width90": np.diff(np.percentile(br, [5, 95], axis=0), axis=0)[0],
-                tag + "_bracket_q": np.percentile(br, [5, 50, 95], axis=0),
+                tag + "_bracket_q": np.percentile(br, [5, 50, 95], axis=0), tag + "_bracket_var": br.var(axis=0, ddof=1),
                 tag + "_meanF_mean": float(summ["mean_F"].mean()), tag + "_meanF_sd": float(summ["mean_F"].std()),
                 tag + "_chi2_per_strike": float(summ["chi2"].mean() / len(K)), tag + "_max_abs_resid": float(np.abs(summ["resid"].mean(axis=0)).max()),
+                tag + "_resid_mean": summ["resid"].mean(axis=0),
                 tag + "_edge_mass": summ["edge_mass"].mean(axis=0), tag + "_tau_q": np.percentile(res["taus"], [5, 50, 95]),
                 tag + "_rhat_max": res["rhat_max"], tag + "_ess_min": res["ess_min"], tag + "_divergences": res["divergences"],
                 tag + "_bracket_rhat_max": float(act3.split_rhat(chains_br[:, :, keep]).max()) if keep.any() else 1.0,
@@ -267,7 +375,18 @@ def run_one(job: Dict[str, Any]) -> Dict[str, Any]:
             "sampler_ok": bool(out["act3_rhat_max"] < 1.01 and out["act3_ess_min"] >= 400 and out["act3_divergences"] == 0),
             "sampler_bracket_ok": bool(out["act3_bracket_rhat_max"] < 1.05 and out["act3_bracket_ess_min"] >= 100),
         }
-        out["detector"] = detector.gate(out.get("act2_bracket"), out["act3_bracket_mean"], int(len(K)))
+        # Gate 4 (new): split-half consistency + LOO; Act II reported
+        t1 = time.time()
+        split = detector.split_half(K, R, mid, hs, F0, D, T, asig, se, edges, NUTS, seed=3)
+        out["split_half"] = split
+        out["split_half_seconds"] = time.time() - t1
+        t1 = time.time()
+        lo = detector.loo(K, R, mid, hs, F0, D, T, asig, se, psi_warm=psi_map)
+        out["loo"] = lo
+        out["loo_seconds"] = time.time() - t1
+        out["act2_signal"] = detector.act2_signal(out.get("act2_bracket"), out["act3_bracket_mean"], int(len(K)))
+        out["detector"] = detector.gate(split, lo, out["act2_signal"])
+        out["detector_v1"] = out["act2_signal"]  # the V1 gate, for the before/after table
     except Exception as exc:
         import traceback
         out["error"] = repr(exc)
@@ -280,27 +399,34 @@ def run_one(job: Dict[str, Any]) -> Dict[str, Any]:
 # driver
 # --------------------------------------------------------------------------
 
-def run(only_dates: Optional[List[str]], snaps: List[str], workers: int) -> List[Dict[str, Any]]:
+def _key(r: Dict[str, Any]) -> Tuple[str, str, int, str]:
+    return (r["settle_date"], r["snap"], int(r.get("window_min", 60)), r.get("arm", "base"))
+
+
+def run(only_dates: Optional[List[str]], snaps: List[str], arms: List[str], workers: int, windows=WINDOWS) -> List[Dict[str, Any]]:
     RESULTS.mkdir(parents=True, exist_ok=True)
-    out_p = RESULTS / "runs.pkl"
-    have: List[Dict[str, Any]] = pickle.load(open(out_p, "rb")) if out_p.exists() else []
-    done = {(r["settle_date"], r["snap"], r.get("window_min", 60)) for r in have if r.get("error") is None}
+    have: List[Dict[str, Any]] = pickle.load(open(RUNS_V2, "rb")) if RUNS_V2.exists() else []
+    done = {_key(r) for r in have if r.get("error") is None}
     inp = load_inputs()
-    jobs = [{"date": d, "snap": s, "window": w, "underlying": inp["underlying"], "settles": inp["settles"]}
-            for d in inp["dates"] for s in snaps for w in WINDOWS
-            if (only_dates is None or d["settle_date"] in only_dates) and (d["settle_date"], s, w) not in done]
-    print("dates clearing Gate 0: %d; jobs to run: %d" % (len(inp["dates"]), len(jobs)), flush=True)
+    jobs = [{"date": d, "snap": s, "window": w, "arm": a, "underlying": inp["underlying"], "settles": inp["settles"]}
+            for a in arms for d in inp["dates"] for s in snaps for w in windows
+            if (only_dates is None or d["settle_date"] in only_dates) and (d["settle_date"], s, w, a) not in done
+            and (a not in ARM_SNAPS or (s, w) in ARM_SNAPS[a])]
+    print("dates clearing Gate 0: %d; jobs to run: %d (arms %s)" % (len(inp["dates"]), len(jobs), ",".join(arms)), flush=True)
     if not jobs:
         return have
     ctx = mp.get_context("fork")
     t0 = time.time()
-    results = [r for r in have if (r["settle_date"], r["snap"], r.get("window_min", 60)) in done]
+    results = [r for r in have if _key(r) in done]
     with ctx.Pool(workers) as pool:
         for i, r in enumerate(pool.imap_unordered(run_one, jobs), 1):
             results.append(r)
-            print("  %3d/%d %s %s w%d %s %5.0fs %s" % (i, len(jobs), r["settle_date"], r["snap"], r["window_min"], "ERR" if r.get("error") else ("gate0=%s" % r.get("gate0")),
-                                                   time.time() - t0, (r.get("detector") or {}).get("reason", "")[:60]), flush=True)
-            with open(out_p, "wb") as fh:
+            print("  %3d/%d %s %s w%d %-6s %s %5.0fs %s" % (i, len(jobs), r["settle_date"], r["snap"], r["window_min"], r["arm"],
+                                                        "ERR" if r.get("error") else ("gate0=%s" % r.get("gate0")),
+                                                        time.time() - t0, (r.get("detector") or {}).get("reason", "")[:70]), flush=True)
+            if r.get("error"):
+                print("      " + r["error"][:200], flush=True)
+            with open(RUNS_V2, "wb") as fh:
                 pickle.dump(results, fh)
     return results
 
@@ -309,20 +435,29 @@ def main(argv: Optional[List[str]] = None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--only", default=None, help="comma-separated settle dates")
     ap.add_argument("--snap", default=",".join(SNAPS))
+    ap.add_argument("--arms", default=",".join(ARMS))
+    ap.add_argument("--windows", default=",".join(str(w) for w in WINDOWS))
     ap.add_argument("--workers", type=int, default=7)
     ap.add_argument("--report", action="store_true")
+    ap.add_argument("--calibrate", action="store_true", help="split-half null distribution on synthetic chains")
     a = ap.parse_args(argv)
+    if a.calibrate:
+        from . import calibrate_detector
+        calibrate_detector.main(["--workers", str(a.workers)])
+        return 0
     if not a.report:
-        run([x.strip() for x in a.only.split(",")] if a.only else None, [s.strip() for s in a.snap.split(",")], a.workers)
+        run([x.strip() for x in a.only.split(",")] if a.only else None, [s.strip() for s in a.snap.split(",")],
+            [x.strip() for x in a.arms.split(",")], a.workers, tuple(int(w) for w in a.windows.split(",")))
     from . import report_real
-    rs = pickle.load(open(RESULTS / "runs.pkl", "rb"))
-    summary = report_real.aggregate(rs)
-    with open(RESULTS / "summary.json", "w") as fh:
+    rs = pickle.load(open(RUNS_V2, "rb"))
+    v1 = pickle.load(open(RUNS_V1, "rb")) if RUNS_V1.exists() else []
+    summary = report_real.aggregate_v2(rs, v1)
+    with open(RESULTS / "summary_v2.json", "w") as fh:
         json.dump(summary, fh, indent=1, default=str)
-    report_real.plots(rs, PLOTS)
-    text = report_real.render(summary, rs, PLOTS)
-    (ROOT / "FINDINGS_REALCHAIN.md").write_text(text)
-    print("wrote", ROOT / "FINDINGS_REALCHAIN.md")
+    report_real.plots_v2(rs, PLOTS)
+    text = report_real.render_v2(summary, rs, PLOTS)
+    (ROOT / "FINDINGS_REALCHAIN_V2.md").write_text(text)
+    print("wrote", ROOT / "FINDINGS_REALCHAIN_V2.md")
     return 0
 
 

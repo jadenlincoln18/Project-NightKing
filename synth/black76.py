@@ -44,17 +44,20 @@ def implied_vol(C, F, K, T, D=1.0, right="C", tol=1e-10, max_iter=60):
     """Invert to sigma. Returns NaN where the price is outside (intrinsic, cap)."""
     C = np.atleast_1d(np.asarray(C, dtype=float))
     K = np.atleast_1d(np.asarray(K, dtype=float)) * np.ones_like(C)
+    # F and T may be per-quote arrays (quotes taken at different instants, synth/sync.py)
+    F = np.atleast_1d(np.asarray(F, dtype=float)) * np.ones_like(C)
+    T = np.atleast_1d(np.asarray(T, dtype=float)) * np.ones_like(C)
     right_arr = np.atleast_1d(np.asarray(right)) if not isinstance(right, str) else np.full(C.shape, right)
     is_call = right_arr == "C"
     # work in calls via parity: C = P + D(F - K)
     Cc = np.where(is_call, C, C + D * (F - K))
     intrinsic = D * np.maximum(F - K, 0.0)
     cap = D * F
-    ok = (Cc > intrinsic + 1e-12) & (Cc < cap - 1e-12) & np.isfinite(Cc)
+    ok = (Cc > intrinsic + 1e-12) & (Cc < cap - 1e-12) & np.isfinite(Cc) & (T > 0)
     out = np.full(C.shape, np.nan)
     if not ok.any():
         return out if out.shape != () else float(out)
-    Kk, Ck = K[ok], Cc[ok]
+    Kk, Ck, F, T = K[ok], Cc[ok], F[ok], T[ok]
     lo = np.full(Kk.shape, 1e-6)
     hi = np.full(Kk.shape, 20.0)
     # bisection to bracket, then Newton polish
