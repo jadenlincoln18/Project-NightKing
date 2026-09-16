@@ -412,7 +412,7 @@ def plots_v2(rs: List[Dict[str, Any]], out_dir: Path) -> None:
 # render
 # --------------------------------------------------------------------------
 
-def _rows(S: Dict[str, Any], snaps, arms=("base", "fwd", "sync", "sync_m")):
+def _rows(S: Dict[str, Any], snaps, arms=ARMS):
     for snap in snaps:
         for w in WINDOWS:
             for arm in arms:
