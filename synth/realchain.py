@@ -273,10 +273,12 @@ def run_one(job: Dict[str, Any]) -> Dict[str, Any]:
                               q["age_min"].values, path, path["F_at_ref"], T, D, mode=sync_mode)
             q = q.copy()
             q["bid_px_00"], q["ask_px_00"], q["mid"], q["hs"] = adj["bid"], adj["ask"], adj["mid"], adj["hs"]
-            out["sync"] = {"ok": bool(path["ok"]), "reason": path.get("reason"), "n_events": path["n_events"],
-                           "n_informative": path.get("n_informative"), "n_used": path.get("n_used"),
-                           "path_range_dollars": path.get("range_dollars"), "path_rms_resid_dollars": path.get("rms_resid_dollars"),
-                           "level_offset_cents": path.get("level_offset_cents"), "anchor_drift_cents": path.get("anchor_drift_cents"),
+            out["sync"] = {"ok": bool(recon["ok"]), "reason": recon.get("reason"), "n_events": recon["n_events"],
+                           "n_informative": recon.get("n_informative"), "n_used": recon.get("n_used"),
+                           "path_range_dollars": path.get("range_dollars"), "path_rms_resid_dollars": recon.get("rms_resid_dollars"),
+                           "level_offset_cents": recon.get("level_offset_cents"),
+                           "anchor_drift_cents": 100.0 * (path["F_at_ref"] - anchor) if arm == "real" else recon.get("anchor_drift_cents"),
+                           "path_source": path.get("source", "reconstruction"),
                            "anchor": anchor, "anchor_min": anchor_min, "mode": sync_mode,
                            "adj_rms_cents": float(100.0 * np.sqrt(np.mean(adj["adj"] ** 2))),
                            "adj_max_abs_cents": float(100.0 * np.abs(adj["adj"]).max()),
@@ -460,8 +462,10 @@ def run(only_dates: Optional[List[str]], snaps: List[str], arms: List[str], work
                                                         time.time() - t0, (r.get("detector") or {}).get("reason", "")[:70]), flush=True)
             if r.get("error"):
                 print("      " + r["error"][:200], flush=True)
-            with open(RUNS_V2, "wb") as fh:
+            tmp = RUNS_V2.with_name(RUNS_V2.name + ".tmp")
+            with open(tmp, "wb") as fh:
                 pickle.dump(results, fh)
+            os.replace(tmp, RUNS_V2)   # atomic: a kill mid-dump leaves the previous checkpoint intact
     return results
 
 
