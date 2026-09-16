@@ -16,8 +16,9 @@ import numpy as np
 from . import detector
 
 HERE = Path(__file__).resolve().parent
-ARMS = ("base", "fwd", "sync", "sync_m")
-ARM_LABEL = {"base": "V1 (parity fwd, raw)", "fwd": "futures fwd, raw", "sync": "futures fwd + sync", "sync_m": "sync (sticky-moneyness)"}
+ARMS = ("base", "fwd", "sync", "sync_m", "real")
+ARM_LABEL = {"base": "V1 (parity fwd, raw)", "fwd": "futures fwd, raw", "sync": "V2: futures fwd + sync", "sync_m": "sync (sticky-moneyness)",
+             "real": "V3: real intraday path"}
 SNAPS = ("T-2d", "T-1d", "T-4h", "T-0")
 WINDOWS = (60, 10)
 
@@ -205,16 +206,18 @@ def aggregate_v2(rs: List[Dict[str, Any]], v1: Optional[List[Dict[str, Any]]] = 
     out["by_cell"] = by
     # paired comparison on the dates every arm extracted
     paired: Dict[str, Any] = {}
+    arms_p = ["base", "fwd", "sync"] + (["real"] if any(k.startswith("real_") for k in by) else [])
+    out["paired_arms"] = arms_p
     for snap in SNAPS[:3]:
         for w in WINDOWS:
-            cells = {a: by.get("%s_%s_w%d" % (a, snap, w)) for a in ("base", "fwd", "sync")}
+            cells = {a: by.get("%s_%s_w%d" % (a, snap, w)) for a in arms_p}
             if not all(cells.values()):
                 continue
             common = set.intersection(*[set(c["dates_extracted"]) for c in cells.values()])
             if not common:
                 continue
             row: Dict[str, Any] = {"n_common": len(common)}
-            for a in ("base", "fwd", "sync"):
+            for a in arms_p:
                 ext = [r for r in ok if r.get("arm", "base") == a and r["snap"] == snap and r.get("window_min", 60) == w and r["settle_date"] in common
                        and "act3_bracket_mean" in r]
                 row[a] = {"chi2_median": _q([r["act3_chi2_per_strike"] for r in ext], 50), "chi2_lt2_frac": _frac([r["act3_chi2_per_strike"] < 2 for r in ext]),
@@ -241,6 +244,38 @@ def aggregate_v2(rs: List[Dict[str, Any]], v1: Optional[List[Dict[str, Any]]] = 
     p = HERE / "results_real" / "split_half_null.json"
     if p.exists():
         out["split_half_calibration"] = json.load(open(p))
+    # real vs reconstructed path (the `real` arm carries both)
+    val: Dict[str, Any] = {}
+    for snap in SNAPS:
+        for w in WINDOWS:
+            sub = [r["real_path"] for r in ok if r.get("arm") == "real" and r["snap"] == snap and r.get("window_min", 60) == w and r.get("real_path")]
+            sub = [x for x in sub if x["source"] == "real" and x.get("recon_ok")]
+            if not sub:
+                continue
+            d = np.concatenate([np.asarray(x["diff_shape_dollars"]) for x in sub]) * 100.0
+            draw = np.concatenate([np.asarray(x["diff_dollars"]) for x in sub]) * 100.0
+            dist = np.concatenate([np.asarray(x["dist_from_anchor_min"]) for x in sub])
+            bins = [(0, 5), (5, 15), (15, 30), (30, 45), (45, 61)]
+            by_dist = []
+            for lo, hi in bins:
+                m = (dist >= lo) & (dist < hi)
+                if m.any():
+                    by_dist.append({"bin": "%d–%d" % (lo, hi - 1 if hi == 61 else hi), "n": int(m.sum()), "rmse_c": float(np.sqrt(np.mean(d[m] ** 2))),
+                                    "mad_c": float(np.median(np.abs(d[m] - np.median(d[m])))), "p90_abs_c": float(np.percentile(np.abs(d[m]), 90))})
+            anc = np.array([x["real_at_anchor_minus_anchor_cents"] for x in sub])
+            atr = np.array([x["real_minus_recon_at_ref_cents"] for x in sub])
+            val["%s_w%d" % (snap, w)] = {"n_jobs": len(sub), "coverage_median": float(np.median([x["coverage"] for x in sub])),
+                                         "n_from_fallback_mean": float(np.mean([x["n_from_fallback"] for x in sub])),
+                                         "level_at_anchor_minus_anchor_c": {"median": float(np.median(anc)), "mad": float(np.median(np.abs(anc - np.median(anc)))),
+                                                                            "rmse": float(np.sqrt(np.mean(anc ** 2)))},
+                                         "real_minus_recon_at_ref_c": {"median": float(np.median(atr)), "rmse": float(np.sqrt(np.mean(atr ** 2)))},
+                                         "shape": {"mean_c": float(d.mean()), "median_c": float(np.median(d)), "mad_c": float(np.median(np.abs(d - np.median(d)))),
+                                                   "rmse_c": float(np.sqrt(np.mean(d ** 2))), "p10_c": float(np.percentile(d, 10)), "p90_c": float(np.percentile(d, 90))},
+                                         "raw": {"mean_c": float(draw.mean()), "rmse_c": float(np.sqrt(np.mean(draw ** 2)))},
+                                         "shape_rmse_per_job_median_c": float(np.median([x["shape_rmse_cents"] for x in sub])),
+                                         "shape_max_abs_per_job_median_c": float(np.median([x["shape_max_abs_cents"] for x in sub])),
+                                         "by_distance": by_dist}
+    out["path_validation"] = val
     out["runs"] = [{k: r.get(k) for k in ("settle_date", "root", "snap", "window_min", "arm", "gate0", "gate0_pooled", "forward_source", "n_quoted_strikes", "n_strikes",
                                           "two_sided_strikes", "quote_age_median_min", "F0", "se_F0", "F0_parity", "F0_parity_sync", "nymex_settle_same_day",
                                           "parity_minus_nymex_cents", "parity_sync_minus_nymex_cents", "parity_check", "atm_sigma", "act3_n_modes", "act3u_n_modes",
@@ -389,7 +424,16 @@ def _rows(S: Dict[str, Any], snaps, arms=("base", "fwd", "sync", "sync_m")):
 def render_v2(S: Dict[str, Any], rs: List[Dict[str, Any]], plot_dir: Path) -> str:
     B = S.get("synthetic_baseline", {})
     L: List[str] = []
-    L.append("# FINDINGS_REALCHAIN_V2 — forward from the futures, synchronised quotes, split-half gate\n")
+    v3 = "real" in S.get("arms", [])
+    L.append("# FINDINGS_REALCHAIN_V3 — the real intraday path in place of the reconstruction (V1 / V2 / V3 side by side)\n" if v3 else
+             "# FINDINGS_REALCHAIN_V2 — forward from the futures, synchronised quotes, split-half gate\n")
+    if v3:
+        L.append("Response to `NightKing/HANDOFF_actii_and_intraday.md` Task 3. Same 30 dates, snapshots, windows and sampler settings as V1 and V2; the "
+                 "`real` arm is V2's `sync` arm with the underlying's path inside each window read from 1-minute CL futures bars of the option's own "
+                 "underlying (`db_pull_futures.py`, ohlcv-1m) instead of being reconstructed from the option trade stream. The real level at the "
+                 "snapshot instant is the forward on every snapshot, T-4h included (V2 had to use parity there). Where bars are missing for more "
+                 "than five minutes the reconstruction fills the hole, shifted to the nearest real minute; the share of such minutes is reported. "
+                 "All V2 arms are re-listed unchanged so every table is V1 / V2 / V3 on the same dates.\n")
     L.append("Response to `NightKing/HANDOFF_forward_and_sync_fix.md`. Same 30 dates, snapshots, windows and sampler settings as "
              "`FINDINGS_REALCHAIN.md` (V1). Three changes, run as separate arms so that each is attributable, with the V1 pipeline "
              "re-run as the `base` arm so every number below is before/after on the same dates. **Nothing here is a trade signal**: "
@@ -399,7 +443,8 @@ def render_v2(S: Dict[str, Any], rs: List[Dict[str, Any]], plot_dir: Path) -> st
     L.append("| `base` | Stage 6 parity regression on the raw window (V1) | last quote per instrument in the window, as quoted | new (split-half + LOO), V1's Act II gate also reported |")
     L.append("| `fwd` | NYMEX settlement of the option's own underlying at the 14:30 snapshots (T-2d, T-1d, T-0); parity at T-4h, where no futures print exists at 10:30 | as quoted | same |")
     L.append("| `sync` | futures-anchored: the settlement fixes the level at 14:29, the options-implied path carries it to 14:30; parity at T-4h (on the synchronised quotes) | every quote moved to the snapshot instant and level by a sticky-strike Black-76 reprice (`synth/sync.py`) | same |")
-    L.append("| `sync_m` | as `sync` | sticky-moneyness reprice (sensitivity; T-1d / 60 min only) | same |\n")
+    L.append("| `sync_m` | as `sync` | sticky-moneyness reprice (sensitivity; T-1d / 60 min only) | same |")
+    L.append("| `real` | the real 1-minute futures level at the snapshot instant, every snapshot | sticky-strike reprice along the real path (reconstruction only in holes > 5 min) | same |\n")
     L.append("Errors: %d of %d jobs. Arms present: %s.\n" % (S["n_errors"], S["n_runs"], ", ".join(S["arms"])))
     if S.get("v1_reproduction"):
         v = S["v1_reproduction"]
@@ -420,12 +465,14 @@ def render_v2(S: Dict[str, Any], rs: List[Dict[str, Any]], plot_dir: Path) -> st
             _pct(d["checks"]["act3_chi2_ok"]), _pct(d["checks"]["act3_max_resid_ok"]), _f(d["chi2u_per_strike_median"], "%.1f"), _f(d["quote_age_median_min"], "%.1f")))
     if S.get("paired"):
         L.append("\nPaired on the dates all three arms extracted:\n")
-        L.append("| snapshot | window | n | χ² med: V1 → fwd → sync | χ² < 2: V1 → fwd → sync | >50% draws multimodal: V1 → fwd → sync | 90% body width med (¢): V1 → fwd → sync |\n|---|---|---|---|---|---|---|")
+        pa = S.get("paired_arms", ["base", "fwd", "sync"])
+        lab = " → ".join({"base": "V1", "fwd": "fwd", "sync": "V2", "real": "V3"}[a] for a in pa)
+        L.append("| snapshot | window | n | χ² med: %s | χ² < 2: %s | >50%% draws multimodal: %s | 90%% body width med (¢): %s |\n|---|---|---|---|---|---|---|" % (lab, lab, lab, lab))
         for k, row in S["paired"].items():
             snap, w = k.split("_w")
-            L.append("| %s | %s | %d | %s → %s → %s | %s → %s → %s | %s → %s → %s | %s → %s → %s |" % (
-                snap, w, row["n_common"], *[_f(row[a]["chi2_median"], "%.1f") for a in ("base", "fwd", "sync")], *[_pct(row[a]["chi2_lt2_frac"]) for a in ("base", "fwd", "sync")],
-                *[_pct(row[a]["multimodal_majority_frac"]) for a in ("base", "fwd", "sync")], *[_f(row[a]["width90_body_cents_median"], "%.1f") for a in ("base", "fwd", "sync")]))
+            L.append("| %s | %s | %d | %s | %s | %s | %s |" % (
+                snap, w, row["n_common"], " → ".join(_f(row[a]["chi2_median"], "%.1f") for a in pa), " → ".join(_pct(row[a]["chi2_lt2_frac"]) for a in pa),
+                " → ".join(_pct(row[a]["multimodal_majority_frac"]) for a in pa), " → ".join(_f(row[a]["width90_body_cents_median"], "%.1f") for a in pa)))
 
     # ---- 2. forward ----
     L.append("\n## 2. The forward: parity vs the futures, and the synchronisation itself\n")
@@ -463,6 +510,28 @@ def render_v2(S: Dict[str, Any], rs: List[Dict[str, Any]], plot_dir: Path) -> st
             _f(sy["path_rms_resid_cents_median"], "%.1f"), _f(sy["level_offset_cents_median"], "%.1f"), _f(sy["level_offset_abs_cents_median"], "%.1f"),
             _f(sy["anchor_drift_cents_median"], "%.1f"), _f(sy["anchor_drift_abs_cents_median"], "%.1f"), _f(sy["anchor_drift_abs_cents_p90"], "%.1f"),
             _f(sy["adj_rms_cents_median"], "%.1f"), _f(sy["adj_max_abs_cents_median"], "%.1f"), _f(sy["adj_theta_rms_cents_median"], "%.1f"), _f(sy["adj_delta_rms_cents_median"], "%.1f")))
+
+    if S.get("path_validation"):
+        L.append("\n### 2b. The real intraday path against V2's reconstruction\n")
+        L.append("From the `real` arm, which carries both paths on every job. `shape` = real − reconstructed after removing the difference at the anchor "
+                 "minute (14:29 for the 14:30 snapshots, 10:30 for T-4h): the reconstruction's level came from the settlement/parity and its shape from "
+                 "the options, so the shape is what is tested. `raw` includes the level. `real at anchor − anchor` checks the bars against the "
+                 "settlement itself. Error by distance from the anchor is the direct test of the T-4h hypothesis.\n")
+        L.append("| snapshot | window | jobs | bar coverage med | minutes from fallback (mean) | real@anchor − anchor: median / MAD / RMSE (¢) | real − recon at t_ref: median / RMSE (¢) | shape diff: mean / median / MAD / RMSE / p10–p90 (¢) | per-job shape RMSE med | per-job max shape diff med | raw diff RMSE |\n|---|---|---|---|---|---|---|---|---|---|---|")
+        for k, v in S["path_validation"].items():
+            snap, w = k.split("_w")
+            a, r, sh = v["level_at_anchor_minus_anchor_c"], v["real_minus_recon_at_ref_c"], v["shape"]
+            L.append("| %s | %s | %d | %s | %s | %s / %s / %s | %s / %s | %s / %s / %s / %s / %s–%s | %s | %s | %s |" % (
+                snap, w, v["n_jobs"], _pct(v["coverage_median"]), _f(v["n_from_fallback_mean"], "%.1f"), _f(a["median"], "%.1f"), _f(a["mad"], "%.1f"), _f(a["rmse"], "%.1f"),
+                _f(r["median"], "%.1f"), _f(r["rmse"], "%.1f"), _f(sh["mean_c"], "%.1f"), _f(sh["median_c"], "%.1f"), _f(sh["mad_c"], "%.1f"), _f(sh["rmse_c"], "%.1f"),
+                _f(sh["p10_c"], "%.0f"), _f(sh["p90_c"], "%.0f"), _f(v["shape_rmse_per_job_median_c"], "%.1f"), _f(v["shape_max_abs_per_job_median_c"], "%.1f"), _f(v["raw"]["rmse_c"], "%.1f")))
+        L.append("\nShape error by distance from the anchor (minutes; RMSE / MAD / p90 of the absolute difference, ¢):\n")
+        bins = sorted({b["bin"] for v in S["path_validation"].values() for b in v["by_distance"]}, key=lambda x: int(x.split("–")[0]))
+        L.append("| snapshot | window | " + " | ".join(bins) + " |\n|---|---|" + "---|" * len(bins))
+        for k, v in S["path_validation"].items():
+            snap, w = k.split("_w")
+            bd = {b["bin"]: b for b in v["by_distance"]}
+            L.append("| %s | %s | " % (snap, w) + " | ".join(("%s / %s / %s (n=%d)" % (_f(bd[b]["rmse_c"], "%.1f"), _f(bd[b]["mad_c"], "%.1f"), _f(bd[b]["p90_abs_c"], "%.1f"), bd[b]["n"])) if b in bd else "—" for b in bins) + " |")
 
     # ---- 3. gate 0 ----
     L.append("\n## 3. Gate 0 and chain geometry by snapshot and arm\n")

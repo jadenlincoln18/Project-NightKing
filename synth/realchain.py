@@ -62,8 +62,9 @@ WINDOWS = (60, 10)   # minutes: Gate 0's own window, and a near-synchronous one 
 RATE = 0.04          # D = exp(-r T): fixed analytically. At T <= 2 days D is within 2e-4 of 1, i.e. < 0.02c on any
                      # price here; the chain cannot identify it (V1: 0.947 at expiry) and the forward no longer
                      # depends on the regression slope, so there is nothing left for the slope to do.
-ARMS = ("base", "fwd", "sync", "sync_m")
+ARMS = ("base", "fwd", "sync", "sync_m", "real")
 ARM_SNAPS = {"sync_m": {("T-1d", 60)}}   # sensitivity arm: T-1d / 60 min only
+INTRADAY = DATA_CME / "futures_intraday" / "schema=ohlcv-1m"   # Task 2 pull (db_pull_futures.py); the `real` arm needs it
 SE_FLOOR_FUTURES = 0.02   # 2c floor on the Stage 14 tolerance when the forward comes from the futures
 ANCHOR_MIN = 1.0          # the NYMEX settlement is the VWAP of 14:28-14:30; anchor the path at 14:29
 PARITY_Z = 3.0            # parity check: flag |parity - futures| > PARITY_Z se and > PARITY_ABS_CENTS
@@ -108,7 +109,16 @@ def load_inputs() -> Dict[str, Any]:
     fs = fs[fs["stat_type"] == 3].dropna(subset=["ts_ref"])
     fs["date"] = pd.to_datetime(fs["ts_ref"], utc=True).dt.date.astype(str)
     settles = {(r.date, r.symbol): float(r.price) for r in fs.sort_values("ts_ref").itertuples()}
-    return {"dates": dates, "underlying": under, "settles": settles}
+    intraday = {p.parent.name.split("=", 1)[1]: str(p) for p in INTRADAY.glob("symbol=*/part.parquet")} if INTRADAY.exists() else {}
+    return {"dates": dates, "underlying": under, "settles": settles, "intraday": intraday}
+
+
+def load_bars(path: str, t_lo, t_hi):
+    """ohlcv-1m bars of one contract between two UTC timestamps (bar open time)."""
+    import pandas as pd
+    b = pd.read_parquet(path, columns=["ts_event", "open", "high", "low", "close", "volume"])
+    b["ts_event"] = pd.to_datetime(b["ts_event"], utc=True)
+    return b[(b["ts_event"] >= t_lo) & (b["ts_event"] < t_hi)].sort_values("ts_event")
 
 
 def snapshot_times(settle_ts) -> Dict[str, Any]:
@@ -215,7 +225,7 @@ def run_one(job: Dict[str, Any]) -> Dict[str, Any]:
             if label == "T-0" and d["ice_settle"] is not None:
                 out["parity_minus_ice_cents"] = 100.0 * (out["F0_parity"] - d["ice_settle"])
         # --- the forward, by arm ---------------------------------------------------
-        sync_mode = {"sync": "strike", "sync_m": "moneyness"}.get(arm)
+        sync_mode = {"sync": "strike", "sync_m": "moneyness", "real": "strike"}.get(arm)
         if arm == "base" or (arm == "fwd" and F_settle is None):
             if not have_parity:
                 out["gate0"] = False
@@ -238,7 +248,27 @@ def run_one(job: Dict[str, Any]) -> Dict[str, Any]:
                 return out
             asig0 = act3.atm_sigma(q["strike"].values, q["right"].values, q["mid"].values, anchor, D, T)
             events = window_events(tb, snap_utc, window)
-            path = sync.estimate_path(events, snap_utc, T, anchor, D, asig0, window, anchor_min=anchor_min)
+            recon = sync.estimate_path(events, snap_utc, T, anchor, D, asig0, window, anchor_min=anchor_min)
+            path = recon
+            if arm == "real":
+                bars_path = job.get("intraday", {}).get(under) if under else None
+                if bars_path is None:
+                    out["gate0"] = False
+                    out["gate0_reason"] = "no intraday bars for %s" % under
+                    return out
+                bars = load_bars(bars_path, snap_utc - pd.Timedelta(minutes=window + 3), snap_utc + pd.Timedelta(minutes=1))
+                path = sync.real_path_from_bars(bars, snap_utc, window, fallback=recon)
+                cmp = sync.compare_paths(path, recon, anchor_min)
+                out["real_path"] = {"n_bars": path["n_bars"], "coverage": path["coverage"], "source": path["source"], "n_from_fallback": path.get("n_from_fallback", 0),
+                                    "n_interpolated": path.get("n_interpolated", 0), "leading_hole_min": path.get("leading_hole_min"),
+                                    "level_at_ref": path["F_at_ref"], "recon_level_at_ref": recon["F_at_ref"],
+                                    "real_minus_recon_at_ref_cents": 100.0 * (path["F_at_ref"] - recon["F_at_ref"]),
+                                    "real_at_anchor_minus_anchor_cents": 100.0 * (float(np.interp(anchor_min, path["knots_min"], path["values"])) - anchor),
+                                    "diff_dollars": cmp["diff_dollars"], "diff_shape_dollars": cmp["diff_shape_dollars"], "dist_from_anchor_min": cmp["dist_from_anchor_min"],
+                                    "level_diff_at_anchor_dollars": cmp["level_diff_at_anchor_dollars"],
+                                    "shape_rmse_cents": 100.0 * float(np.sqrt(np.mean(cmp["diff_shape_dollars"] ** 2))),
+                                    "shape_max_abs_cents": 100.0 * float(np.abs(cmp["diff_shape_dollars"]).max()),
+                                    "recon_ok": bool(recon.get("ok"))}
             adj = sync.adjust(q["strike"].values, q["right"].values, q["bid_px_00"].values, q["ask_px_00"].values,
                               q["age_min"].values, path, path["F_at_ref"], T, D, mode=sync_mode)
             q = q.copy()
@@ -267,7 +297,11 @@ def run_one(job: Dict[str, Any]) -> Dict[str, Any]:
                     out["parity_sync_minus_F0_cents"] = 100.0 * (out["F0_parity_sync"] - path["F_at_ref"])
                 if label == "T-0" and d["ice_settle"] is not None:
                     out["parity_sync_minus_ice_cents"] = 100.0 * (out["F0_parity_sync"] - d["ice_settle"])
-            if F_settle is not None:
+            if arm == "real" and path.get("source") == "real":
+                F0 = float(path["F_at_ref"])
+                se = max(se_adj, SE_FLOOR_FUTURES) if have_adj else 0.10
+                out["forward_source"] = "futures (intraday)"
+            elif F_settle is not None:
                 F0 = float(path["F_at_ref"])
                 se = max(se_adj, SE_FLOOR_FUTURES) if have_adj else 0.10
                 out["forward_source"] = "futures+path"
@@ -408,7 +442,7 @@ def run(only_dates: Optional[List[str]], snaps: List[str], arms: List[str], work
     have: List[Dict[str, Any]] = pickle.load(open(RUNS_V2, "rb")) if RUNS_V2.exists() else []
     done = {_key(r) for r in have if r.get("error") is None}
     inp = load_inputs()
-    jobs = [{"date": d, "snap": s, "window": w, "arm": a, "underlying": inp["underlying"], "settles": inp["settles"]}
+    jobs = [{"date": d, "snap": s, "window": w, "arm": a, "underlying": inp["underlying"], "settles": inp["settles"], "intraday": inp["intraday"]}
             for a in arms for d in inp["dates"] for s in snaps for w in windows
             if (only_dates is None or d["settle_date"] in only_dates) and (d["settle_date"], s, w, a) not in done
             and (a not in ARM_SNAPS or (s, w) in ARM_SNAPS[a])]
@@ -456,8 +490,9 @@ def main(argv: Optional[List[str]] = None) -> int:
         json.dump(summary, fh, indent=1, default=str)
     report_real.plots_v2(rs, PLOTS)
     text = report_real.render_v2(summary, rs, PLOTS)
-    (ROOT / "FINDINGS_REALCHAIN_V2.md").write_text(text)
-    print("wrote", ROOT / "FINDINGS_REALCHAIN_V2.md")
+    target = ROOT / ("FINDINGS_REALCHAIN_V3.md" if "real" in summary["arms"] else "FINDINGS_REALCHAIN_V2.md")
+    target.write_text(text)
+    print("wrote", target)
     return 0
 
 

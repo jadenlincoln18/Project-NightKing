@@ -135,6 +135,51 @@ class TestPath(unittest.TestCase):
         self.assertEqual(path["F_at_ref"], F_REF)
 
 
+class TestRealPath(unittest.TestCase):
+    def _bars(self, t_ref, path_fn, minutes, drop=()):
+        rows = []
+        for m in minutes:               # bar opening m+1 minutes before t_ref closes at m minutes before
+            if m in drop:
+                continue
+            ts = t_ref - pd.Timedelta(minutes=m + 1)
+            rows.append({"ts_event": ts, "open": path_fn(m + 1), "high": max(path_fn(m + 1), path_fn(m)), "low": min(path_fn(m + 1), path_fn(m)),
+                         "close": path_fn(m), "volume": 10})
+        return pd.DataFrame(rows)
+
+    def test_bars_become_the_path_and_short_holes_interpolate(self):
+        t_ref = pd.Timestamp("2026-03-12 19:30:00", tz="UTC")
+        fn = lambda m: F_REF + 0.01 * m
+        bars = self._bars(t_ref, fn, range(0, 61), drop=(7, 8))
+        path = sync.real_path_from_bars(bars, t_ref, 60.0)
+        self.assertTrue(path["ok"])
+        self.assertEqual(path["source"], "real")
+        self.assertEqual(path["n_bars"], 59)
+        self.assertEqual(path["n_interpolated"], 2)
+        self.assertAlmostEqual(path["F_at_ref"], F_REF, places=9)
+        np.testing.assert_allclose(path["values"], [fn(m) for m in range(61)], atol=1e-9)   # a linear path interpolates exactly
+
+    def test_long_hole_is_filled_from_the_reconstruction_shifted_to_the_real_level(self):
+        t_ref = pd.Timestamp("2026-03-12 19:30:00", tz="UTC")
+        fn = lambda m: F_REF - 0.02 * m
+        bars = self._bars(t_ref, fn, range(0, 61), drop=range(20, 40))
+        recon = {"knots_min": np.arange(61.0), "values": np.array([fn(m) + 0.30 + 0.001 * m for m in range(61)]), "ok": True, "F_at_ref": F_REF + 0.3}
+        path = sync.real_path_from_bars(bars, t_ref, 60.0, fallback=recon)
+        self.assertEqual(path["n_from_fallback"], 20)
+        self.assertEqual(path["n_interpolated"], 0)
+        err = np.abs(path["values"] - np.array([fn(m) for m in range(61)]))
+        self.assertLess(err.max(), 0.03)   # the reconstruction's shape, shifted onto the real level at the hole's edge
+        cmp = sync.compare_paths(path, recon, anchor_min=1.0)
+        self.assertAlmostEqual(cmp["level_diff_at_anchor_dollars"], -0.301, places=6)
+
+    def test_no_bars_falls_back_entirely(self):
+        t_ref = pd.Timestamp("2026-03-12 19:30:00", tz="UTC")
+        recon = {"knots_min": np.arange(61.0), "values": np.full(61, F_REF), "ok": True, "F_at_ref": F_REF}
+        path = sync.real_path_from_bars(pd.DataFrame(columns=["ts_event", "close"]), t_ref, 60.0, fallback=recon)
+        self.assertEqual(path["source"], "reconstruction")
+        self.assertEqual(path["coverage"], 0.0)
+        self.assertEqual(path["F_at_ref"], F_REF)
+
+
 class TestDetector(unittest.TestCase):
     def setUp(self):
         geo = geometry.load()

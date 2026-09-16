@@ -252,6 +252,85 @@ def path_at(path: Dict[str, Any], t_min) -> np.ndarray:
 
 
 # --------------------------------------------------------------------------
+# a real path from 1-minute futures bars (Task 2/3 of HANDOFF_actii_and_intraday.md)
+# --------------------------------------------------------------------------
+
+MAX_GAP_MIN = 5   # a hole longer than this in the bars is filled from the reconstruction, not interpolated
+
+
+def real_path_from_bars(bars, t_ref, window_min: float, fallback: Optional[Dict[str, Any]] = None,
+                        max_gap_min: int = MAX_GAP_MIN) -> Dict[str, Any]:
+    """Underlying level on 1-minute knots (minutes before t_ref) from ohlcv-1m bars of the
+    option's underlying contract. Databento's ts_event is the bar's open; the level at instant
+    t is the close of the bar that opened at t - 1 min, and inside a minute the level is
+    interpolated between that bar's open and close. Minutes without a bar (no trade) are
+    linearly interpolated when the hole is <= max_gap_min minutes; longer holes, and a window
+    with no bars at all, are filled from `fallback` (the options-implied reconstruction)
+    shifted to match the real level at the nearest covered minute. Coverage is reported."""
+    import pandas as pd
+    t_ref = pd.Timestamp(t_ref)
+    n_k = int(np.ceil(window_min / 1.0)) + 1
+    knots = np.arange(n_k, dtype=float)                      # minutes before t_ref
+    vals = np.full(n_k, np.nan)
+    if bars is not None and len(bars):
+        b = bars.copy()
+        b["ts_event"] = pd.to_datetime(b["ts_event"], utc=True)
+        # bar opening at t_ref - m - 1min closes at instant t_ref - m
+        close_at = {(t_ref - ts).total_seconds() / 60.0 - 1.0: float(c) for ts, c in zip(b["ts_event"], b["close"])}
+        for k in range(n_k):
+            v = close_at.get(float(k))
+            if v is not None and np.isfinite(v):
+                vals[k] = v
+    have = np.isfinite(vals)
+    out: Dict[str, Any] = {"knots_min": knots, "n_bars": int(have.sum()), "coverage": float(have.mean()), "source": "real"}
+    if not have.any():
+        if fallback is None:
+            out.update({"values": vals, "ok": False, "reason": "no bars in the window"})
+            return out
+        out.update({"values": np.asarray(fallback["values"], float).copy(), "ok": bool(fallback.get("ok")), "source": "reconstruction",
+                    "reason": "no bars in the window; reconstruction used", "smile": fallback.get("smile")})
+        out["F_at_ref"] = float(out["values"][0])
+        return out
+    # interpolate short holes
+    idx = np.where(have)[0]
+    filled = np.interp(knots, knots[idx], vals[idx])
+    gap = np.zeros(n_k, bool)
+    for a, b_ in zip(idx[:-1], idx[1:]):
+        if b_ - a - 1 > max_gap_min:
+            gap[a + 1:b_] = True
+    if idx[0] > 0:
+        gap[:idx[0]] = idx[0] > max_gap_min       # leading hole (nearest t_ref)
+    if idx[-1] < n_k - 1:
+        gap[idx[-1] + 1:] = (n_k - 1 - idx[-1]) > max_gap_min
+    n_fb = 0
+    if gap.any():
+        if fallback is not None and fallback.get("values") is not None:
+            fb = np.asarray(fallback["values"], float)
+            for k in np.where(gap)[0]:
+                j = idx[np.argmin(np.abs(idx - k))]          # nearest covered minute
+                filled[k] = fb[k] + (vals[j] - fb[j])
+                n_fb += 1
+        else:
+            filled[gap] = np.nan
+            filled = np.interp(knots, knots[np.isfinite(filled)], filled[np.isfinite(filled)])
+    out.update({"values": filled, "ok": True, "n_interpolated": int((~have & ~gap).sum()), "n_from_fallback": n_fb,
+                "F_at_ref": float(filled[0]), "range_dollars": float(filled.max() - filled.min()), "smile": (fallback or {}).get("smile"),
+                "leading_hole_min": int(idx[0])})
+    return out
+
+
+def compare_paths(real: Dict[str, Any], recon: Dict[str, Any], anchor_min: float) -> Dict[str, Any]:
+    """Real minus reconstructed level at every knot, raw and after removing the difference at the
+    anchor minute (the reconstruction's level came from the settlement/parity, its shape from the
+    options; the shape is what is being tested)."""
+    k = np.asarray(real["knots_min"], float)
+    d = np.asarray(real["values"], float) - np.interp(k, recon["knots_min"], recon["values"])
+    d_anchor = float(np.interp(anchor_min, k, d))
+    return {"knots_min": k, "diff_dollars": d, "diff_shape_dollars": d - d_anchor, "level_diff_at_anchor_dollars": d_anchor,
+            "dist_from_anchor_min": np.abs(k - anchor_min)}
+
+
+# --------------------------------------------------------------------------
 # the adjustment
 # --------------------------------------------------------------------------
 
