@@ -127,13 +127,13 @@ def loo(K, right, mid, hs, F0: float, D: float, T: float, atm_sigma: float, se_F
         psi = act3.map_estimate(m, psi0=psi0, maxiter=500)
         H = m.gauss_newton(psi)
         H = 0.5 * (H + H.T) + 1e-8 * np.eye(m.dim)
-        theta = m.QV @ psi
+        theta = m.theta_of(psi)
         p, _ = m.density(theta)
         pay = np.maximum(m.s - K[i], 0.0) if right[i] == "C" else np.maximum(K[i] - m.s, 0.0)
         g = D * pay
         Chat = float(g @ p)
         J_theta = (g * p) @ m.B - Chat * (p @ m.B)   # dChat/dtheta
-        J = m.QV.T @ J_theta                          # dChat/dpsi
+        J = m._dtheta_dpsi(psi).T @ J_theta           # dChat/dpsi (generic over priors)
         try:
             var = float(J @ np.linalg.solve(H, J))
         except np.linalg.LinAlgError:
@@ -145,6 +145,45 @@ def loo(K, right, mid, hs, F0: float, D: float, T: float, atm_sigma: float, se_F
     return {"pred": pred, "pred_sd": pred_sd, "z": r, "max_abs_z": float(np.abs(r).max()), "worst_strike": float(K[worst]),
             "worst_right": str(right[worst]), "n_flagged": int((np.abs(r) > cutoff).sum()),
             "flagged_strikes": [float(k) for k in K[np.abs(r) > cutoff]], "rms_z": float(np.sqrt(np.mean(r ** 2))), "cutoff": cutoff}
+
+
+# --------------------------------------------------------------------------
+# 2b. quote-level exclusion by the LOO rule (Part B of HANDOFF_prior_fix.md)
+# --------------------------------------------------------------------------
+
+EXCLUDE_MAX_FRAC = 0.10   # a rule that removes more than this share of quotes is suspect (reported, the chain still runs)
+
+
+def exclude_by_loo(K, right, mid, hs, F0: float, D: float, T: float, atm_sigma: float, se_F0: float, age_min=None,
+                   cutoff: float = LOO_Z_CUTOFF) -> Dict[str, Any]:
+    """One pass: LOO on the chain, drop every strike with |z| > cutoff, keep at least 8 strikes and 3 per wing.
+    Returns the keep mask, the LOO result, and a description of each removed quote."""
+    K = np.asarray(K, float)
+    right = np.asarray(right)
+    mid = np.asarray(mid, float)
+    hs = np.asarray(hs, float)
+    lo = loo(K, right, mid, hs, F0, D, T, atm_sigma, se_F0, cutoff=cutoff)
+    flag = np.abs(lo["z"]) > cutoff
+    keep = ~flag
+    # never take the chain below Gate 0: if it would, drop only the worst strikes that keep 8 / 3+3
+    order = np.argsort(-np.abs(lo["z"]))
+    keep = np.ones(K.size, bool)
+    for i in order:
+        if not flag[i]:
+            break
+        trial = keep.copy()
+        trial[i] = False
+        if trial.sum() >= 8 and (K[trial] < F0).sum() >= 3 and (K[trial] >= F0).sum() >= 3:
+            keep = trial
+    removed = np.where(~keep)[0]
+    dist = np.abs(K - F0) / max(atm_sigma * np.sqrt(max(T, 1e-9)) * F0, 1e-9)   # distance from the forward in vol-scales
+    rank = np.argsort(np.argsort(np.abs(K - F0)))                                # 0 = nearest the money
+    desc = [{"strike": float(K[i]), "right": str(right[i]), "z": float(lo["z"][i]), "mid": float(mid[i]), "hs": float(hs[i]),
+             "age_min": None if age_min is None else float(np.asarray(age_min)[i]), "dist_vol": float(dist[i]),
+             "moneyness_rank": int(rank[i]), "wing": "below" if K[i] < F0 else "above"} for i in removed]
+    return {"keep": keep, "loo": lo, "n_removed": int(removed.size), "frac_removed": float(removed.size / K.size),
+            "suspect": bool(removed.size / K.size > EXCLUDE_MAX_FRAC), "removed": desc, "cutoff": cutoff,
+            "n_flagged": int(flag.sum())}
 
 
 # --------------------------------------------------------------------------

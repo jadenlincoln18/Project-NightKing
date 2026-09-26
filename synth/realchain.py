@@ -62,9 +62,11 @@ WINDOWS = (60, 10)   # minutes: Gate 0's own window, and a near-synchronous one 
 RATE = 0.04          # D = exp(-r T): fixed analytically. At T <= 2 days D is within 2e-4 of 1, i.e. < 0.02c on any
                      # price here; the chain cannot identify it (V1: 0.947 at expiry) and the forward no longer
                      # depends on the regression slope, so there is nothing left for the slope to do.
-ARMS = ("base", "fwd", "sync", "sync_m", "real", "real_t3", "real_t1", "real_hs")
+ARMS = ("base", "fwd", "sync", "sync_m", "real", "real_t3", "real_t1", "real_hs", "real_x", "real_t3_x")
+EXCLUDE_LOO_Z = 3.0   # Part B rule: drop strikes with LOO |z| > 3 once before the fit (arms ending in _x)
 ARM_SNAPS = {"sync_m": {("T-1d", 60)}}   # sensitivity arm: T-1d / 60 min only
-ARM_PRIOR = {"real_t3": ("student", 3.0), "real_t1": ("student", 1.0), "real_hs": ("horseshoe", 3.0)}   # V4 candidates: the real path with a new prior
+ARM_PRIOR = {"real_t3": ("student", 3.0), "real_t1": ("student", 1.0), "real_hs": ("horseshoe", 3.0),
+             "real_t3_x": ("student", 3.0)}   # V4 candidates: the real path with a new prior; _x = Part B exclusion on top
 INTRADAY = DATA_CME / "futures_intraday" / "schema=ohlcv-1m"   # Task 2 pull (db_pull_futures.py); the `real` arm needs it
 SE_FLOOR_FUTURES = 0.02   # 2c floor on the Stage 14 tolerance when the forward comes from the futures
 ANCHOR_MIN = 1.0          # the NYMEX settlement is the VWAP of 14:28-14:30; anchor the path at 14:29
@@ -367,6 +369,27 @@ def run_one(job: Dict[str, Any]) -> Dict[str, Any]:
         # Act III, constrained then unconstrained
         asig = act3.atm_sigma(K, R, mid, F0, D, T)
         out["atm_sigma"] = asig
+        if arm.endswith("_x"):
+            # Part B: quote-level exclusion by the LOO rule, once, before the fit; what was removed is recorded
+            ex = detector.exclude_by_loo(K, R, mid, hs, F0, D, T, asig, se, age_min=otm["age_min"].values, cutoff=EXCLUDE_LOO_Z)
+            out["exclusion"] = {k: v for k, v in ex.items() if k not in ("keep", "loo")}
+            out["exclusion"]["pre_loo_max_abs_z"] = ex["loo"]["max_abs_z"]
+            keep = ex["keep"]
+            K, R, mid, hs = K[keep], R[keep], mid[keep], hs[keep]
+            out.update({"n_strikes_pre_exclusion": int(keep.size), "n_strikes": int(len(K)), "K": K, "right": R, "mid": mid, "hs": hs})
+            # Act II on the reduced chain as well, so the report line compares like with like
+            try:
+                a2 = act2.run(K, R, mid, hs, F0, D, T, edges, rng=np.random.default_rng(0))
+            except Exception as exc:
+                a2 = {"ok": False, "reason": repr(exc)}
+            out["act2_ok"] = bool(a2.get("ok"))
+            if a2.get("ok"):
+                out["act2_bracket"] = a2["bracket_probs"]
+                out["act2_checks"] = a2["checks"]
+                out["act2_svi"] = {k: float(v) if isinstance(v, (float, int, np.floating, np.bool_)) else v for k, v in a2["svi"].items()}
+                out["act2_grid"] = (a2["grid"], a2["density"])
+                out["act2_n_used"] = a2["n_used"]
+                out["act2_n_dropped"] = a2["n_dropped"]
         psi_map = None
         for mart, tag in ((True, "act3"), (False, "act3u")):
             model = act3.Model(K, R, mid, hs, F0, D, T, asig, se_F0=se, martingale=mart)

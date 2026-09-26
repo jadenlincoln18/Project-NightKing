@@ -217,6 +217,42 @@ class TestDetector(unittest.TestCase):
         self.assertEqual(lo["worst_strike"], self.K[i])
         self.assertIn(self.K[i], lo["flagged_strikes"])
 
+    def test_exclusion_rule_removes_the_stale_quote_and_keeps_gate0(self):
+        mid = self.mid.copy()
+        calls = np.where(self.R == "C")[0]
+        i = int(calls[2])
+        mid[i] = max(mid[i] - 0.15, 0.005)
+        ex = detector.exclude_by_loo(self.K, self.R, mid, self.hs, self.F0, self.pl.D, self.T, self.sigma, 0.02, cutoff=3.0)
+        self.assertFalse(ex["keep"][i])
+        self.assertGreaterEqual(ex["keep"].sum(), 8)
+        self.assertEqual(ex["n_removed"], int((~ex["keep"]).sum()))
+        self.assertTrue(any(r["strike"] == self.K[i] for r in ex["removed"]))
+        self.assertIn("moneyness_rank", ex["removed"][0])
+
+    def test_student_and_horseshoe_priors_have_correct_gradients(self):
+        from synth import act3
+        for kind, nu in (("student", 3.0), ("student", 1.0), ("horseshoe", 3.0)):
+            m = act3.Model(self.K, self.R, self.mid, self.hs, self.F0, self.pl.D, self.T, self.sigma, se_F0=0.02, prior=kind, nu=nu)
+            psi = 0.3 * np.random.default_rng(1).standard_normal(m.dim)
+            lp, g = m.logpost(psi)
+            num = np.empty(m.dim)
+            for j in range(m.dim):
+                e = np.zeros(m.dim)
+                e[j] = 1e-6
+                num[j] = (m.logpost(psi + e, False) - m.logpost(psi - e, False)) / 2e-6
+            self.assertLess(np.abs(num - g).max() / (np.abs(g).max() + 1e-9), 1e-5, kind)
+            H = m.gauss_newton(psi)
+            self.assertTrue(np.all(np.linalg.eigvalsh(0.5 * (H + H.T)) > 0), kind)
+        self.assertEqual(act3.Model(self.K, self.R, self.mid, self.hs, self.F0, self.pl.D, self.T, self.sigma, prior="gauss").dim, 23)
+
+    def test_student_prior_laplace_recovers_the_brackets(self):
+        from synth import act3
+        m = act3.Model(self.K, self.R, self.mid, self.hs, self.F0, self.pl.D, self.T, self.sigma, se_F0=0.02, prior="student", nu=3.0)
+        res = act3.sample(m, np.random.default_rng(0), sampler="laplace", n_chains=4, n_warmup=50, n_samples=200)
+        br = m.summarise(res["thetas"], self.edges)["bracket"].mean(axis=0)
+        p_true = self.pl.bracket_probs(self.edges)
+        self.assertLess(np.abs(br - p_true).max(), 0.02)
+
     def test_gate_reports_act2_alongside(self):
         sh = detector.split_half(self.K, self.R, self.mid, self.hs, self.F0, self.pl.D, self.T, self.sigma, 0.02, self.edges, self.nuts, sampler="laplace", cutoff=3.0)
         a2 = detector.act2_signal(sh["halves"][0]["mean"] + 0.05, sh["halves"][0]["mean"], len(self.K))
