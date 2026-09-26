@@ -19,8 +19,10 @@ HERE = Path(__file__).resolve().parent
 ARMS = ("base", "fwd", "sync", "sync_m", "real", "real_t3", "real_t1", "real_hs")
 ARM_LABEL = {"base": "V1 (parity fwd, raw)", "fwd": "futures fwd, raw", "sync": "V2: futures fwd + sync", "sync_m": "sync (sticky-moneyness)",
              "real": "V3: real intraday path", "real_t3": "V4: real path + Student-t ν=3 prior", "real_t1": "V4: real path + Student-t ν=1 prior",
-             "real_hs": "V4: real path + horseshoe prior"}
-V4_ARMS = ("real_t3", "real_t1", "real_hs")
+             "real_hs": "V4: real path + horseshoe prior", "real_m36": "V4: real path, 36 knots", "real_m48": "V4: real path, 48 knots",
+             "real_m48t3": "V4: real path, 48 knots + Student-t ν=3", "real_m48_x": "V4: 48 knots + LOO exclusion", "real_m36_x": "V4: 36 knots + LOO exclusion",
+             "real_x": "V3 + LOO exclusion", "real_t3_x": "V4: Student-t ν=3 + LOO exclusion"}
+V4_ARMS = ("real_t3", "real_t1", "real_hs", "real_m36", "real_m48", "real_m48t3", "real_m48_x", "real_m36_x", "real_x", "real_t3_x")
 SNAPS = ("T-2d", "T-1d", "T-4h", "T-0")
 WINDOWS = (60, 10)
 
@@ -475,7 +477,8 @@ def render_v2(S: Dict[str, Any], rs: List[Dict[str, Any]], plot_dir: Path) -> st
     if S.get("paired"):
         L.append("\nPaired on the dates all three arms extracted:\n")
         pa = S.get("paired_arms", ["base", "fwd", "sync"])
-        lab = " → ".join({"base": "V1", "fwd": "fwd", "sync": "V2", "real": "V3", "real_t3": "V4(t3)", "real_t1": "V4(t1)", "real_hs": "V4(hs)"}[a] for a in pa)
+        short = {"base": "V1", "fwd": "fwd", "sync": "V2", "real": "V3"}
+        lab = " → ".join(short.get(a, "V4(%s)" % a.replace("real_", "")) for a in pa)
         L.append("| snapshot | window | n | χ² med: %s | χ² < 2: %s | >50%% draws multimodal: %s | 90%% body width med (¢): %s |\n|---|---|---|---|---|---|---|" % (lab, lab, lab, lab))
         for k, row in S["paired"].items():
             snap, w = k.split("_w")

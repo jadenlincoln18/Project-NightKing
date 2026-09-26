@@ -62,11 +62,13 @@ WINDOWS = (60, 10)   # minutes: Gate 0's own window, and a near-synchronous one 
 RATE = 0.04          # D = exp(-r T): fixed analytically. At T <= 2 days D is within 2e-4 of 1, i.e. < 0.02c on any
                      # price here; the chain cannot identify it (V1: 0.947 at expiry) and the forward no longer
                      # depends on the regression slope, so there is nothing left for the slope to do.
-ARMS = ("base", "fwd", "sync", "sync_m", "real", "real_t3", "real_t1", "real_hs", "real_x", "real_t3_x")
+ARMS = ("base", "fwd", "sync", "sync_m", "real", "real_t3", "real_t1", "real_hs", "real_x", "real_t3_x", "real_m36", "real_m48", "real_m48t3", "real_m48_x", "real_m36_x")
 EXCLUDE_LOO_Z = 3.0   # Part B rule: drop strikes with LOO |z| > 3 once before the fit (arms ending in _x)
 ARM_SNAPS = {"sync_m": {("T-1d", 60)}}   # sensitivity arm: T-1d / 60 min only
-ARM_PRIOR = {"real_t3": ("student", 3.0), "real_t1": ("student", 1.0), "real_hs": ("horseshoe", 3.0),
-             "real_t3_x": ("student", 3.0)}   # V4 candidates: the real path with a new prior; _x = Part B exclusion on top
+ARM_PRIOR = {"real_t3": ("student", 3.0, 24), "real_t1": ("student", 1.0, 24), "real_hs": ("horseshoe", 3.0, 24),
+             "real_t3_x": ("student", 3.0, 24), "real_m36": ("gauss", 3.0, 36), "real_m48": ("gauss", 3.0, 48),
+             "real_m48t3": ("student", 3.0, 48), "real_m48_x": ("gauss", 3.0, 48), "real_m36_x": ("gauss", 3.0, 36)}
+# V4 candidates: the real path with a new prior (kind, nu, knots); _x = Part B exclusion on top
 INTRADAY = DATA_CME / "futures_intraday" / "schema=ohlcv-1m"   # Task 2 pull (db_pull_futures.py); the `real` arm needs it
 SE_FLOOR_FUTURES = 0.02   # 2c floor on the Stage 14 tolerance when the forward comes from the futures
 ANCHOR_MIN = 1.0          # the NYMEX settlement is the VWAP of 14:28-14:30; anchor the path at 14:29
@@ -182,15 +184,15 @@ def run_one(job: Dict[str, Any]) -> Dict[str, Any]:
     import pandas as pd
     from . import act2, act3, densities, detector, geometry, harness, sync
     d, label, window, arm = job["date"], job["snap"], int(job.get("window", 60)), job.get("arm", "base")
-    act3_kind, act3_nu = ARM_PRIOR.get(arm, ("gauss", 3.0))
+    act3_kind, act3_nu, act3_m = ARM_PRIOR.get(arm, ("gauss", 3.0, 24))
     out: Dict[str, Any] = {"settle_date": d["settle_date"], "root": d["root"], "snap": label, "window_min": window, "arm": arm,
                            "event_ticker": d["event_ticker"], "cl_contract_kalshi": d["cl_contract"], "ice_settle": d["ice_settle"],
                            "error": None}
     t0 = time.time()
     try:
         from . import act3 as _act3
-        _act3.set_prior(act3_kind, act3_nu)
-        out["prior"] = _act3.prior_label(act3_kind, act3_nu)
+        _act3.set_prior(act3_kind, act3_nu, act3_m)
+        out["prior"] = _act3.prior_label(act3_kind, act3_nu, act3_m)
         p = DATA_CME / "options_tbbo_by_expiry" / ("root=%s" % d["root"]) / ("expiry=%s" % d["settle_date"]) / "part.parquet"
         tb = pd.read_parquet(p, columns=["ts_event", "instrument_id", "bid_px_00", "ask_px_00", "strike", "right"])
         times = snapshot_times(d["settle_ts"])
@@ -522,7 +524,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         json.dump(summary, fh, indent=1, default=str)
     report_real.plots_v2(rs, PLOTS)
     text = report_real.render_v2(summary, rs, PLOTS)
-    target = ROOT / ("FINDINGS_REALCHAIN_V4.md" if any(a in summary["arms"] for a in ("real_t3", "real_t1", "real_hs")) else
+    target = ROOT / ("FINDINGS_REALCHAIN_V4.md" if any(a.startswith("real_") for a in summary["arms"]) else
                      "FINDINGS_REALCHAIN_V3.md" if "real" in summary["arms"] else "FINDINGS_REALCHAIN_V2.md")
     target.write_text(text)
     print("wrote", target)

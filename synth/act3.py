@@ -75,24 +75,26 @@ TAU_LN_SD = 1.0
 # prior on the increments: "gauss" (V1-V3), "student" (nu = PRIOR_NU), "horseshoe" (local scales sampled)
 PRIOR_KIND = "gauss"
 PRIOR_NU = 3.0
+M_COEF = 24         # B-spline coefficients over +-extent_sd vol-scales; 24 -> 0.7 vol-scales between knots
 HS_SCALE = 0.5      # half-Cauchy scale of the local lambda_j (the tau prior's median: local scales only, no global tau -
                     # with a global tau as well the posterior runs down the flat tau -> 0, lambda -> inf ridge)
 HS_ETA_MAX = 6.0    # log lambda_j is clipped to +-HS_ETA_MAX inside the map (exp(6) = 400x): no overflow
 HS_ETA_CURV = 0.25  # floor on the whitening curvature of log lambda_j: sd <= 2 in log scale
 
 
-def set_prior(kind: str = "gauss", nu: float = 3.0) -> None:
-    """Module-level default for every Model built afterwards (the study drivers set it per job)."""
-    global PRIOR_KIND, PRIOR_NU
+def set_prior(kind: str = "gauss", nu: float = 3.0, m: int = 24) -> None:
+    """Module-level defaults for every Model built afterwards (the study drivers set them per job)."""
+    global PRIOR_KIND, PRIOR_NU, M_COEF
     if kind not in ("gauss", "student", "horseshoe"):
         raise ValueError(kind)
-    PRIOR_KIND, PRIOR_NU = kind, float(nu)
+    PRIOR_KIND, PRIOR_NU, M_COEF = kind, float(nu), int(m)
 
 
-def prior_label(kind: Optional[str] = None, nu: Optional[float] = None) -> str:
+def prior_label(kind: Optional[str] = None, nu: Optional[float] = None, m: Optional[int] = None) -> str:
     kind = PRIOR_KIND if kind is None else kind
     nu = PRIOR_NU if nu is None else nu
-    return {"gauss": "gauss", "student": "student-t nu=%g" % nu, "horseshoe": "horseshoe"}[kind]
+    m = M_COEF if m is None else m
+    return {"gauss": "gauss", "student": "student-t nu=%g" % nu, "horseshoe": "horseshoe"}[kind] + ", m=%d" % m
 
 
 # --------------------------------------------------------------------------
@@ -112,8 +114,9 @@ def bspline_basis(x: np.ndarray, m: int, x_lo: float, x_hi: float, degree: int =
 
 class Model:
     def __init__(self, K: np.ndarray, right: np.ndarray, mid: np.ndarray, hs: np.ndarray, F0: float, D: float, T: float,
-                 atm_sigma: float, se_F0: float = 0.05, m: int = 24, n_grid: int = 400, extent_sd: float = 7.0,
+                 atm_sigma: float, se_F0: float = 0.05, m: Optional[int] = None, n_grid: int = 400, extent_sd: float = 7.0,
                  martingale: bool = True, hs_floor: float = 0.0, prior: Optional[str] = None, nu: Optional[float] = None):
+        m = M_COEF if m is None else int(m)
         self.prior_kind = PRIOR_KIND if prior is None else prior
         self.nu = float(PRIOR_NU if nu is None else nu)
         self.K = np.asarray(K, float)

@@ -182,7 +182,7 @@ def run_one(cfg: Dict[str, Any], seed: int) -> Dict[str, Any]:
 
     # --- Act III ------------------------------------------------------------------
     asig = act3.atm_sigma(K, R, mid, F0_used, D_hat, T)
-    act3.set_prior(c["prior"], c["nu"])
+    act3.set_prior(c["prior"], c["nu"], c["m_coef"])
     if c.get("exclude_loo"):
         from . import detector
         ex = detector.exclude_by_loo(K, R, mid, hsq, F0_used, D_hat, T, asig, se_F0, cutoff=float(c["exclude_loo"]))
