@@ -16,9 +16,11 @@ import numpy as np
 from . import detector
 
 HERE = Path(__file__).resolve().parent
-ARMS = ("base", "fwd", "sync", "sync_m", "real")
+ARMS = ("base", "fwd", "sync", "sync_m", "real", "real_t3", "real_t1", "real_hs")
 ARM_LABEL = {"base": "V1 (parity fwd, raw)", "fwd": "futures fwd, raw", "sync": "V2: futures fwd + sync", "sync_m": "sync (sticky-moneyness)",
-             "real": "V3: real intraday path"}
+             "real": "V3: real intraday path", "real_t3": "V4: real path + Student-t ν=3 prior", "real_t1": "V4: real path + Student-t ν=1 prior",
+             "real_hs": "V4: real path + horseshoe prior"}
+V4_ARMS = ("real_t3", "real_t1", "real_hs")
 SNAPS = ("T-2d", "T-1d", "T-4h", "T-0")
 WINDOWS = (60, 10)
 
@@ -206,7 +208,7 @@ def aggregate_v2(rs: List[Dict[str, Any]], v1: Optional[List[Dict[str, Any]]] = 
     out["by_cell"] = by
     # paired comparison on the dates every arm extracted
     paired: Dict[str, Any] = {}
-    arms_p = ["base", "fwd", "sync"] + (["real"] if any(k.startswith("real_") for k in by) else [])
+    arms_p = ["base", "fwd", "sync"] + (["real"] if any(k.startswith("real_T") for k in by) else []) + [a for a in V4_ARMS if any(k.startswith(a + "_T") for k in by)]
     out["paired_arms"] = arms_p
     for snap in SNAPS[:3]:
         for w in WINDOWS:
@@ -425,8 +427,14 @@ def render_v2(S: Dict[str, Any], rs: List[Dict[str, Any]], plot_dir: Path) -> st
     B = S.get("synthetic_baseline", {})
     L: List[str] = []
     v3 = "real" in S.get("arms", [])
-    L.append("# FINDINGS_REALCHAIN_V3 — the real intraday path in place of the reconstruction (V1 / V2 / V3 side by side)\n" if v3 else
+    v4 = any(a in S.get("arms", []) for a in V4_ARMS)
+    L.append("# FINDINGS_REALCHAIN_V4 — a locally adaptive prior on the real chains (V1 / V2 / V3 / V4 side by side)\n" if v4 else
+             "# FINDINGS_REALCHAIN_V3 — the real intraday path in place of the reconstruction (V1 / V2 / V3 side by side)\n" if v3 else
              "# FINDINGS_REALCHAIN_V2 — forward from the futures, synchronised quotes, split-half gate\n")
+    if v4:
+        L.append("Response to `NightKing/HANDOFF_prior_fix.md` §A.5. The `real_t3` / `real_t1` / `real_hs` arms are V3's `real` arm with the prior on the "
+                 "log-density's second differences changed (`synth/act3.py`, `set_prior`); forward, synchronisation, path, sampler settings and Gate 4 are "
+                 "V3's. Synthetic verdicts on the same candidates: `FINDINGS_PRIOR.md`. Every V1–V3 arm is re-listed unchanged.\n")
     if v3:
         L.append("Response to `NightKing/HANDOFF_actii_and_intraday.md` Task 3. Same 30 dates, snapshots, windows and sampler settings as V1 and V2; the "
                  "`real` arm is V2's `sync` arm with the underlying's path inside each window read from 1-minute CL futures bars of the option's own "
@@ -444,7 +452,8 @@ def render_v2(S: Dict[str, Any], rs: List[Dict[str, Any]], plot_dir: Path) -> st
     L.append("| `fwd` | NYMEX settlement of the option's own underlying at the 14:30 snapshots (T-2d, T-1d, T-0); parity at T-4h, where no futures print exists at 10:30 | as quoted | same |")
     L.append("| `sync` | futures-anchored: the settlement fixes the level at 14:29, the options-implied path carries it to 14:30; parity at T-4h (on the synchronised quotes) | every quote moved to the snapshot instant and level by a sticky-strike Black-76 reprice (`synth/sync.py`) | same |")
     L.append("| `sync_m` | as `sync` | sticky-moneyness reprice (sensitivity; T-1d / 60 min only) | same |")
-    L.append("| `real` | the real 1-minute futures level at the snapshot instant, every snapshot | sticky-strike reprice along the real path (reconstruction only in holes > 5 min) | same |\n")
+    L.append("| `real` | the real 1-minute futures level at the snapshot instant, every snapshot | sticky-strike reprice along the real path (reconstruction only in holes > 5 min) | same |")
+    L.append("| `real_t3` / `real_t1` / `real_hs` | as `real` | as `real` | same; Act III prior = Student-t ν=3 / ν=1 / horseshoe on the second differences |\n")
     L.append("Errors: %d of %d jobs. Arms present: %s.\n" % (S["n_errors"], S["n_runs"], ", ".join(S["arms"])))
     if S.get("v1_reproduction"):
         v = S["v1_reproduction"]
@@ -466,7 +475,7 @@ def render_v2(S: Dict[str, Any], rs: List[Dict[str, Any]], plot_dir: Path) -> st
     if S.get("paired"):
         L.append("\nPaired on the dates all three arms extracted:\n")
         pa = S.get("paired_arms", ["base", "fwd", "sync"])
-        lab = " → ".join({"base": "V1", "fwd": "fwd", "sync": "V2", "real": "V3"}[a] for a in pa)
+        lab = " → ".join({"base": "V1", "fwd": "fwd", "sync": "V2", "real": "V3", "real_t3": "V4(t3)", "real_t1": "V4(t1)", "real_hs": "V4(hs)"}[a] for a in pa)
         L.append("| snapshot | window | n | χ² med: %s | χ² < 2: %s | >50%% draws multimodal: %s | 90%% body width med (¢): %s |\n|---|---|---|---|---|---|---|" % (lab, lab, lab, lab))
         for k, row in S["paired"].items():
             snap, w = k.split("_w")

@@ -28,6 +28,25 @@ Model
   fallback  "laplace": MAP + Gaussian from the Gauss-Newton Hessian, for CI (and the
             "unconverged" injection uses NUTS with a deliberately short warmup)
 
+Priors on the increments (HANDOFF_prior_fix.md, September 2026). The Gaussian penalty above has one
+scale for the whole curve and Gaussian tails, so a locally sharp feature (the trough of a
+bimodal density) is astronomically improbable at any tau - the blind spot of
+FINDINGS_SYNTHETIC.md §9. Two locally adaptive alternatives are implemented, switchable
+with set_prior() / Model(prior=...), the Gaussian staying the default:
+  student    d_j = (D2 theta)_j ~ tau * t_nu, i.e. a Gaussian with a random per-increment
+             scale (inverse-gamma) integrated out per increment in closed form. tau is still
+             integrated by the same 1-d quadrature: the integrand is a product over j of t
+             densities evaluated on the tau grid, so no scale is sampled and no funnel is
+             introduced. The prior is no longer diagonal in the eigenbasis; it is evaluated
+             on d = Md u with Md = D2 QV, which is exact in any coordinates. The whitening
+             uses the positive scale-mixture curvature (nu+1)/(nu tau^2 + d_j^2).
+  horseshoe  explicit local scales: d_j = lambda_j z_j, z_j ~ N(0, tau^2) (tau integrated by
+             quadrature on S = sum z_j^2 exactly as in the Gaussian case), lambda_j ~ C+(0, 1)
+             sampled as log lambda_j. Non-centred: theta = QV_tilt u_tilt + QV_pen Md_pen^-1
+             (lambda * z), so the sampler sees (u_tilt, z, log lambda), 1 + 2(m-2) dims. This
+             is the route the docstring history warns about (a funnel per scale); it is kept
+             so that its sampler diagnostics can be reported rather than assumed.
+
 Why half-Cauchy on tau rather than the writeup's Gamma on lambda = 1/tau^2: it is the
 standard weakly-informative scale prior, heavy-tailed enough to let the data choose very
 rough or very smooth, and its scale (1) is the order of the second difference a lognormal
@@ -53,6 +72,27 @@ TAU_SCALE = 1.0
 TAU_PRIOR = "lognormal"
 TAU_LN_MED = 0.5
 TAU_LN_SD = 1.0
+# prior on the increments: "gauss" (V1-V3), "student" (nu = PRIOR_NU), "horseshoe" (local scales sampled)
+PRIOR_KIND = "gauss"
+PRIOR_NU = 3.0
+HS_SCALE = 0.5      # half-Cauchy scale of the local lambda_j (the tau prior's median: local scales only, no global tau -
+                    # with a global tau as well the posterior runs down the flat tau -> 0, lambda -> inf ridge)
+HS_ETA_MAX = 6.0    # log lambda_j is clipped to +-HS_ETA_MAX inside the map (exp(6) = 400x): no overflow
+HS_ETA_CURV = 0.25  # floor on the whitening curvature of log lambda_j: sd <= 2 in log scale
+
+
+def set_prior(kind: str = "gauss", nu: float = 3.0) -> None:
+    """Module-level default for every Model built afterwards (the study drivers set it per job)."""
+    global PRIOR_KIND, PRIOR_NU
+    if kind not in ("gauss", "student", "horseshoe"):
+        raise ValueError(kind)
+    PRIOR_KIND, PRIOR_NU = kind, float(nu)
+
+
+def prior_label(kind: Optional[str] = None, nu: Optional[float] = None) -> str:
+    kind = PRIOR_KIND if kind is None else kind
+    nu = PRIOR_NU if nu is None else nu
+    return {"gauss": "gauss", "student": "student-t nu=%g" % nu, "horseshoe": "horseshoe"}[kind]
 
 
 # --------------------------------------------------------------------------
@@ -73,7 +113,9 @@ def bspline_basis(x: np.ndarray, m: int, x_lo: float, x_hi: float, degree: int =
 class Model:
     def __init__(self, K: np.ndarray, right: np.ndarray, mid: np.ndarray, hs: np.ndarray, F0: float, D: float, T: float,
                  atm_sigma: float, se_F0: float = 0.05, m: int = 24, n_grid: int = 400, extent_sd: float = 7.0,
-                 martingale: bool = True, hs_floor: float = 0.0):
+                 martingale: bool = True, hs_floor: float = 0.0, prior: Optional[str] = None, nu: Optional[float] = None):
+        self.prior_kind = PRIOR_KIND if prior is None else prior
+        self.nu = float(PRIOR_NU if nu is None else nu)
         self.K = np.asarray(K, float)
         self.is_call = np.asarray(right) == "C"
         self.mid = np.asarray(mid, float)
@@ -111,7 +153,17 @@ class Model:
         self.penalised = self.eig > 1e-8
         self.q_pen = int(self.penalised.sum())
         self.QV = self.Q @ V
-        self.dim = m - 1  # u coordinates; tau is integrated out analytically (1-d quadrature)
+        self.n_inc = m - 2
+        self.Md = D2 @ self.QV                     # increments d = Md u; the tilt column is zero
+        self.QVpen = self.QV[:, self.penalised]
+        self.QVtilt = self.QV[:, ~self.penalised]
+        if self.prior_kind == "horseshoe":
+            # non-centred: theta = QVtilt u_t + Bmap (lambda * z), with Bmap = QVpen Md_pen^-1
+            self.Minv = np.linalg.inv(self.Md[:, self.penalised])
+            self.Bmap = self.QVpen @ self.Minv
+            self.dim = 1 + 2 * self.n_inc      # [u_tilt, z (n_inc), log lambda (n_inc)]
+        else:
+            self.dim = m - 1  # u coordinates; tau is integrated out analytically (1-d quadrature)
         self.nll_scale = 1.0 / np.maximum(self.hs, 1e-4)
         # tau quadrature grid for the marginal prior on the penalised coordinates:
         #   p(u_pen) = int prod_j N(u_j; 0, tau^2/e_j) p(tau) dtau, p(tau) half-Cauchy(TAU_SCALE)
@@ -122,24 +174,104 @@ class Model:
             log_p_tau = -np.log1p((tau_g / TAU_SCALE) ** 2) + self.logtau_grid  # incl. Jacobian d tau / d log tau
         else:
             log_p_tau = -0.5 * ((self.logtau_grid - np.log(TAU_LN_MED)) / TAU_LN_SD) ** 2
+        self._log_p_tau = log_p_tau
         self.prior_const = (-self.q_pen * self.logtau_grid + log_p_tau
                             + 0.5 * float(np.sum(np.log(self.eig[self.penalised]))))
+        # student: per tau grid point, the constant part of sum_j log t_nu(d_j / tau) - log tau
+        self.student_const = -self.n_inc * self.logtau_grid + log_p_tau
+        self.nu_tau2 = self.nu * tau_g ** 2
+
+    # --- coordinate maps ------------------------------------------------------
+    def split_hs(self, psi):
+        u_t = psi[:1]
+        z = psi[1:1 + self.n_inc]
+        eta = np.clip(psi[1 + self.n_inc:], -HS_ETA_MAX, HS_ETA_MAX)
+        return u_t, z, eta
+
+    def theta_of(self, psi: np.ndarray) -> np.ndarray:
+        psi = np.asarray(psi, float)
+        if self.prior_kind == "horseshoe":
+            u_t, z, eta = self.split_hs(psi)
+            return self.QVtilt @ u_t + self.Bmap @ (np.exp(eta) * z)
+        return self.QV @ psi
+
+    def thetas_of(self, psis: np.ndarray) -> np.ndarray:
+        psis = np.asarray(psis, float)
+        if self.prior_kind == "horseshoe":
+            u_t, z, eta = psis[:, :1], psis[:, 1:1 + self.n_inc], psis[:, 1 + self.n_inc:]
+            return u_t @ self.QVtilt.T + (np.exp(eta) * z) @ self.Bmap.T
+        return psis @ self.QV.T
+
+    def _dtheta_dpsi(self, psi: np.ndarray) -> np.ndarray:
+        """Jacobian of theta w.r.t. the sampled coordinates (m x dim)."""
+        if self.prior_kind == "horseshoe":
+            u_t, z, eta = self.split_hs(np.asarray(psi, float))
+            lam = np.exp(eta)
+            return np.hstack([self.QVtilt, self.Bmap * lam[None, :], self.Bmap * (lam * z)[None, :]])
+        return self.QV
 
     # --- parameter maps -------------------------------------------------------
     def theta_from(self, psi: np.ndarray) -> Tuple[np.ndarray, np.ndarray, float]:
-        """theta, u, and the posterior-mean tau given u (for reporting)."""
+        """theta, the sampled coordinates, and the posterior-mean tau given them (for reporting)."""
         u = np.asarray(psi, float)
-        S = float(np.sum(self.eig[self.penalised] * u[self.penalised] ** 2))
-        _, _, wq = self._marginal_prior(S)
+        wq = self._tau_weights(u)
         tau_mean = float(np.exp(self.logtau_grid) @ wq)
-        return self.QV @ u, u, tau_mean
+        return self.theta_of(u), u, tau_mean
 
     def tau_draw(self, psi: np.ndarray, rng: np.random.Generator) -> float:
-        u = np.asarray(psi, float)
-        S = float(np.sum(self.eig[self.penalised] * u[self.penalised] ** 2))
-        _, _, wq = self._marginal_prior(S)
+        wq = self._tau_weights(np.asarray(psi, float))
         k = rng.choice(len(wq), p=wq / wq.sum())
         return float(np.exp(self.logtau_grid[k]))
+
+    def _tau_weights(self, u: np.ndarray) -> np.ndarray:
+        if self.prior_kind == "student":
+            return self._student_prior(self.Md @ u)[2]
+        if self.prior_kind == "horseshoe":
+            # no global tau: report the median local scale as "tau" (a point mass on the grid)
+            _, _, eta = self.split_hs(u)
+            wq = np.zeros(self.logtau_grid.size)
+            wq[int(np.argmin(np.abs(self.logtau_grid - float(np.median(eta)) - np.log(HS_SCALE))))] = 1.0
+            return wq
+        S = float(np.sum(self.eig[self.penalised] * u[self.penalised] ** 2))
+        return self._marginal_prior(S)[2]
+
+    def _student_prior(self, d: np.ndarray):
+        """log int prod_j t_nu(d_j/tau)/tau p(tau) dtau by quadrature; gradient in d; tau weights;
+        positive curvature surrogate (the scale-mixture conditional precision, averaged over tau)."""
+        d2 = d * d
+        # a_g = const_g - (nu+1)/2 sum_j log(1 + d_j^2 / (nu tau_g^2))
+        L = np.log1p(d2[None, :] / self.nu_tau2[:, None])           # n_grid x n_inc
+        a = self.student_const - 0.5 * (self.nu + 1.0) * L.sum(axis=1)
+        mx = a.max()
+        ex = np.exp(a - mx)
+        Z = ex.sum()
+        wq = ex / Z
+        lse = mx + np.log(Z)
+        inv = 1.0 / (self.nu_tau2[:, None] + d2[None, :])            # n_grid x n_inc
+        grad_d = -(self.nu + 1.0) * d * (wq @ inv)
+        curv_d = (self.nu + 1.0) * (wq @ inv)
+        return lse, grad_d, wq, curv_d
+
+    def _hs_prior(self, z: np.ndarray, eta: np.ndarray):
+        """z_j ~ N(0, 1); log lambda_j = eta_j with lambda_j ~ half-Cauchy(HS_SCALE), including the
+        Jacobian of the log transform. No global tau: the increments are d_j = lambda_j z_j."""
+        lse = -0.5 * float(z @ z)
+        lam2 = np.exp(2.0 * eta) / HS_SCALE ** 2
+        lp = lse - float(np.sum(np.log1p(lam2))) + float(eta.sum())
+        g_z = -z
+        g_eta = -2.0 * lam2 / (1.0 + lam2) + 1.0
+        curv_z = np.ones(z.size)
+        curv_eta = 4.0 * lam2 / (1.0 + lam2) ** 2
+        return lp, g_z, g_eta, None, curv_z, curv_eta
+
+    def _marginal_prior_hs(self, S: float):
+        # same quadrature as the Gaussian case with unit eigenvalues (z is already whitened per increment)
+        a = (-self.n_inc * self.logtau_grid + self._log_p_tau) - 0.5 * S * self.inv_tau2
+        mx = a.max()
+        ex = np.exp(a - mx)
+        Z = ex.sum()
+        wq = ex / Z
+        return mx + np.log(Z), -0.5 * float(wq @ self.inv_tau2), wq
 
     def _marginal_prior(self, S: float):
         a = self.prior_const - 0.5 * S * self.inv_tau2
@@ -176,7 +308,7 @@ class Model:
         u = np.asarray(psi, float)
         if not np.all(np.isfinite(u)) or np.max(np.abs(u)) > 1e4:
             return -np.inf if not with_grad else (-np.inf, np.zeros(self.dim))
-        theta = self.QV @ u
+        theta = self.theta_of(u)
         if with_grad:
             p, r, J, mean, dmean = self._lik_terms(theta)
             g_theta = J.T @ (r * self.nll_scale)
@@ -190,33 +322,62 @@ class Model:
             lp += -0.5 * zf * zf
             if with_grad:
                 g_theta = g_theta - zf / self.se_F0 * dmean
+        if self.prior_kind == "horseshoe":
+            u_t, z, eta = self.split_hs(u)
+            lp_pr, g_z, g_eta, _, _, _ = self._hs_prior(z, eta)
+            lp += lp_pr - 0.5 * float(u_t @ u_t) / TILT_SD ** 2
+            if not with_grad:
+                return lp
+            g = self._dtheta_dpsi(u).T @ g_theta
+            g[:1] += -u_t / TILT_SD ** 2
+            g[1:1 + self.n_inc] += g_z
+            g[1 + self.n_inc:] += g_eta
+            return lp, g
         pen = self.penalised
-        S = float(np.sum(self.eig[pen] * u[pen] ** 2))
-        lse, dlse_dS, _ = self._marginal_prior(S)
-        lp += lse
         tilt = ~pen
+        if self.prior_kind == "student":
+            d = self.Md @ u
+            lse, grad_d, _, _ = self._student_prior(d)
+        else:
+            S = float(np.sum(self.eig[pen] * u[pen] ** 2))
+            lse, dlse_dS, _ = self._marginal_prior(S)
+        lp += lse
         lp += -0.5 * float(u[tilt] @ u[tilt]) / TILT_SD ** 2
         if not with_grad:
             return lp
         g_u = self.QV.T @ g_theta
-        g_u[pen] += dlse_dS * 2.0 * self.eig[pen] * u[pen]
+        if self.prior_kind == "student":
+            g_u += self.Md.T @ grad_d
+        else:
+            g_u[pen] += dlse_dS * 2.0 * self.eig[pen] * u[pen]
         g_u[tilt] += -u[tilt] / TILT_SD ** 2
         return lp, g_u
 
     def gauss_newton(self, psi: np.ndarray) -> np.ndarray:
         """Positive-definite approximation to the negative Hessian of logpost at psi."""
         u = np.asarray(psi, float)
-        theta = self.QV @ u
+        theta = self.theta_of(u)
         p, r, J, mean, dmean = self._lik_terms(theta)
-        Ju = J @ self.QV
+        Jp = self._dtheta_dpsi(u)
+        Ju = J @ Jp
         H = (Ju * self.nll_scale[:, None] ** 2).T @ Ju
         if self.martingale:
-            gm = self.QV.T @ dmean
+            gm = Jp.T @ dmean
             H += np.outer(gm, gm) / self.se_F0 ** 2
+        if self.prior_kind == "horseshoe":
+            u_t, z, eta = self.split_hs(u)
+            _, _, _, _, curv_z, curv_eta = self._hs_prior(z, eta)
+            prior = np.concatenate([[1.0 / TILT_SD ** 2], curv_z, np.maximum(curv_eta, HS_ETA_CURV)])
+            return H + np.diag(prior)
         pen = self.penalised
+        prior = np.full(self.dim, 1.0 / TILT_SD ** 2)
+        if self.prior_kind == "student":
+            _, _, _, curv_d = self._student_prior(self.Md @ u)
+            H = H + (self.Md.T * curv_d[None, :]) @ self.Md
+            prior[pen] = 0.0
+            return H + np.diag(prior)
         S = float(np.sum(self.eig[pen] * u[pen] ** 2))
         _, dlse_dS, _ = self._marginal_prior(S)
-        prior = np.full(self.dim, 1.0 / TILT_SD ** 2)
         prior[pen] = -2.0 * dlse_dS * self.eig[pen]
         return H + np.diag(prior)
 
@@ -571,6 +732,14 @@ def ess(chains: np.ndarray) -> np.ndarray:
 # --------------------------------------------------------------------------
 
 def map_estimate(model: Model, psi0: Optional[np.ndarray] = None, maxiter: int = 3000) -> np.ndarray:
+    if psi0 is None and model.prior_kind == "horseshoe":
+        # warm start: the Gaussian-prior MAP mapped to (u_tilt, z = increments, log lambda = 0)
+        g = Model(model.K, np.where(model.is_call, "C", "P"), model.mid, model.hs, model.F0, model.D, model.T,
+                  max(model.v / np.sqrt(model.T), 0.05), se_F0=model.se_F0, m=model.m, n_grid=len(model.s),
+                  extent_sd=model.extent_sd, martingale=model.martingale, prior="gauss")
+        u = map_estimate(g)
+        d = g.Md @ u
+        psi0 = np.concatenate([u[~g.penalised], d, np.zeros(model.n_inc)])
     psi0 = np.zeros(model.dim) if psi0 is None else np.asarray(psi0, float)
 
     def f(p):
@@ -599,7 +768,7 @@ def sample(model: Model, rng: np.random.Generator, sampler: str = "nuts", n_chai
     if sampler == "laplace":
         M = n_chains * n_samples
         psi = psi_map[None, :] + (L @ rng.standard_normal((d, M))).T
-        thetas = psi @ model.QV.T
+        thetas = model.thetas_of(psi)
         taus = np.array([model.tau_draw(p, rng) for p in psi])
         return {"psi": psi, "thetas": thetas, "taus": taus, "rhat_max": 1.0, "ess_min": float(M),
                 "divergences": 0, "converged": True, "sampler": "laplace", "seconds": time.time() - t0,
@@ -649,7 +818,7 @@ def sample(model: Model, rng: np.random.Generator, sampler: str = "nuts", n_chai
     es = ess(ch)
     xi = ch.reshape(-1, d)
     psi = white.psi(xi)
-    thetas = psi @ model.QV.T
+    thetas = model.thetas_of(psi)
     taus = np.array([model.tau_draw(p, rng) for p in psi])
     rhat_max = float(np.nanmax(rhat))
     ess_min = float(np.nanmin(es))

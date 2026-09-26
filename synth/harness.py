@@ -35,6 +35,7 @@ DEFAULTS: Dict[str, Any] = {
     "noise_scale": 1.0, "martingale": True, "forward_offset": 0.0, "extent_sd": 7.0, "inject": None,
     "sampler": "slice", "n_chains": 4, "n_warmup": 300, "n_samples": 500, "levels": (50, 80, 90, 95),
     "sigma_clip": (0.25, 1.0), "m_coef": 24, "n_grid": 400, "snapshot": None, "fixed_D": None, "hs_floor": 0.0,
+    "prior": "gauss", "nu": 3.0,   # prior on the log-density's second differences (act3.set_prior)
 }
 EDGE_MASS_MAX = 0.01  # posterior mass in the outer 2.5% of the grid at either end
 _GEO: Optional[Dict[str, Any]] = None
@@ -180,6 +181,7 @@ def run_one(cfg: Dict[str, Any], seed: int) -> Dict[str, Any]:
 
     # --- Act III ------------------------------------------------------------------
     asig = act3.atm_sigma(K, R, mid, F0_used, D_hat, T)
+    act3.set_prior(c["prior"], c["nu"])
     model = act3.Model(K, R, mid, hsq, F0_used, D_hat, T, asig, se_F0=se_F0, m=c["m_coef"], n_grid=c["n_grid"],
                        extent_sd=c["extent_sd"], martingale=c["martingale"], hs_floor=c["hs_floor"])
     n_warmup, n_samples, n_chains = c["n_warmup"], c["n_samples"], c["n_chains"]

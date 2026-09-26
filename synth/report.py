@@ -113,7 +113,10 @@ def _q(xs, q) -> Optional[float]:
 # --------------------------------------------------------------------------
 
 def summarise_config(name: str) -> Dict[str, Any]:
-    all_rs = runner.load_results(name)
+    return summarise_runs(runner.load_results(name))
+
+
+def summarise_runs(all_rs: List[Dict[str, Any]]) -> Dict[str, Any]:
     rs = [r for r in all_rs if r.get("error") is None]
     out: Dict[str, Any] = {"n_runs": len(rs), "n_errors": len(all_rs) - len(rs),
                            "errors": [r["error"] for r in all_rs if r.get("error")][:3]}
