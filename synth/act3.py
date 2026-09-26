@@ -4,7 +4,10 @@ gradients (no JAX/Stan dependency; Python 3.9).
 
 Model
   grid      s_k uniform in x = log(s/F0) on [-c v, +c v], v = ATM sigma*sqrt(T), c = extent_sd
-  basis     cubic B-splines in x, m coefficients, uniform clamped knots
+  basis     cubic B-splines in x, m coefficients, uniform clamped knots. m = 48 by default since
+            FINDINGS_PRIOR.md (0.35 vol-scales between knots); at the previous 24 the basis could
+            not represent a trough between humps 2.6 vol-scales apart at all, which - not the
+            prior's tail - was the bimodal blind spot of FINDINGS_SYNTHETIC.md
   density   p_k = w_k exp(phi_k) / Z,  phi = B theta       (positive, normalised by construction)
   gauge     B-splines sum to one, so theta + const is the same density: theta = Q eta with
             Q an orthonormal basis of the sum-zero subspace
@@ -75,7 +78,8 @@ TAU_LN_SD = 1.0
 # prior on the increments: "gauss" (V1-V3), "student" (nu = PRIOR_NU), "horseshoe" (local scales sampled)
 PRIOR_KIND = "gauss"
 PRIOR_NU = 3.0
-M_COEF = 24         # B-spline coefficients over +-extent_sd vol-scales; 24 -> 0.7 vol-scales between knots
+M_COEF = 48         # B-spline coefficients over +-extent_sd vol-scales: 48 -> 0.35 vol-scales between knots (FINDINGS_PRIOR.md;
+                    # 24 was V1-V3 and is still what the base/fwd/sync/real arms of realchain run for reproducibility)
 HS_SCALE = 0.5      # half-Cauchy scale of the local lambda_j (the tau prior's median: local scales only, no global tau -
                     # with a global tau as well the posterior runs down the flat tau -> 0, lambda -> inf ridge)
 HS_ETA_MAX = 6.0    # log lambda_j is clipped to +-HS_ETA_MAX inside the map (exp(6) = 400x): no overflow

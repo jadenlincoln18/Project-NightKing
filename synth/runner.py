@@ -33,7 +33,8 @@ RESULTS = HERE / "results"
 PLOTS = HERE / "plots"
 
 NUTS = {"sampler": "nuts", "n_chains": 4, "n_warmup": 400, "n_samples": 400}
-BASE = dict(NUTS, family="crude_skew", lookback=1)
+BASE = dict(NUTS, family="crude_skew", lookback=1, m_coef=24)   # FINDINGS_SYNTHETIC.md was run at 24 knots; the default is now 48
+                                                                  # (FINDINGS_PRIOR.md) - a full re-run at 48 is the next study, not this one
 
 # name -> (cfg, n_runs). Seeds are fixed per config so a re-run reproduces the file.
 CONFIGS: Dict[str, Any] = {

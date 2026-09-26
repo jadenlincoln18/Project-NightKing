@@ -243,7 +243,9 @@ class TestDetector(unittest.TestCase):
             self.assertLess(np.abs(num - g).max() / (np.abs(g).max() + 1e-9), 1e-5, kind)
             H = m.gauss_newton(psi)
             self.assertTrue(np.all(np.linalg.eigvalsh(0.5 * (H + H.T)) > 0), kind)
-        self.assertEqual(act3.Model(self.K, self.R, self.mid, self.hs, self.F0, self.pl.D, self.T, self.sigma, prior="gauss").dim, 23)
+        self.assertEqual(act3.Model(self.K, self.R, self.mid, self.hs, self.F0, self.pl.D, self.T, self.sigma, prior="gauss", m=24).dim, 23)
+        self.assertEqual(act3.Model(self.K, self.R, self.mid, self.hs, self.F0, self.pl.D, self.T, self.sigma, prior="gauss").dim, act3.M_COEF - 1)
+        self.assertEqual(act3.M_COEF, 48)   # FINDINGS_PRIOR.md: the default since the knot-count finding
 
     def test_student_prior_laplace_recovers_the_brackets(self):
         from synth import act3

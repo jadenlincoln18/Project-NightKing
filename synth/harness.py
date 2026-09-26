@@ -34,7 +34,7 @@ DEFAULTS: Dict[str, Any] = {
     "family": "crude_skew", "lookback": 1, "n_strikes": None, "hs_source": "model", "error": "gaussian",
     "noise_scale": 1.0, "martingale": True, "forward_offset": 0.0, "extent_sd": 7.0, "inject": None,
     "sampler": "slice", "n_chains": 4, "n_warmup": 300, "n_samples": 500, "levels": (50, 80, 90, 95),
-    "sigma_clip": (0.25, 1.0), "m_coef": 24, "n_grid": 400, "snapshot": None, "fixed_D": None, "hs_floor": 0.0,
+    "sigma_clip": (0.25, 1.0), "m_coef": 48, "n_grid": 400, "snapshot": None, "fixed_D": None, "hs_floor": 0.0,
     "prior": "gauss", "nu": 3.0,   # prior on the log-density's second differences (act3.set_prior)
     "exclude_loo": None,           # Part B: drop strikes with LOO |z| > this before Act III (None = off)
 }

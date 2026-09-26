@@ -101,7 +101,7 @@ def run_candidate(cand: str, workers: int, quick: bool = False, only: Optional[L
         if only and name not in only:
             continue
         cfg, _ = runner.CONFIGS[name]
-        cfg = dict(cfg, prior=kind, nu=nu, m_coef=m)
+        cfg = dict(cfg, prior=kind, nu=nu, m_coef=m)   # every candidate pins its own knot count; the baseline pickles were made at 24
         if quick:
             cfg = dict(cfg, sampler="laplace")
             n_runs = 3
