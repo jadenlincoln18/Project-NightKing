@@ -16,7 +16,7 @@ import numpy as np
 from . import detector
 
 HERE = Path(__file__).resolve().parent
-ARMS = ("base", "fwd", "sync", "sync_m", "real", "real_t3", "real_t1", "real_hs")
+ARMS = ("base", "fwd", "sync", "sync_m", "real", "real_t3", "real_t1", "real_hs", "real_m36", "real_m48", "real_m48t3", "real_m48_x", "real_m36_x", "real_x", "real_t3_x", "real_m64")
 ARM_LABEL = {"base": "V1 (parity fwd, raw)", "fwd": "futures fwd, raw", "sync": "V2: futures fwd + sync", "sync_m": "sync (sticky-moneyness)",
              "real": "V3: real intraday path", "real_t3": "V4: real path + Student-t ν=3 prior", "real_t1": "V4: real path + Student-t ν=1 prior",
              "real_hs": "V4: real path + horseshoe prior", "real_m36": "V4: real path, 36 knots", "real_m48": "V4: real path, 48 knots",
