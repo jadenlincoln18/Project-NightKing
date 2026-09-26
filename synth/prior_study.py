@@ -45,9 +45,10 @@ RESULTS = HERE / "results_prior"
 PLOTS = HERE / "plots_prior"
 
 CANDIDATES: Dict[str, Tuple[str, float, int]] = {"t3": ("student", 3.0, 24), "t1": ("student", 1.0, 24), "hs": ("horseshoe", 3.0, 24),
-                                                 "m36": ("gauss", 3.0, 36), "m48": ("gauss", 3.0, 48), "m48t3": ("student", 3.0, 48)}
+                                                 "m36": ("gauss", 3.0, 36), "m48": ("gauss", 3.0, 48), "m48t3": ("student", 3.0, 48),
+                                                 "m64": ("gauss", 3.0, 64)}
 CAND_LABEL = {"base": "Gaussian, 24 knots (current)", "t3": "Student-t ν=3, 24 knots", "t1": "Student-t ν=1, 24 knots", "hs": "horseshoe, 24 knots",
-              "m36": "Gaussian, 36 knots", "m48": "Gaussian, 48 knots", "m48t3": "Student-t ν=3, 48 knots"}
+              "m36": "Gaussian, 36 knots", "m48": "Gaussian, 48 knots", "m48t3": "Student-t ν=3, 48 knots", "m64": "Gaussian, 64 knots"}
 # configs and runs per config (the first n seeds of each; the baseline has >= these)
 CONFIGS: Dict[str, int] = {
     "A_crude_full": 40, "B_lognormal_full": 40, "C_bimodal_full": 40, "C05_bimodal_halfnoise": 30, "F_bimodal_close": 30,
@@ -58,7 +59,8 @@ CONFIGS_HS: Dict[str, int] = {"A_crude_full": 20, "C_bimodal_full": 20, "F_bimod
 CONFIGS_SMALL: Dict[str, int] = {"A_crude_full": 30, "B_lognormal_full": 30, "C_bimodal_full": 30, "C05_bimodal_halfnoise": 20, "F_bimodal_close": 20,
                                  "E_sharp_peak": 20, "G_spike_outside_prior": 20, "D_heavy_both": 20, "S08_crude": 20, "M_crude_nomart": 20,
                                  "X_fwd15": 20, "X_stale": 20, "X_convexity": 20, "X_truncated_grid": 20, "X_unconverged": 20}
-CONFIGS_BY_CAND = {"hs": CONFIGS_HS, "t1": CONFIGS_HS, "m36": CONFIGS_SMALL, "m48": CONFIGS_SMALL, "m48t3": CONFIGS_HS}
+CONFIGS_BLIND: Dict[str, int] = {"A_crude_full": 20, "C_bimodal_full": 20, "C05_bimodal_halfnoise": 20, "E_sharp_peak": 20, "G_spike_outside_prior": 20, "S08_crude": 20}
+CONFIGS_BY_CAND = {"hs": CONFIGS_HS, "t1": CONFIGS_HS, "m36": CONFIGS_SMALL, "m48": CONFIGS_SMALL, "m48t3": CONFIGS_BLIND, "m64": CONFIGS_BLIND}
 NOT_REGRESS = ["A_crude_full", "B_lognormal_full", "S08_crude", "M_crude_nomart", "X_fwd15", "X_stale", "X_convexity", "X_truncated_grid", "X_unconverged"]
 MUST_IMPROVE = ["C_bimodal_full", "C05_bimodal_halfnoise", "G_spike_outside_prior", "E_sharp_peak"]
 
@@ -265,7 +267,8 @@ def render(A: Dict[str, Any]) -> str:
     L.append("| `t1` | d_j ~ τ·t₁ (Cauchy increments) | none | as `t3` |")
     L.append("| `hs` | d_j = λ_j z_j, z_j ~ N(0,1), λ_j ~ C⁺(0, 0.5), non-centred | 22 log-scales | none (a global τ with local λ_j ran down the flat τ→0, λ→∞ ridge) |")
     L.append("| `m36` / `m48` | as `base` with 36 / 48 knots (0.47 / 0.35 vol-scales between knots instead of 0.7) | +12 / +24 coefficients | as `base` |")
-    L.append("| `m48t3` | Student-t ν=3 increments on 48 knots | +24 coefficients | as `t3` |\n")
+    L.append("| `m48t3` | Student-t ν=3 increments on 48 knots | +24 coefficients | as `t3` |")
+    L.append("| `m64` | as `base` with 64 knots (0.22 vol-scales between knots) | +40 coefficients | as `base` |\n")
     L.append("**VERDICT_PLACEHOLDER**\n")
     L.append("## 1. Checklist, per candidate\n")
     L.append("Must-not-regress items are judged against the baseline on the same seeds (coverage within 3 points, RMSE within 0.1¢, sampler within the "

@@ -62,12 +62,12 @@ WINDOWS = (60, 10)   # minutes: Gate 0's own window, and a near-synchronous one 
 RATE = 0.04          # D = exp(-r T): fixed analytically. At T <= 2 days D is within 2e-4 of 1, i.e. < 0.02c on any
                      # price here; the chain cannot identify it (V1: 0.947 at expiry) and the forward no longer
                      # depends on the regression slope, so there is nothing left for the slope to do.
-ARMS = ("base", "fwd", "sync", "sync_m", "real", "real_t3", "real_t1", "real_hs", "real_x", "real_t3_x", "real_m36", "real_m48", "real_m48t3", "real_m48_x", "real_m36_x")
+ARMS = ("base", "fwd", "sync", "sync_m", "real", "real_t3", "real_t1", "real_hs", "real_x", "real_t3_x", "real_m36", "real_m48", "real_m48t3", "real_m48_x", "real_m36_x", "real_m64")
 EXCLUDE_LOO_Z = 3.0   # Part B rule: drop strikes with LOO |z| > 3 once before the fit (arms ending in _x)
 ARM_SNAPS = {"sync_m": {("T-1d", 60)}}   # sensitivity arm: T-1d / 60 min only
 ARM_PRIOR = {"real_t3": ("student", 3.0, 24), "real_t1": ("student", 1.0, 24), "real_hs": ("horseshoe", 3.0, 24),
              "real_t3_x": ("student", 3.0, 24), "real_m36": ("gauss", 3.0, 36), "real_m48": ("gauss", 3.0, 48),
-             "real_m48t3": ("student", 3.0, 48), "real_m48_x": ("gauss", 3.0, 48), "real_m36_x": ("gauss", 3.0, 36)}
+             "real_m48t3": ("student", 3.0, 48), "real_m48_x": ("gauss", 3.0, 48), "real_m36_x": ("gauss", 3.0, 36), "real_m64": ("gauss", 3.0, 64)}
 # V4 candidates: the real path with a new prior (kind, nu, knots); _x = Part B exclusion on top
 INTRADAY = DATA_CME / "futures_intraday" / "schema=ohlcv-1m"   # Task 2 pull (db_pull_futures.py); the `real` arm needs it
 SE_FLOOR_FUTURES = 0.02   # 2c floor on the Stage 14 tolerance when the forward comes from the futures

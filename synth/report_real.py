@@ -21,8 +21,8 @@ ARM_LABEL = {"base": "V1 (parity fwd, raw)", "fwd": "futures fwd, raw", "sync": 
              "real": "V3: real intraday path", "real_t3": "V4: real path + Student-t ν=3 prior", "real_t1": "V4: real path + Student-t ν=1 prior",
              "real_hs": "V4: real path + horseshoe prior", "real_m36": "V4: real path, 36 knots", "real_m48": "V4: real path, 48 knots",
              "real_m48t3": "V4: real path, 48 knots + Student-t ν=3", "real_m48_x": "V4: 48 knots + LOO exclusion", "real_m36_x": "V4: 36 knots + LOO exclusion",
-             "real_x": "V3 + LOO exclusion", "real_t3_x": "V4: Student-t ν=3 + LOO exclusion"}
-V4_ARMS = ("real_t3", "real_t1", "real_hs", "real_m36", "real_m48", "real_m48t3", "real_m48_x", "real_m36_x", "real_x", "real_t3_x")
+             "real_x": "V3 + LOO exclusion", "real_t3_x": "V4: Student-t ν=3 + LOO exclusion", "real_m64": "V4: real path, 64 knots"}
+V4_ARMS = ("real_t3", "real_t1", "real_hs", "real_m36", "real_m48", "real_m48t3", "real_m48_x", "real_m36_x", "real_x", "real_t3_x", "real_m64")
 SNAPS = ("T-2d", "T-1d", "T-4h", "T-0")
 WINDOWS = (60, 10)
 
