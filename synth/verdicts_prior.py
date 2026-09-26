@@ -69,9 +69,14 @@ non-uniform knot vector changes what the second-difference penalty means (the fi
 unequal P-splines). The learned-prior idea the operator raised stays behind both: calibrating τ's hyperprior from real extractions is
 sound and cheap once the basis can express what the data ask for, but it cannot substitute for that.
 
+**Part B on this harness** (`m48x`: 48 knots with the LOO exclusion rule applied before the fit): coverage on the clean chains is
+unchanged (%s / %s / %s), 0.7%% of quotes are removed on them and none on the 8-strike chains, the injected stale and crossed quotes
+are removed on 100%% of the fault chains, and the bimodal truth is untouched (%s overall). The rule removes noise, not signal; what it
+does on the real chains is in `FINDINGS_REALCHAIN_V4.md` §8.
+
 **Recommendation.** Make 48 uniform knots with the Gaussian prior the default (`act3.M_COEF = 48`), re-run the real chains with it
 (`FINDINGS_REALCHAIN_V4.md`), and keep the 24-knot model runnable as the baseline. `FINDINGS_SYNTHETIC.md`'s FAIL verdict is
-superseded in its diagnosis (form of the prior) but not in its status: the harness still shows a 0.7¢-wide band that misses the
+superseded in its diagnosis (form of the prior) but not in its status: the harness still shows a 1.6¢-wide band that misses the
 truth by 1.3σ at the trough, so the answer to "is the blind spot closed" is **narrowed, not closed**.
 """ % (
         g("C_bimodal_full", "t3", "tau_med"), g("C_bimodal_full", "base", "tau_med"),
@@ -91,7 +96,8 @@ truth by 1.3σ at the trough, so the answer to "is the blind spot closed" is **n
         (" (run: trough z %s, trough coverage %s, overall %s, spike %s; bracket R̂ %s, ESS %s on crude chains — %s)" % (
             g("C_bimodal_full", "m64", "trough_z", "%+.1f"), pct("C_bimodal_full", "m64", "trough_cov"), pct("C_bimodal_full", "m64", "cov90_all"), pct("G_spike_outside_prior", "m64", "cov90_all"),
             g("A_crude_full", "m64", "brhat_med", "%.3f"), g("A_crude_full", "m64", "bess_med", "%.0f"),
-            A.get("checklist", {}).get("m64", {}).get("_summary", {}).get("verdict", "—"))) if m64 else " (queued)")
+            A.get("checklist", {}).get("m64", {}).get("_summary", {}).get("verdict", "—"))) if m64 else " (queued)",
+        pct("A_crude_full", "m48x", "cov90_all"), pct("A_crude_full", "m48x", "cov90_body"), pct("A_crude_full", "m48x", "cov90_tail"), pct("C_bimodal_full", "m48x", "cov90_all"))
     p = ROOT / "FINDINGS_PRIOR.md"
     s = p.read_text()
     s = s.replace("**VERDICT_PLACEHOLDER**\n", verdict)
