@@ -80,25 +80,32 @@ PRIOR_KIND = "gauss"
 PRIOR_NU = 3.0
 M_COEF = 48         # B-spline coefficients over +-extent_sd vol-scales: 48 -> 0.35 vol-scales between knots (FINDINGS_PRIOR.md;
                     # 24 was V1-V3 and is still what the base/fwd/sync/real arms of realchain run for reproducibility)
+HS_FLOOR = 0.0      # tick floor on the likelihood tolerance (dollars): 0 = the writeup's "sd = half-spread" (FINDINGS_TICKFLOOR.md)
+HS_MODE = "max"     # "max": sd = max(hs, floor); "quad": sd = sqrt(hs^2 + floor^2) (tick uncertainty added in quadrature)
 HS_SCALE = 0.5      # half-Cauchy scale of the local lambda_j (the tau prior's median: local scales only, no global tau -
                     # with a global tau as well the posterior runs down the flat tau -> 0, lambda -> inf ridge)
 HS_ETA_MAX = 6.0    # log lambda_j is clipped to +-HS_ETA_MAX inside the map (exp(6) = 400x): no overflow
 HS_ETA_CURV = 0.25  # floor on the whitening curvature of log lambda_j: sd <= 2 in log scale
 
 
-def set_prior(kind: str = "gauss", nu: float = 3.0, m: int = 24) -> None:
+def set_prior(kind: str = "gauss", nu: float = 3.0, m: int = 24, hs_floor: float = 0.0, hs_mode: str = "max") -> None:
     """Module-level defaults for every Model built afterwards (the study drivers set them per job)."""
-    global PRIOR_KIND, PRIOR_NU, M_COEF
+    global PRIOR_KIND, PRIOR_NU, M_COEF, HS_FLOOR, HS_MODE
     if kind not in ("gauss", "student", "horseshoe"):
         raise ValueError(kind)
-    PRIOR_KIND, PRIOR_NU, M_COEF = kind, float(nu), int(m)
+    if hs_mode not in ("max", "quad"):
+        raise ValueError(hs_mode)
+    PRIOR_KIND, PRIOR_NU, M_COEF, HS_FLOOR, HS_MODE = kind, float(nu), int(m), float(hs_floor), hs_mode
 
 
 def prior_label(kind: Optional[str] = None, nu: Optional[float] = None, m: Optional[int] = None) -> str:
     kind = PRIOR_KIND if kind is None else kind
     nu = PRIOR_NU if nu is None else nu
     m = M_COEF if m is None else m
-    return {"gauss": "gauss", "student": "student-t nu=%g" % nu, "horseshoe": "horseshoe"}[kind] + ", m=%d" % m
+    lab = {"gauss": "gauss", "student": "student-t nu=%g" % nu, "horseshoe": "horseshoe"}[kind] + ", m=%d" % m
+    if HS_FLOOR > 0:
+        lab += ", hs floor %.1fc (%s)" % (100 * HS_FLOOR, HS_MODE)
+    return lab
 
 
 # --------------------------------------------------------------------------
@@ -119,8 +126,12 @@ def bspline_basis(x: np.ndarray, m: int, x_lo: float, x_hi: float, degree: int =
 class Model:
     def __init__(self, K: np.ndarray, right: np.ndarray, mid: np.ndarray, hs: np.ndarray, F0: float, D: float, T: float,
                  atm_sigma: float, se_F0: float = 0.05, m: Optional[int] = None, n_grid: int = 400, extent_sd: float = 7.0,
-                 martingale: bool = True, hs_floor: float = 0.0, prior: Optional[str] = None, nu: Optional[float] = None):
+                 martingale: bool = True, hs_floor: Optional[float] = None, prior: Optional[str] = None, nu: Optional[float] = None,
+                 hs_mode: Optional[str] = None):
         m = M_COEF if m is None else int(m)
+        hs_floor = HS_FLOOR if hs_floor is None else float(hs_floor)
+        self.hs_mode = HS_MODE if hs_mode is None else hs_mode
+        self.hs_floor = hs_floor
         self.prior_kind = PRIOR_KIND if prior is None else prior
         self.nu = float(PRIOR_NU if nu is None else nu)
         self.K = np.asarray(K, float)
@@ -128,7 +139,12 @@ class Model:
         self.mid = np.asarray(mid, float)
         # hs_floor: a quote cannot locate a price more precisely than the tick; 0 = writeup as
         # specified (tolerance = half-spread exactly)
-        self.hs = np.maximum(np.asarray(hs, float), hs_floor)
+        hs_raw = np.asarray(hs, float)
+        self.hs_raw = hs_raw
+        if self.hs_mode == "quad":
+            self.hs = np.sqrt(hs_raw ** 2 + hs_floor ** 2)
+        else:
+            self.hs = np.maximum(hs_raw, hs_floor)
         self.F0, self.D, self.T = float(F0), float(D), float(T)
         self.se_F0 = float(max(se_F0, 0.005))
         self.martingale = martingale

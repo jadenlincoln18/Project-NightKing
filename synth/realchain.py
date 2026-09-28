@@ -62,12 +62,14 @@ WINDOWS = (60, 10)   # minutes: Gate 0's own window, and a near-synchronous one 
 RATE = 0.04          # D = exp(-r T): fixed analytically. At T <= 2 days D is within 2e-4 of 1, i.e. < 0.02c on any
                      # price here; the chain cannot identify it (V1: 0.947 at expiry) and the forward no longer
                      # depends on the regression slope, so there is nothing left for the slope to do.
-ARMS = ("base", "fwd", "sync", "sync_m", "real", "real_t3", "real_t1", "real_hs", "real_x", "real_t3_x", "real_m36", "real_m48", "real_m48t3", "real_m48_x", "real_m36_x", "real_m64")
+ARMS = ("base", "fwd", "sync", "sync_m", "real", "real_t3", "real_t1", "real_hs", "real_x", "real_t3_x", "real_m36", "real_m48", "real_m48t3", "real_m48_x", "real_m36_x", "real_m64", "real_m48_f1", "real_m48_f2", "real_m48_f1q", "real_m48_f1x")
 EXCLUDE_LOO_Z = 3.0   # Part B rule: drop strikes with LOO |z| > 3 once before the fit (arms ending in _x)
 ARM_SNAPS = {"sync_m": {("T-1d", 60)}}   # sensitivity arm: T-1d / 60 min only
 ARM_PRIOR = {"real_t3": ("student", 3.0, 24), "real_t1": ("student", 1.0, 24), "real_hs": ("horseshoe", 3.0, 24),
              "real_t3_x": ("student", 3.0, 24), "real_m36": ("gauss", 3.0, 36), "real_m48": ("gauss", 3.0, 48),
-             "real_m48t3": ("student", 3.0, 48), "real_m48_x": ("gauss", 3.0, 48), "real_m36_x": ("gauss", 3.0, 36), "real_m64": ("gauss", 3.0, 64)}
+             "real_m48t3": ("student", 3.0, 48), "real_m48_x": ("gauss", 3.0, 48), "real_m36_x": ("gauss", 3.0, 36), "real_m64": ("gauss", 3.0, 64),
+             "real_m48_f1": ("gauss", 3.0, 48), "real_m48_f2": ("gauss", 3.0, 48), "real_m48_f1q": ("gauss", 3.0, 48), "real_m48_f1x": ("gauss", 3.0, 48)}
+ARM_FLOOR = {"real_m48_f1": (0.01, "max"), "real_m48_f2": (0.02, "max"), "real_m48_f1q": (0.01, "quad"), "real_m48_f1x": (0.01, "max")}   # FINDINGS_TICKFLOOR.md
 # V4 candidates: the real path with a new prior (kind, nu, knots); _x = Part B exclusion on top
 INTRADAY = DATA_CME / "futures_intraday" / "schema=ohlcv-1m"   # Task 2 pull (db_pull_futures.py); the `real` arm needs it
 SE_FLOOR_FUTURES = 0.02   # 2c floor on the Stage 14 tolerance when the forward comes from the futures
@@ -191,8 +193,10 @@ def run_one(job: Dict[str, Any]) -> Dict[str, Any]:
     t0 = time.time()
     try:
         from . import act3 as _act3
-        _act3.set_prior(act3_kind, act3_nu, act3_m)
+        fl, fm = ARM_FLOOR.get(arm, (0.0, "max"))
+        _act3.set_prior(act3_kind, act3_nu, act3_m, hs_floor=fl, hs_mode=fm)
         out["prior"] = _act3.prior_label(act3_kind, act3_nu, act3_m)
+        out["hs_floor"] = fl
         p = DATA_CME / "options_tbbo_by_expiry" / ("root=%s" % d["root"]) / ("expiry=%s" % d["settle_date"]) / "part.parquet"
         tb = pd.read_parquet(p, columns=["ts_event", "instrument_id", "bid_px_00", "ask_px_00", "strike", "right"])
         times = snapshot_times(d["settle_ts"])

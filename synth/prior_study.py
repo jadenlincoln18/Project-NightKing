@@ -46,11 +46,15 @@ PLOTS = HERE / "plots_prior"
 
 CANDIDATES: Dict[str, Tuple[str, float, int]] = {"t3": ("student", 3.0, 24), "t1": ("student", 1.0, 24), "hs": ("horseshoe", 3.0, 24),
                                                  "m36": ("gauss", 3.0, 36), "m48": ("gauss", 3.0, 48), "m48t3": ("student", 3.0, 48),
-                                                 "m64": ("gauss", 3.0, 64), "m48x": ("gauss", 3.0, 48)}
-CAND_EXTRA = {"m48x": {"exclude_loo": 3.0}}   # Part B on the synthetic harness: the LOO exclusion rule on top of 48 knots
+                                                 "m64": ("gauss", 3.0, 64), "m48x": ("gauss", 3.0, 48),
+                                                 "f1": ("gauss", 3.0, 48), "f2": ("gauss", 3.0, 48), "f1q": ("gauss", 3.0, 48), "f1x": ("gauss", 3.0, 48)}
+CAND_EXTRA = {"m48x": {"exclude_loo": 3.0},   # Part B on the synthetic harness: the LOO exclusion rule on top of 48 knots
+              "f1": {"hs_floor": 0.01}, "f2": {"hs_floor": 0.02}, "f1q": {"hs_floor": 0.01, "hs_floor_mode": "quad"},
+              "f1x": {"hs_floor": 0.01, "exclude_loo": 3.0}}   # FINDINGS_TICKFLOOR.md
 CAND_LABEL = {"base": "Gaussian, 24 knots (current)", "t3": "Student-t ν=3, 24 knots", "t1": "Student-t ν=1, 24 knots", "hs": "horseshoe, 24 knots",
               "m36": "Gaussian, 36 knots", "m48": "Gaussian, 48 knots", "m48t3": "Student-t ν=3, 48 knots", "m64": "Gaussian, 64 knots",
-              "m48x": "Gaussian, 48 knots + LOO exclusion"}
+              "m48x": "Gaussian, 48 knots + LOO exclusion", "f1": "48 knots, tick floor 1¢", "f2": "48 knots, tick floor 2¢",
+              "f1q": "48 knots, tick floor 1¢ (quadrature)", "f1x": "48 knots, tick floor 1¢ + LOO exclusion"}
 # configs and runs per config (the first n seeds of each; the baseline has >= these)
 CONFIGS: Dict[str, int] = {
     "A_crude_full": 40, "B_lognormal_full": 40, "C_bimodal_full": 40, "C05_bimodal_halfnoise": 30, "F_bimodal_close": 30,
@@ -63,7 +67,9 @@ CONFIGS_SMALL: Dict[str, int] = {"A_crude_full": 30, "B_lognormal_full": 30, "C_
                                  "X_fwd15": 20, "X_stale": 20, "X_convexity": 20, "X_truncated_grid": 20, "X_unconverged": 20}
 CONFIGS_BLIND: Dict[str, int] = {"A_crude_full": 20, "C_bimodal_full": 20, "C05_bimodal_halfnoise": 20, "E_sharp_peak": 20, "G_spike_outside_prior": 20, "S08_crude": 20}
 CONFIGS_X: Dict[str, int] = {"A_crude_full": 30, "S08_crude": 20, "X_stale": 20, "X_convexity": 20, "C_bimodal_full": 20}
-CONFIGS_BY_CAND = {"hs": CONFIGS_HS, "t1": CONFIGS_HS, "m36": CONFIGS_SMALL, "m48": CONFIGS_SMALL, "m48t3": CONFIGS_BLIND, "m64": CONFIGS_BLIND, "m48x": CONFIGS_X}
+CONFIGS_F: Dict[str, int] = {"A_crude_full": 30, "B_lognormal_full": 30, "S08_crude": 20, "X_stale": 20, "X_convexity": 20, "C_bimodal_full": 20}
+CONFIGS_BY_CAND = {"hs": CONFIGS_HS, "t1": CONFIGS_HS, "m36": CONFIGS_SMALL, "m48": CONFIGS_SMALL, "m48t3": CONFIGS_BLIND, "m64": CONFIGS_BLIND, "m48x": CONFIGS_X,
+                   "f1": CONFIGS_F, "f2": CONFIGS_F, "f1q": CONFIGS_F, "f1x": CONFIGS_F}
 NOT_REGRESS = ["A_crude_full", "B_lognormal_full", "S08_crude", "M_crude_nomart", "X_fwd15", "X_stale", "X_convexity", "X_truncated_grid", "X_unconverged"]
 MUST_IMPROVE = ["C_bimodal_full", "C05_bimodal_halfnoise", "G_spike_outside_prior", "E_sharp_peak"]
 

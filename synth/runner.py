@@ -90,12 +90,21 @@ def _work(args):
     return r
 
 
+def _dump(results, out: Path) -> None:
+    tmp = out.with_name(out.name + ".tmp")
+    with open(tmp, "wb") as fh:
+        pickle.dump(results, fh)
+    os.replace(tmp, out)   # atomic: a kill mid-dump leaves the previous checkpoint intact
+
+
 def run_config(name: str, cfg: Dict[str, Any], n_runs: int, workers: int, quick: bool = False) -> Path:
     RESULTS.mkdir(parents=True, exist_ok=True)
     out = RESULTS / ("%s.pkl" % name)
     if out.exists():
         with open(out, "rb") as fh:
             have = pickle.load(fh)
+        # a seed whose run raised is re-done; a seed absent was never attempted; an ok seed is never re-run
+        have = [r for r in have if r.get("error") is None]
         if len(have) >= n_runs:
             print("  %-26s cached (%d runs)" % (name, len(have)))
             return out
@@ -113,13 +122,12 @@ def run_config(name: str, cfg: Dict[str, Any], n_runs: int, workers: int, quick:
     with ctx.Pool(workers) as pool:
         for i, r in enumerate(pool.imap_unordered(_work, [(name, cfg, s) for s in seeds]), 1):
             results.append(r)
+            _dump(results, out)   # one checkpoint per completed job
             if i % max(1, len(seeds) // 8) == 0 or i == len(seeds):
                 el = time.time() - t0
-                print("  %-26s %3d/%d  %5.0fs  eta %5.0fs" % (name, i, len(seeds), el, el / i * (len(seeds) - i)), flush=True)
-                with open(out, "wb") as fh:
-                    pickle.dump(results, fh)
-    with open(out, "wb") as fh:
-        pickle.dump(results, fh)
+                print("  %s %-26s %3d/%d  %5.0fs  eta %5.0fs%s" % (time.strftime("%H:%M:%S"), name, i, len(seeds), el, el / i * (len(seeds) - i),
+                                                                  "  ERR" if r.get("error") else ""), flush=True)
+    _dump(results, out)
     return out
 
 
@@ -138,11 +146,22 @@ def main(argv: Optional[List[str]] = None) -> int:
     ap.add_argument("--report", action="store_true", help="aggregate only")
     ap.add_argument("--quick", action="store_true", help="6 runs per config with the laplace sampler")
     ap.add_argument("--runs", type=int, default=None, help="override runs per config")
+    ap.add_argument("--m-coef", type=int, default=None, help="knot count for every config (the study behind FINDINGS_SYNTHETIC.md ran 24)")
+    ap.add_argument("--hs-floor", type=float, default=None, help="tick floor on the likelihood tolerance, dollars (FINDINGS_TICKFLOOR.md)")
+    ap.add_argument("--hs-floor-mode", default=None, choices=["max", "quad"])
+    ap.add_argument("--results-dir", default=None, help="write/read results here instead of synth/results (e.g. synth/results48)")
+    ap.add_argument("--findings", default=None, help="write the findings here instead of FINDINGS_SYNTHETIC.md")
     a = ap.parse_args(argv)
+    global RESULTS, PLOTS
+    if a.results_dir:
+        RESULTS = Path(a.results_dir) if Path(a.results_dir).is_absolute() else HERE.parent / a.results_dir
+        PLOTS = RESULTS.parent / (RESULTS.name.replace("results", "plots"))
+    override = {k: v for k, v in (("m_coef", a.m_coef), ("hs_floor", a.hs_floor), ("hs_floor_mode", a.hs_floor_mode)) if v is not None}
     names = list(CONFIGS) if not a.only else [n.strip() for n in a.only.split(",")]
     if not a.report:
         for n in names:
             cfg, n_runs = CONFIGS[n]
+            cfg = dict(cfg, **override)
             n_runs = 6 if a.quick else (a.runs or n_runs)
             run_config(n, cfg, n_runs, a.workers, quick=a.quick)
     from . import report
@@ -152,7 +171,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         json.dump(summary, fh, indent=1, default=_json_default)
     report.plots(names, PLOTS)
     text = report.render(summary, PLOTS)
-    findings = HERE.parent / "FINDINGS_SYNTHETIC.md"
+    findings = HERE.parent / (a.findings or "FINDINGS_SYNTHETIC.md")
     tmp = findings.with_suffix(".tmp")
     tmp.write_text(text)
     tmp.replace(findings)
