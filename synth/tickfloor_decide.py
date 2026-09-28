@@ -6,8 +6,8 @@ same seeds:
                                points below m48; the injected stale and crossed quotes are still caught by
                                the residual check on >= 90% of chains; bimodal coverage is not more than 5
                                points below m48; bracket R-hat on crude chains <= 1.03
-    among admissible floors    adopt the smallest one (1c max < 1c quadrature < 2c max, by the tolerance
-                               it adds to a 0.5c quote); if none is admissible, adopt no floor.
+    among admissible floors    adopt the smallest one (0.5c quadrature < 1c max < 1c quadrature < 2c max, by
+                               the tolerance it adds to a 0.5c quote); if none is admissible, adopt no floor.
 
 Writes synth/results_prior/tickfloor_decision.json, which the driver reads to configure the real-chain
 arms it runs next and the full synthetic study.
@@ -21,7 +21,7 @@ import json
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-ORDER = [("f1", 0.01, "max"), ("f1q", 0.01, "quad"), ("f2", 0.02, "max")]
+ORDER = [("f05q", 0.005, "quad"), ("f1", 0.01, "max"), ("f1q", 0.01, "quad"), ("f2", 0.02, "max")]
 
 
 def main() -> int:

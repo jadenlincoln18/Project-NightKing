@@ -18,11 +18,11 @@ from . import prior_study
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
-SYN = ["m48", "f1", "f1q", "f2", "m48x", "f1x"]
-SYN_LABEL = {"m48": "base48: 48 knots, no floor, no exclusion", "f1": "floor48: 1¢ (max)", "f1q": "floor48: 1¢ (quadrature)", "f2": "floor48: 2¢ (max)",
+SYN = ["m48", "f05q", "f1", "f1q", "f2", "m48x", "f1x"]
+SYN_LABEL = {"m48": "base48: 48 knots, no floor, no exclusion", "f05q": "floor48: 0.5¢ (quadrature)", "f1": "floor48: 1¢ (max)", "f1q": "floor48: 1¢ (quadrature)", "f2": "floor48: 2¢ (max)",
              "m48x": "excl48: LOO exclusion, no floor", "f1x": "both: 1¢ floor + exclusion"}
-REAL = ["real_m48", "real_m48_f1", "real_m48_f2", "real_m48_x", "real_m48_f1x"]
-REAL_LABEL = {"real_m48": "base48", "real_m48_f1": "floor48 1¢", "real_m48_f2": "floor48 2¢", "real_m48_x": "excl48", "real_m48_f1x": "both (1¢ + excl)"}
+REAL = ["real_m48", "real_m48_f05q", "real_m48_f1", "real_m48_f2", "real_m48_x", "real_m48_f1x"]
+REAL_LABEL = {"real_m48": "base48", "real_m48_f05q": "floor48 0.5¢ quad", "real_m48_f1": "floor48 1¢", "real_m48_f2": "floor48 2¢", "real_m48_x": "excl48", "real_m48_f1x": "both (1¢ + excl)"}
 SNAPS = ("T-2d", "T-1d", "T-4h")
 
 
@@ -105,7 +105,8 @@ def render() -> str:
                     _f(d["width90_body_cents_median"], "%.1f"), _f(sm.get("bracket_rhat_max_median"), "%.3f"), _f(sm.get("bracket_ess_min_median"), "%.0f"), _f(sm.get("divergences_median"), "%.0f")))
     # ---- disagreement
     if "real_m48_x" in real and any(a.startswith("real_m48_f") for a in real):
-        fa = "real_m48_f1" if "real_m48_f1" in real else [a for a in real if a.startswith("real_m48_f")][0]
+        dec_arm = ("real_m48_" + dec["chosen"]) if dec.get("chosen") else None
+        fa = dec_arm if dec_arm in real else ("real_m48_f1" if "real_m48_f1" in real else [a for a in real if a.startswith("real_m48_f")][0])
         L.append("\n## 3. Where the floor and the exclusion rule disagree (60-minute windows, %s vs excl48)\n" % REAL_LABEL[fa])
         L.append("Gate 4 (split-half) and the LOO flag count per chain under each treatment; a chain is listed if Gate 4's answer differs or the "
                  "χ²/strike differs by more than 0.5.\n")

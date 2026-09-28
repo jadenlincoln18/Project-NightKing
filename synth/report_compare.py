@@ -110,12 +110,15 @@ def render(S24: Dict[str, Any], S48: Dict[str, Any], floor: float, mode: str) ->
     L.append("\n## 6. Mechanical criteria (the report's own verdict function, on each study)\n")
     V24, V48 = report.verdict(S24), report.verdict(S48)
     L.append("| criterion | 24 knots | 48 knots |\n|---|---|---|")
-    keys = [k for k in V24.get("core", {})] if isinstance(V24.get("core"), dict) else []
-    if keys:
-        for k in keys:
-            L.append("| %s | %s | %s |" % (k, V24["core"][k], V48["core"].get(k)))
-    else:
-        L.append("| (verdict structure) | %s | %s |" % (json.dumps(V24, default=str)[:400], json.dumps(V48, default=str)[:400]))
+    def _crit(t):
+        if t is None:
+            return "—"
+        v, ok = t
+        vv = ("%.3f" % v) if isinstance(v, float) else (", ".join(("%.2f" % x) if isinstance(x, float) else str(x) for x in v) if isinstance(v, tuple) else str(v))
+        return "%s %s" % (vv, "✓" if ok else ("✗" if ok is False else ""))
+    for k in V24.get("core", {}):
+        L.append("| %s | %s | %s |" % (k, _crit(V24["core"].get(k)), _crit(V48["core"].get(k))))
+    L.append("| **verdict** | **%s** (%d core failures) | **%s** (%d core failures) |" % (V24["verdict"], len(V24["failed"]), V48["verdict"], len(V48["failed"])))
     L.append("\n## 7. Verdict and what remains unfixed\n\nREADING_PLACEHOLDER\n")
     L.append("Plots: `synth/plots48/` (48 knots) and `synth/plots/` (24 knots), same file names.\n")
     return "\n".join(L) + "\n"
