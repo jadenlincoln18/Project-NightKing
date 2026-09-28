@@ -377,7 +377,7 @@ def run_one(job: Dict[str, Any]) -> Dict[str, Any]:
         # Act III, constrained then unconstrained
         asig = act3.atm_sigma(K, R, mid, F0, D, T)
         out["atm_sigma"] = asig
-        if arm.endswith("_x"):
+        if arm.endswith("x"):   # every arm whose name ends in x carries the exclusion (real_x, real_m48_x, real_m48_f1x, ...)
             # Part B: quote-level exclusion by the LOO rule, once, before the fit; what was removed is recorded
             ex = detector.exclude_by_loo(K, R, mid, hs, F0, D, T, asig, se, age_min=otm["age_min"].values, cutoff=EXCLUDE_LOO_Z)
             out["exclusion"] = {k: v for k, v in ex.items() if k not in ("keep", "loo")}

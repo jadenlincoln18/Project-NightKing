@@ -56,8 +56,8 @@ def render() -> str:
              "Every arm is 48 knots with the Gaussian prior; the exclusion rule is Part B's (LOO |z| > 3, once, Gate 0 preserved).\n")
     L.append("**VERDICT_PLACEHOLDER**\n")
     if dec:
-        L.append("Decision rule fixed before the runs (`synth/tickfloor_decide.py`): a floor is admissible if crude-skew 90% coverage stays in [88%, 95%] and "
-                 "within 3 points of base48, the stale and crossed injected quotes are still caught on ≥ 90% of chains, bimodal coverage is within 5 points of "
+        L.append("Decision rule fixed before the runs (`synth/tickfloor_decide.py`): a floor is admissible if crude-skew 90%% coverage stays in [88%%, 95%%] and "
+                 "within 3 points of base48, the stale and crossed injected quotes are still caught on ≥ 90%% of chains, bimodal coverage is within 5 points of "
                  "base48, and bracket R̂ ≤ 1.03; the smallest admissible floor is adopted. Outcome: **%s**.\n" % (
                      ("adopt %s" % SYN_LABEL[dec["chosen"]]) if dec.get("chosen") else "no floor admissible"))
         L.append("| candidate | admissible | crude cov90 in [88, 95]% | not 3 pts below base48 | stale caught | crossed caught | bimodal within 5 pts | bracket R̂ ≤ 1.03 |\n|---|---|---|---|---|---|---|---|")
