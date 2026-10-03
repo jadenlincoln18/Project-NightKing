@@ -156,6 +156,10 @@ def main(argv: Optional[List[str]] = None) -> int:
     if a.results_dir:
         RESULTS = Path(a.results_dir) if Path(a.results_dir).is_absolute() else HERE.parent / a.results_dir
         PLOTS = RESULTS.parent / (RESULTS.name.replace("results", "plots"))
+        # run as `python -m synth.runner` this function lives in __main__, while report.py imports synth.runner as a
+        # second module object; the override must reach that one too or the aggregate reads the default directory
+        import synth.runner as _self
+        _self.RESULTS, _self.PLOTS = RESULTS, PLOTS
     override = {k: v for k, v in (("m_coef", a.m_coef), ("hs_floor", a.hs_floor), ("hs_floor_mode", a.hs_floor_mode)) if v is not None}
     names = list(CONFIGS) if not a.only else [n.strip() for n in a.only.split(",")]
     if not a.report:
@@ -170,7 +174,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     with open(RESULTS / "summary.json", "w") as fh:
         json.dump(summary, fh, indent=1, default=_json_default)
     report.plots(names, PLOTS)
-    text = report.render(summary, PLOTS)
+    text = report.render(summary, PLOTS, m_coef=a.m_coef, results_dir=RESULTS if a.results_dir else None)
     findings = HERE.parent / (a.findings or "FINDINGS_SYNTHETIC.md")
     tmp = findings.with_suffix(".tmp")
     tmp.write_text(text)

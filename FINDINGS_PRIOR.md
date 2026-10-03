@@ -13,35 +13,35 @@ Part A of `NightKing/HANDOFF_prior_fix.md`. Every candidate runs through the syn
 | `m64` | as `base` with 64 knots (0.22 vol-scales between knots) | +40 coefficients | as `base` |
 | `m48x` | `m48` with Part B's exclusion rule applied before the fit (drop strikes with LOO \|z\| > 3, once) | none | as `base` |
 
-**Verdict: the bimodal blind spot is a basis-resolution problem before it is a prior-form problem, and it is now half closed. Every heavy-tailed or local-scale prior on 24 knots leaves it untouched (Student-t ν=3: trough z +6.8 → +6.4, trough coverage 0% → 5%; ν=1 and the horseshoe are rejected on the sampler gate), while the unchanged Gaussian prior on 48 knots takes the trough z from +6.8 to +1.3, trough coverage from 0% to 57%, overall bimodal coverage from 42% to 72% and kinked-peak body coverage from 53% to 89%, with no must-not-regress item failing, every injected fault still caught, and bracket R̂ / ESS on crude chains of 1.020 / 260 against 1.016 / 290. Adding the Student-t tail on top of 48 knots buys nothing and costs sampler health. Recommendation: 48 uniform knots with the current Gaussian prior is the new default; the trough (57% coverage), the overall bimodal (72%) and the spike (59%) are still short of the 80% bar, so the blind spot is narrowed, not closed; 64 knots (§3) is the test of whether more resolution keeps paying: trough z +1.1, trough coverage 75%, overall 74%, spike 59%, at bracket R̂ 1.021 / ESS 217 on crude chains.**
+**VERDICT_PLACEHOLDER**
 
 ## 1. Checklist, per candidate
 
 Must-not-regress items are judged against the baseline on the same seeds (coverage within 3 points, RMSE within 0.1¢, sampler within the stated gate); must-improve items against the fixed targets (coverage ≥ 80%, trough |z| ≤ 2). Tolerances were fixed before the runs.
 
-| item | baseline | Student-t ν=3, 24 knots | Student-t ν=1, 24 knots | horseshoe, 24 knots | Gaussian, 36 knots | Gaussian, 48 knots | Student-t ν=3, 48 knots | Gaussian, 64 knots | Gaussian, 48 knots + LOO exclusion |
-|---|---|---|---|---|---|---|---|---|---|
-| A_cov90_all | 92% | 92% ✓ | 91% ✓ | 78% ✗ | 92% ✓ | 92% ✓ | 93% ✓ | 93% ✓ | 92% ✓ |
-| A_cov90_body | 95% | 93% ✓ | 94% ✓ | 76% ✗ | 95% ✓ | 95% ✓ | 97% ✓ | 97% ✓ | 95% ✓ |
-| A_cov90_tail | 95% | 94% ✓ | 94% ✓ | 80% ✗ | 95% ✓ | 95% ✓ | 96% ✓ | 97% ✓ | 96% ✓ |
-| A_rmse_body | 0.57 | 0.64 ✓ | 0.77 ✗ | 0.94 ✗ | 0.64 ✓ | 0.66 ✓ | 0.76 ✗ | 0.77 ✗ | 0.68 ✗ |
-| A_rmse_tail | 0.21 | 0.23 ✓ | 0.27 ✓ | 0.31 ✗ | 0.26 ✓ | 0.28 ✓ | 0.30 ✓ | 0.31 ✓ | 0.29 ✓ |
-| B_cov90_all | 76% | 78% ✓ | —  | —  | 79% ✓ | 80% ✓ | —  | —  | —  |
-| S08_cov90_all | 97% | 96% ✓ | 92% ✗ | 76% ✗ | 98% ✓ | 98% ✓ | 98% ✓ | 99% ✓ | 98% ✓ |
-| M_stage14_z | 0.72 | 0.72 ✓ | —  | —  | 0.67 ✓ | 0.67 ✓ | —  | —  | —  |
-| X_fwd15_caught_parity | 100% | 100% ✓ | —  | —  | 100% ✓ | 100% ✓ | —  | —  | —  |
-| X_stale_caught_resid | 100% | 100% ✓ | —  | —  | 100% ✓ | 100% ✓ | —  | —  | —  |
-| X_convexity_caught_resid | 100% | 100% ✓ | —  | —  | 100% ✓ | 100% ✓ | —  | —  | —  |
-| X_truncated_caught_edge | 100% | 100% ✓ | —  | —  | 100% ✓ | 100% ✓ | —  | —  | —  |
-| X_unconverged_caught | 100% | 100% ✓ | —  | —  | 100% ✓ | 100% ✓ | —  | —  | —  |
-| A_bracket_rhat | 1.02 | 1.02 ✓ | 1.05 ✗ | 1.62 ✗ | 1.02 ✓ | 1.02 ✓ | 1.03 ✗ | 1.02 ✓ | 1.02 ✓ |
-| A_bracket_ess | 290 | 198 ✓ | 96 ✗ | 27 ✗ | 231 ✓ | 260 ✓ | 169 ✓ | 217 ✓ | 276 ✓ |
-| C_trough_cov90 | 0% | 5% ✗ | 10% ✗ | 10% ✗ | 27% ✗ | 57% ✗ | 55% ✗ | 75% ✗ | 55% ✗ |
-| C_trough_absz | 6.82 | 6.39 ✗ | 6.73 ✗ | 7.60 ✗ | 2.32 ✗ | 1.30 ✓ | 1.51 ✓ | 1.07 ✓ | 1.47 ✓ |
-| C_cov90_all | 42% | 43% ✗ | 42% ✗ | 22% ✗ | 65% ✗ | 72% ✗ | 74% ✗ | 74% ✗ | 73% ✗ |
-| G_cov90_all | 46% | 47% ✗ | —  | —  | 57% ✗ | 59% ✗ | 60% ✗ | 59% ✗ | —  |
-| E_cov90_body | 53% | 52% ✗ | —  | —  | 82% ✓ | 89% ✓ | 90% ✓ | 90% ✓ | —  |
-| **verdict** | | **NO IMPROVEMENT** | **REJECTED (regresses: A_rmse_body, S08_cov90_all, A_bracket_rhat, A_bracket_ess)** | **REJECTED (regresses: A_cov90_all, A_cov90_body, A_cov90_tail, A_rmse_body, A_rmse_tail, S08_cov90_all, A_bracket_rhat, A_bracket_ess)** | **PARTIAL (1 of 5 improve targets met)** | **PARTIAL (2 of 5 improve targets met)** | **REJECTED (regresses: A_rmse_body, A_bracket_rhat)** | **REJECTED (regresses: A_rmse_body)** | **REJECTED (regresses: A_rmse_body)** |
+| item | baseline | Student-t ν=3, 24 knots | Student-t ν=1, 24 knots | horseshoe, 24 knots | Gaussian, 36 knots | Gaussian, 48 knots | Student-t ν=3, 48 knots | Gaussian, 64 knots | Gaussian, 48 knots + LOO exclusion | 48 knots, tick floor 1¢ | 48 knots, tick floor 2¢ | 48 knots, tick floor 1¢ (quadrature) | 48 knots, tick floor 1¢ + LOO exclusion | 48 knots, tick floor 0.5¢ (quadrature) |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| A_cov90_all | 92% | 92% ✓ | 91% ✓ | 78% ✗ | 92% ✓ | 92% ✓ | 93% ✓ | 93% ✓ | 92% ✓ | 97% ✓ | 98% ✓ | 98% ✓ | 97% ✓ | 96% ✓ |
+| A_cov90_body | 95% | 93% ✓ | 94% ✓ | 76% ✗ | 95% ✓ | 95% ✓ | 97% ✓ | 97% ✓ | 95% ✓ | 97% ✓ | 99% ✓ | 98% ✓ | 97% ✓ | 96% ✓ |
+| A_cov90_tail | 95% | 94% ✓ | 94% ✓ | 80% ✗ | 95% ✓ | 95% ✓ | 96% ✓ | 97% ✓ | 96% ✓ | 97% ✓ | 98% ✓ | 98% ✓ | 98% ✓ | 98% ✓ |
+| A_rmse_body | 0.57 | 0.64 ✓ | 0.77 ✗ | 0.94 ✗ | 0.64 ✓ | 0.66 ✓ | 0.76 ✗ | 0.77 ✗ | 0.68 ✗ | 0.59 ✓ | 0.54 ✓ | 0.52 ✓ | 0.62 ✓ | 0.59 ✓ |
+| A_rmse_tail | 0.21 | 0.23 ✓ | 0.27 ✓ | 0.31 ✗ | 0.26 ✓ | 0.28 ✓ | 0.30 ✓ | 0.31 ✓ | 0.29 ✓ | 0.24 ✓ | 0.22 ✓ | 0.22 ✓ | 0.25 ✓ | 0.24 ✓ |
+| B_cov90_all | 76% | 78% ✓ | —  | —  | 79% ✓ | 80% ✓ | —  | —  | —  | 94% ✓ | 96% ✓ | 95% ✓ | 94% ✓ | 88% ✓ |
+| S08_cov90_all | 97% | 96% ✓ | 92% ✗ | 76% ✗ | 98% ✓ | 98% ✓ | 98% ✓ | 99% ✓ | 98% ✓ | 99% ✓ | 99% ✓ | 99% ✓ | 99% ✓ | 99% ✓ |
+| M_stage14_z | 0.72 | 0.72 ✓ | —  | —  | 0.67 ✓ | 0.67 ✓ | —  | —  | —  | —  | —  | —  | —  | —  |
+| X_fwd15_caught_parity | 100% | 100% ✓ | —  | —  | 100% ✓ | 100% ✓ | —  | —  | —  | —  | —  | —  | —  | —  |
+| X_stale_caught_resid | 100% | 100% ✓ | —  | —  | 100% ✓ | 100% ✓ | —  | —  | —  | 100% ✓ | 100% ✓ | 100% ✓ | —  | 100% ✓ |
+| X_convexity_caught_resid | 100% | 100% ✓ | —  | —  | 100% ✓ | 100% ✓ | —  | —  | —  | 100% ✓ | 100% ✓ | 100% ✓ | —  | 100% ✓ |
+| X_truncated_caught_edge | 100% | 100% ✓ | —  | —  | 100% ✓ | 100% ✓ | —  | —  | —  | —  | —  | —  | —  | —  |
+| X_unconverged_caught | 100% | 100% ✓ | —  | —  | 100% ✓ | 100% ✓ | —  | —  | —  | —  | —  | —  | —  | —  |
+| A_bracket_rhat | 1.02 | 1.02 ✓ | 1.05 ✗ | 1.62 ✗ | 1.02 ✓ | 1.02 ✓ | 1.03 ✗ | 1.02 ✓ | 1.02 ✓ | 1.02 ✓ | 1.02 ✓ | 1.02 ✓ | 1.02 ✓ | 1.02 ✓ |
+| A_bracket_ess | 290 | 198 ✓ | 96 ✗ | 27 ✗ | 231 ✓ | 260 ✓ | 169 ✓ | 217 ✓ | 276 ✓ | 249 ✓ | 232 ✓ | 244 ✓ | 249 ✓ | 220 ✓ |
+| C_trough_cov90 | 0% | 5% ✗ | 10% ✗ | 10% ✗ | 27% ✗ | 57% ✗ | 55% ✗ | 75% ✗ | 55% ✗ | 55% ✗ | 60% ✗ | 50% ✗ | 50% ✗ | 60% ✗ |
+| C_trough_absz | 6.82 | 6.39 ✗ | 6.73 ✗ | 7.60 ✗ | 2.32 ✗ | 1.30 ✓ | 1.51 ✓ | 1.07 ✓ | 1.47 ✓ | 1.44 ✓ | 1.42 ✓ | 1.54 ✓ | 1.63 ✓ | 1.34 ✓ |
+| C_cov90_all | 42% | 43% ✗ | 42% ✗ | 22% ✗ | 65% ✗ | 72% ✗ | 74% ✗ | 74% ✗ | 73% ✗ | 85% ✓ | 92% ✓ | 88% ✓ | 85% ✓ | 82% ✓ |
+| G_cov90_all | 46% | 47% ✗ | —  | —  | 57% ✗ | 59% ✗ | 60% ✗ | 59% ✗ | —  | —  | —  | —  | —  | —  |
+| E_cov90_body | 53% | 52% ✗ | —  | —  | 82% ✓ | 89% ✓ | 90% ✓ | 90% ✓ | —  | —  | —  | —  | —  | —  |
+| **verdict** | | **NO IMPROVEMENT** | **REJECTED (regresses: A_rmse_body, S08_cov90_all, A_bracket_rhat, A_bracket_ess)** | **REJECTED (regresses: A_cov90_all, A_cov90_body, A_cov90_tail, A_rmse_body, A_rmse_tail, S08_cov90_all, A_bracket_rhat, A_bracket_ess)** | **PARTIAL (1 of 5 improve targets met)** | **PARTIAL (2 of 5 improve targets met)** | **REJECTED (regresses: A_rmse_body, A_bracket_rhat)** | **REJECTED (regresses: A_rmse_body)** | **REJECTED (regresses: A_rmse_body)** | **PARTIAL (2 of 5 improve targets met)** | **PARTIAL (2 of 5 improve targets met)** | **PARTIAL (2 of 5 improve targets met)** | **PARTIAL (2 of 5 improve targets met)** | **PARTIAL (2 of 5 improve targets met)** |
 
 ## 2. Bracket coverage and error, by planted density
 
@@ -58,10 +58,20 @@ Must-not-regress items are judged against the baseline on the same seeds (covera
 | A_crude_full | Student-t ν=3, 48 knots | 20 | 93% | 97% | 96% | 89% | 0.76 | 0.30 | 3.07 | 1.12 | -0.03 |
 | A_crude_full | Gaussian, 64 knots | 20 | 93% | 97% | 97% | 91% | 0.77 | 0.31 | 3.19 | 1.17 | -0.03 |
 | A_crude_full | Gaussian, 48 knots + LOO exclusion | 30 | 92% | 95% | 96% | 89% | 0.68 | 0.29 | 2.69 | 1.04 | -0.07 |
+| A_crude_full | 48 knots, tick floor 1¢ | 30 | 97% | 97% | 97% | 96% | 0.59 | 0.24 | 2.64 | 1.02 | -0.04 |
+| A_crude_full | 48 knots, tick floor 2¢ | 30 | 98% | 99% | 98% | 98% | 0.54 | 0.22 | 2.99 | 1.15 | -0.04 |
+| A_crude_full | 48 knots, tick floor 1¢ (quadrature) | 30 | 98% | 98% | 98% | 98% | 0.52 | 0.22 | 2.83 | 1.09 | -0.03 |
+| A_crude_full | 48 knots, tick floor 1¢ + LOO exclusion | 30 | 97% | 97% | 98% | 97% | 0.62 | 0.25 | 2.63 | 1.02 | -0.05 |
+| A_crude_full | 48 knots, tick floor 0.5¢ (quadrature) | 30 | 96% | 96% | 98% | 96% | 0.59 | 0.24 | 2.66 | 1.04 | -0.04 |
 | B_lognormal_full | Gaussian, 24 knots (current) | 40 | 76% | 97% | 85% | 66% | 0.65 | 0.34 | 2.41 | 0.88 | -0.05 |
 | B_lognormal_full | Student-t ν=3, 24 knots | 40 | 78% | 96% | 86% | 69% | 0.62 | 0.34 | 2.36 | 0.89 | -0.05 |
 | B_lognormal_full | Gaussian, 36 knots | 30 | 79% | 97% | 90% | 69% | 0.72 | 0.39 | 2.97 | 1.10 | -0.05 |
 | B_lognormal_full | Gaussian, 48 knots | 30 | 80% | 97% | 93% | 70% | 0.78 | 0.41 | 3.34 | 1.24 | -0.06 |
+| B_lognormal_full | 48 knots, tick floor 1¢ | 30 | 94% | 98% | 97% | 92% | 0.61 | 0.29 | 2.96 | 1.11 | -0.03 |
+| B_lognormal_full | 48 knots, tick floor 2¢ | 30 | 96% | 99% | 97% | 95% | 0.55 | 0.25 | 3.45 | 1.25 | -0.02 |
+| B_lognormal_full | 48 knots, tick floor 1¢ (quadrature) | 30 | 95% | 99% | 98% | 94% | 0.53 | 0.26 | 3.13 | 1.16 | -0.03 |
+| B_lognormal_full | 48 knots, tick floor 1¢ + LOO exclusion | 30 | 94% | 98% | 97% | 93% | 0.59 | 0.28 | 2.96 | 1.10 | -0.02 |
+| B_lognormal_full | 48 knots, tick floor 0.5¢ (quadrature) | 30 | 88% | 98% | 96% | 81% | 0.64 | 0.32 | 3.14 | 1.17 | -0.04 |
 | C_bimodal_full | Gaussian, 24 knots (current) | 40 | 42% | 41% | 29% | 65% | 1.77 | 0.96 | 2.46 | 0.94 | +0.11 |
 | C_bimodal_full | Student-t ν=3, 24 knots | 40 | 43% | 40% | 31% | 65% | 1.82 | 0.95 | 2.50 | 0.95 | +0.12 |
 | C_bimodal_full | Student-t ν=1, 24 knots | 20 | 42% | 49% | 29% | 63% | 2.04 | 0.95 | 2.85 | 0.98 | +0.16 |
@@ -71,6 +81,11 @@ Must-not-regress items are judged against the baseline on the same seeds (covera
 | C_bimodal_full | Student-t ν=3, 48 knots | 20 | 74% | 80% | 79% | 76% | 1.89 | 0.76 | 4.51 | 1.77 | +0.21 |
 | C_bimodal_full | Gaussian, 64 knots | 20 | 74% | 81% | 82% | 73% | 1.81 | 0.72 | 4.89 | 1.97 | +0.26 |
 | C_bimodal_full | Gaussian, 48 knots + LOO exclusion | 20 | 73% | 78% | 82% | 72% | 1.66 | 0.81 | 4.38 | 1.72 | +0.09 |
+| C_bimodal_full | 48 knots, tick floor 1¢ | 20 | 85% | 88% | 89% | 84% | 1.33 | 0.62 | 4.21 | 1.70 | +0.05 |
+| C_bimodal_full | 48 knots, tick floor 2¢ | 20 | 92% | 95% | 93% | 90% | 1.18 | 0.63 | 5.14 | 1.98 | -0.05 |
+| C_bimodal_full | 48 knots, tick floor 1¢ (quadrature) | 20 | 88% | 93% | 91% | 89% | 1.25 | 0.63 | 4.59 | 1.84 | +0.01 |
+| C_bimodal_full | 48 knots, tick floor 1¢ + LOO exclusion | 20 | 85% | 90% | 89% | 83% | 1.52 | 0.78 | 4.55 | 1.74 | -0.19 |
+| C_bimodal_full | 48 knots, tick floor 0.5¢ (quadrature) | 20 | 82% | 85% | 89% | 79% | 1.42 | 0.65 | 4.37 | 1.73 | +0.11 |
 | C05_bimodal_halfnoise | Gaussian, 24 knots (current) | 30 | 36% | 30% | 18% | 65% | 1.71 | 0.89 | 1.67 | 0.61 | +0.19 |
 | C05_bimodal_halfnoise | Student-t ν=3, 24 knots | 30 | 33% | 30% | 16% | 60% | 1.73 | 0.89 | 1.64 | 0.59 | +0.21 |
 | C05_bimodal_halfnoise | Gaussian, 36 knots | 20 | 62% | 73% | 63% | 68% | 1.38 | 0.58 | 2.70 | 0.97 | +0.23 |
@@ -108,6 +123,11 @@ Must-not-regress items are judged against the baseline on the same seeds (covera
 | S08_crude | Student-t ν=3, 48 knots | 20 | 98% | 100% | 100% | 98% | 0.89 | 0.45 | 5.27 | 2.00 | +0.04 |
 | S08_crude | Gaussian, 64 knots | 20 | 99% | 100% | 100% | 98% | 0.87 | 0.44 | 5.31 | 2.05 | +0.06 |
 | S08_crude | Gaussian, 48 knots + LOO exclusion | 20 | 98% | 100% | 100% | 98% | 0.82 | 0.42 | 4.85 | 1.88 | +0.06 |
+| S08_crude | 48 knots, tick floor 1¢ | 20 | 99% | 100% | 100% | 98% | 0.81 | 0.40 | 5.07 | 1.93 | -0.04 |
+| S08_crude | 48 knots, tick floor 2¢ | 20 | 99% | 100% | 100% | 98% | 0.78 | 0.40 | 5.39 | 2.05 | -0.11 |
+| S08_crude | 48 knots, tick floor 1¢ (quadrature) | 20 | 99% | 100% | 100% | 98% | 0.77 | 0.40 | 5.05 | 1.99 | -0.05 |
+| S08_crude | 48 knots, tick floor 1¢ + LOO exclusion | 20 | 99% | 100% | 100% | 98% | 0.81 | 0.40 | 5.07 | 1.93 | -0.04 |
+| S08_crude | 48 knots, tick floor 0.5¢ (quadrature) | 20 | 99% | 100% | 100% | 98% | 0.78 | 0.39 | 4.85 | 1.86 | -0.01 |
 | M_crude_nomart | Gaussian, 24 knots (current) | 30 | 92% | 98% | 95% | 89% | 0.75 | 0.23 | 2.47 | 0.86 | +0.02 |
 | M_crude_nomart | Student-t ν=3, 24 knots | 30 | 92% | 96% | 94% | 89% | 0.79 | 0.25 | 2.57 | 0.87 | +0.05 |
 | M_crude_nomart | Gaussian, 36 knots | 20 | 94% | 98% | 96% | 92% | 0.78 | 0.28 | 3.25 | 1.07 | +0.01 |
@@ -121,11 +141,21 @@ Must-not-regress items are judged against the baseline on the same seeds (covera
 | X_stale | Gaussian, 36 knots | 20 | 60% | 44% | 54% | 72% | 12.54 | 4.84 | 4.93 | 1.84 | -0.03 |
 | X_stale | Gaussian, 48 knots | 20 | 64% | 49% | 60% | 72% | 11.24 | 5.84 | 6.33 | 2.53 | -0.66 |
 | X_stale | Gaussian, 48 knots + LOO exclusion | 20 | 94% | 100% | 97% | 91% | 0.75 | 0.32 | 3.56 | 1.27 | -0.03 |
+| X_stale | 48 knots, tick floor 1¢ | 20 | 70% | 54% | 62% | 83% | 12.65 | 5.06 | 6.54 | 2.19 | -0.08 |
+| X_stale | 48 knots, tick floor 2¢ | 20 | 70% | 49% | 59% | 86% | 11.99 | 5.54 | 6.61 | 2.54 | -0.30 |
+| X_stale | 48 knots, tick floor 1¢ (quadrature) | 20 | 70% | 51% | 64% | 82% | 11.85 | 5.13 | 7.14 | 2.42 | -0.29 |
+| X_stale | 48 knots, tick floor 1¢ + LOO exclusion | 20 | 97% | 100% | 99% | 95% | 0.55 | 0.24 | 3.23 | 1.15 | -0.01 |
+| X_stale | 48 knots, tick floor 0.5¢ (quadrature) | 20 | 66% | 48% | 60% | 78% | 11.19 | 5.26 | 6.49 | 2.64 | -0.69 |
 | X_convexity | Gaussian, 24 knots (current) | 30 | 53% | 35% | 45% | 67% | 6.61 | 2.91 | 2.95 | 1.30 | -0.40 |
 | X_convexity | Student-t ν=3, 24 knots | 30 | 52% | 35% | 44% | 66% | 6.61 | 2.92 | 2.99 | 1.31 | -0.39 |
 | X_convexity | Gaussian, 36 knots | 20 | 63% | 37% | 56% | 79% | 7.38 | 3.04 | 4.25 | 1.85 | -0.66 |
 | X_convexity | Gaussian, 48 knots | 20 | 68% | 41% | 64% | 82% | 7.62 | 3.04 | 4.93 | 2.12 | -0.69 |
 | X_convexity | Gaussian, 48 knots + LOO exclusion | 20 | 94% | 98% | 95% | 92% | 0.87 | 0.35 | 3.54 | 1.21 | -0.09 |
+| X_convexity | 48 knots, tick floor 1¢ | 20 | 73% | 49% | 64% | 91% | 7.62 | 3.07 | 5.17 | 2.21 | -0.70 |
+| X_convexity | 48 knots, tick floor 2¢ | 20 | 75% | 44% | 68% | 92% | 6.72 | 2.84 | 5.65 | 2.45 | -0.50 |
+| X_convexity | 48 knots, tick floor 1¢ (quadrature) | 20 | 75% | 43% | 68% | 91% | 6.87 | 2.83 | 5.47 | 2.33 | -0.56 |
+| X_convexity | 48 knots, tick floor 1¢ + LOO exclusion | 20 | 94% | 97% | 93% | 95% | 0.78 | 0.31 | 3.41 | 1.18 | -0.07 |
+| X_convexity | 48 knots, tick floor 0.5¢ (quadrature) | 20 | 69% | 46% | 62% | 84% | 7.43 | 3.05 | 5.11 | 2.18 | -0.65 |
 | X_truncated_grid | Gaussian, 24 knots (current) | 30 | 15% | 54% | 18% | 0% | 9.15 | 7.88 | 13.31 | 2.62 | -0.14 |
 | X_truncated_grid | Student-t ν=3, 24 knots | 30 | 14% | 58% | 16% | 0% | 8.19 | 7.78 | 11.56 | 2.29 | -0.21 |
 | X_truncated_grid | Gaussian, 36 knots | 20 | 15% | 62% | 17% | 0% | 9.15 | 7.97 | 13.85 | 3.00 | -0.46 |
@@ -150,6 +180,11 @@ Trough = the bracket between the two humps where the truth is lowest: z of the p
 | C_bimodal_full | Student-t ν=3, 48 knots | 20 | +1.5 | 1.75 | 55% | 74% | 80% | 100% | {'2': 20} | 0.069 | 1.00 | 1.02 |
 | C_bimodal_full | Gaussian, 64 knots | 20 | +1.1 | 1.93 | 75% | 74% | 81% | 100% | {'2': 20} | 0.067 | 0.89 | 1.03 |
 | C_bimodal_full | Gaussian, 48 knots + LOO exclusion | 20 | +1.5 | 1.68 | 55% | 73% | 78% | 100% | {'2': 20} | 0.066 | 1.31 | 0.98 |
+| C_bimodal_full | 48 knots, tick floor 1¢ | 20 | +1.4 | 1.62 | 55% | 85% | 88% | 100% | {'2': 20} | 0.059 | 1.22 | 0.90 |
+| C_bimodal_full | 48 knots, tick floor 2¢ | 20 | +1.4 | 1.74 | 60% | 92% | 95% | 100% | {'2': 20} | 0.059 | 1.22 | 0.70 |
+| C_bimodal_full | 48 knots, tick floor 1¢ (quadrature) | 20 | +1.5 | 1.63 | 50% | 88% | 93% | 100% | {'2': 20} | 0.057 | 1.20 | 0.81 |
+| C_bimodal_full | 48 knots, tick floor 1¢ + LOO exclusion | 20 | +1.6 | 1.62 | 50% | 85% | 90% | 100% | {'2': 20} | 0.063 | 1.20 | 0.92 |
+| C_bimodal_full | 48 knots, tick floor 0.5¢ (quadrature) | 20 | +1.3 | 1.67 | 60% | 82% | 85% | 100% | {'2': 20} | 0.060 | 1.26 | 0.99 |
 | C05_bimodal_halfnoise | Gaussian, 24 knots (current) | 30 | +11.2 | 0.39 | 0% | 36% | 30% | 100% | {'2': 30} | 0.085 | 4.87 | 1.44 |
 | C05_bimodal_halfnoise | Student-t ν=3, 24 knots | 30 | +11.3 | 0.41 | 0% | 33% | 30% | 100% | {'2': 30} | 0.085 | 3.38 | 1.48 |
 | C05_bimodal_halfnoise | Gaussian, 36 knots | 20 | +3.0 | 0.80 | 5% | 62% | 73% | 100% | {'2': 20} | 0.056 | 2.12 | 1.17 |
@@ -192,10 +227,20 @@ Trough = the bracket between the two humps where the truth is lowest: z of the p
 | A_crude_full | Student-t ν=3, 48 knots | 20 | 1.051 (1.237) | 108 (55) | 33 | 1.030 (1.192) | 169 (77) | 203 |
 | A_crude_full | Gaussian, 64 knots | 20 | 1.036 (1.081) | 177 (80) | 51 | 1.021 (1.048) | 217 (127) | 110 |
 | A_crude_full | Gaussian, 48 knots + LOO exclusion | 30 | 1.023 (1.072) | 201 (66) | 21 | 1.016 (1.035) | 276 (112) | 77 |
+| A_crude_full | 48 knots, tick floor 1¢ | 30 | 1.028 (1.134) | 197 (68) | 36 | 1.018 (1.074) | 249 (101) | 74 |
+| A_crude_full | 48 knots, tick floor 2¢ | 30 | 1.030 (1.093) | 176 (69) | 39 | 1.021 (1.112) | 232 (66) | 91 |
+| A_crude_full | 48 knots, tick floor 1¢ (quadrature) | 30 | 1.024 (1.137) | 226 (46) | 40 | 1.018 (1.105) | 244 (54) | 104 |
+| A_crude_full | 48 knots, tick floor 1¢ + LOO exclusion | 30 | 1.028 (1.099) | 184 (70) | 37 | 1.017 (1.091) | 249 (98) | 82 |
+| A_crude_full | 48 knots, tick floor 0.5¢ (quadrature) | 30 | 1.029 (1.056) | 188 (124) | 37 | 1.021 (1.055) | 220 (106) | 74 |
 | B_lognormal_full | Gaussian, 24 knots (current) | 40 | 1.027 (1.148) | 215 (53) | 22 | 1.020 (1.094) | 238 (73) | 46 |
 | B_lognormal_full | Student-t ν=3, 24 knots | 40 | 1.045 (1.173) | 126 (54) | 20 | 1.027 (1.105) | 202 (64) | 113 |
 | B_lognormal_full | Gaussian, 36 knots | 30 | 1.026 (1.115) | 178 (61) | 18 | 1.020 (1.119) | 249 (51) | 50 |
 | B_lognormal_full | Gaussian, 48 knots | 30 | 1.044 (1.137) | 135 (47) | 20 | 1.028 (1.129) | 174 (72) | 70 |
+| B_lognormal_full | 48 knots, tick floor 1¢ | 30 | 1.022 (1.140) | 267 (52) | 29 | 1.019 (1.098) | 246 (67) | 38 |
+| B_lognormal_full | 48 knots, tick floor 2¢ | 30 | 1.018 (1.062) | 263 (89) | 28 | 1.017 (1.076) | 267 (79) | 47 |
+| B_lognormal_full | 48 knots, tick floor 1¢ (quadrature) | 30 | 1.021 (1.061) | 240 (93) | 24 | 1.018 (1.051) | 256 (128) | 52 |
+| B_lognormal_full | 48 knots, tick floor 1¢ + LOO exclusion | 30 | 1.022 (1.140) | 257 (51) | 28 | 1.019 (1.098) | 238 (53) | 47 |
+| B_lognormal_full | 48 knots, tick floor 0.5¢ (quadrature) | 30 | 1.028 (1.058) | 199 (86) | 26 | 1.025 (1.047) | 276 (99) | 66 |
 | C_bimodal_full | Gaussian, 24 knots (current) | 40 | 1.134 (1.691) | 52 (20) | 16 | 1.044 (1.136) | 147 (74) | 118 |
 | C_bimodal_full | Student-t ν=3, 24 knots | 40 | 1.133 (1.451) | 53 (24) | 30 | 1.049 (1.188) | 96 (50) | 208 |
 | C_bimodal_full | Student-t ν=1, 24 knots | 20 | 1.452 (2.754) | 25 (15) | 8 | 1.087 (1.213) | 86 (45) | 159 |
@@ -205,6 +250,11 @@ Trough = the bracket between the two humps where the truth is lowest: z of the p
 | C_bimodal_full | Student-t ν=3, 48 knots | 20 | 1.216 (1.549) | 34 (25) | 22 | 1.076 (1.255) | 88 (40) | 290 |
 | C_bimodal_full | Gaussian, 64 knots | 20 | 1.099 (1.391) | 69 (21) | 16 | 1.050 (1.136) | 125 (48) | 162 |
 | C_bimodal_full | Gaussian, 48 knots + LOO exclusion | 20 | 1.083 (1.351) | 65 (29) | 26 | 1.044 (1.113) | 142 (47) | 137 |
+| C_bimodal_full | 48 knots, tick floor 1¢ | 20 | 1.030 (1.425) | 198 (22) | 130 | 1.026 (1.110) | 165 (47) | 84 |
+| C_bimodal_full | 48 knots, tick floor 2¢ | 20 | 1.025 (1.464) | 237 (44) | 120 | 1.023 (1.465) | 228 (36) | 85 |
+| C_bimodal_full | 48 knots, tick floor 1¢ (quadrature) | 20 | 1.044 (1.329) | 151 (45) | 130 | 1.032 (1.152) | 189 (37) | 102 |
+| C_bimodal_full | 48 knots, tick floor 1¢ + LOO exclusion | 20 | 1.056 (1.370) | 100 (22) | 114 | 1.028 (1.221) | 142 (35) | 93 |
+| C_bimodal_full | 48 knots, tick floor 0.5¢ (quadrature) | 20 | 1.053 (1.377) | 126 (26) | 94 | 1.031 (1.200) | 179 (37) | 141 |
 | C05_bimodal_halfnoise | Gaussian, 24 knots (current) | 30 | 1.171 (1.996) | 41 (16) | 42 | 1.053 (1.189) | 133 (61) | 117 |
 | C05_bimodal_halfnoise | Student-t ν=3, 24 knots | 30 | 1.194 (1.591) | 48 (24) | 34 | 1.104 (1.330) | 70 (37) | 211 |
 | C05_bimodal_halfnoise | Gaussian, 36 knots | 20 | 1.115 (1.581) | 42 (25) | 79 | 1.038 (1.146) | 122 (55) | 102 |
@@ -242,6 +292,11 @@ Trough = the bracket between the two humps where the truth is lowest: z of the p
 | S08_crude | Student-t ν=3, 48 knots | 20 | 1.077 (1.196) | 83 (34) | 55 | 1.064 (1.250) | 95 (37) | 180 |
 | S08_crude | Gaussian, 64 knots | 20 | 1.065 (1.253) | 97 (46) | 42 | 1.043 (1.249) | 131 (66) | 88 |
 | S08_crude | Gaussian, 48 knots + LOO exclusion | 20 | 1.042 (1.316) | 126 (44) | 57 | 1.037 (1.300) | 144 (55) | 69 |
+| S08_crude | 48 knots, tick floor 1¢ | 20 | 1.038 (1.102) | 107 (73) | 50 | 1.032 (1.107) | 139 (73) | 69 |
+| S08_crude | 48 knots, tick floor 2¢ | 20 | 1.059 (1.148) | 87 (49) | 52 | 1.033 (1.174) | 162 (51) | 72 |
+| S08_crude | 48 knots, tick floor 1¢ (quadrature) | 20 | 1.048 (1.137) | 130 (59) | 56 | 1.045 (1.128) | 141 (69) | 85 |
+| S08_crude | 48 knots, tick floor 1¢ + LOO exclusion | 20 | 1.038 (1.102) | 107 (73) | 50 | 1.032 (1.107) | 139 (73) | 83 |
+| S08_crude | 48 knots, tick floor 0.5¢ (quadrature) | 20 | 1.039 (1.151) | 152 (65) | 57 | 1.039 (1.073) | 140 (100) | 84 |
 | M_crude_nomart | Gaussian, 24 knots (current) | 30 | 1.029 (1.085) | 155 (60) | 34 | 1.019 (1.090) | 241 (79) | 57 |
 | M_crude_nomart | Student-t ν=3, 24 knots | 30 | 1.040 (1.078) | 136 (75) | 18 | 1.020 (1.067) | 267 (92) | 97 |
 | M_crude_nomart | Gaussian, 36 knots | 20 | 1.025 (1.102) | 215 (49) | 43 | 1.020 (1.086) | 249 (75) | 64 |
@@ -255,11 +310,21 @@ Trough = the bracket between the two humps where the truth is lowest: z of the p
 | X_stale | Gaussian, 36 knots | 20 | 1.449 (2.834) | 24 (15) | 38 | 1.139 (1.875) | 60 (19) | 107 |
 | X_stale | Gaussian, 48 knots | 20 | 1.319 (2.953) | 30 (14) | 31 | 1.151 (1.925) | 46 (24) | 132 |
 | X_stale | Gaussian, 48 knots + LOO exclusion | 20 | 1.028 (1.065) | 167 (65) | 41 | 1.018 (1.048) | 201 (87) | 98 |
+| X_stale | 48 knots, tick floor 1¢ | 20 | 1.172 (3.525) | 41 (13) | 26 | 1.158 (1.778) | 45 (24) | 119 |
+| X_stale | 48 knots, tick floor 2¢ | 20 | 1.494 (3.286) | 31 (13) | 28 | 1.243 (1.914) | 45 (24) | 136 |
+| X_stale | 48 knots, tick floor 1¢ (quadrature) | 20 | 1.304 (2.671) | 41 (14) | 24 | 1.164 (1.591) | 54 (24) | 140 |
+| X_stale | 48 knots, tick floor 1¢ + LOO exclusion | 20 | 1.028 (1.052) | 205 (123) | 26 | 1.015 (1.045) | 304 (101) | 79 |
+| X_stale | 48 knots, tick floor 0.5¢ (quadrature) | 20 | 1.180 (2.693) | 54 (15) | 37 | 1.128 (1.896) | 54 (19) | 150 |
 | X_convexity | Gaussian, 24 knots (current) | 30 | 1.039 (2.394) | 144 (16) | 30 | 1.056 (1.624) | 98 (35) | 104 |
 | X_convexity | Student-t ν=3, 24 knots | 30 | 1.121 (2.337) | 47 (17) | 27 | 1.066 (1.601) | 97 (28) | 143 |
 | X_convexity | Gaussian, 36 knots | 20 | 1.184 (2.668) | 37 (17) | 30 | 1.103 (1.314) | 61 (30) | 102 |
 | X_convexity | Gaussian, 48 knots | 20 | 1.084 (2.595) | 71 (15) | 28 | 1.075 (1.667) | 99 (26) | 129 |
 | X_convexity | Gaussian, 48 knots + LOO exclusion | 20 | 1.024 (1.156) | 162 (55) | 40 | 1.021 (1.079) | 274 (101) | 90 |
+| X_convexity | 48 knots, tick floor 1¢ | 20 | 1.120 (2.089) | 61 (16) | 32 | 1.067 (1.649) | 84 (27) | 119 |
+| X_convexity | 48 knots, tick floor 2¢ | 20 | 1.126 (1.916) | 74 (18) | 50 | 1.107 (1.367) | 77 (27) | 119 |
+| X_convexity | 48 knots, tick floor 1¢ (quadrature) | 20 | 1.154 (1.991) | 40 (17) | 22 | 1.092 (1.324) | 74 (35) | 122 |
+| X_convexity | 48 knots, tick floor 1¢ + LOO exclusion | 20 | 1.028 (1.083) | 206 (86) | 30 | 1.022 (1.087) | 244 (62) | 77 |
+| X_convexity | 48 knots, tick floor 0.5¢ (quadrature) | 20 | 1.441 (1.745) | 27 (18) | 39 | 1.187 (1.537) | 46 (21) | 162 |
 | X_truncated_grid | Gaussian, 24 knots (current) | 30 | 1.105 (1.714) | 63 (18) | 1 | 1.049 (1.363) | 119 (33) | 137 |
 | X_truncated_grid | Student-t ν=3, 24 knots | 30 | 1.125 (1.555) | 48 (22) | 4 | 1.037 (1.114) | 142 (68) | 168 |
 | X_truncated_grid | Gaussian, 36 knots | 20 | 1.103 (1.609) | 67 (17) | 1 | 1.060 (1.250) | 119 (30) | 120 |
@@ -289,11 +354,21 @@ X_unconverged band width relative to the converged run on the same seeds (median
 | X_stale | Gaussian, 36 knots | 20 | -0.20 | 1.37 | 55% | 0% | 0% | 100% | 100% | 0% | 100% |
 | X_stale | Gaussian, 48 knots | 20 | +6.37 | 1.20 | 55% | 0% | 0% | 100% | 100% | 0% | 100% |
 | X_stale | Gaussian, 48 knots + LOO exclusion | 20 | +0.00 | 0.89 | 70% | 0% | 0% | — | 5% | 0% | 100% |
+| X_stale | 48 knots, tick floor 1¢ | 20 | +0.17 | 1.25 | 60% | 0% | 0% | 100% | 100% | 0% | 100% |
+| X_stale | 48 knots, tick floor 2¢ | 20 | -0.12 | 1.29 | 65% | 0% | 0% | 100% | 100% | 0% | 100% |
+| X_stale | 48 knots, tick floor 1¢ (quadrature) | 20 | -1.99 | 1.10 | 65% | 0% | 0% | 100% | 100% | 0% | 100% |
+| X_stale | 48 knots, tick floor 1¢ + LOO exclusion | 20 | +0.00 | 0.91 | 65% | 0% | 0% | — | 0% | 0% | 100% |
+| X_stale | 48 knots, tick floor 0.5¢ (quadrature) | 20 | -3.59 | 1.13 | 60% | 0% | 0% | 100% | 100% | 5% | 100% |
 | X_convexity | Gaussian, 24 knots (current) | 30 | +1.42 | 1.39 | 60% | 0% | 17% | 100% | 100% | 0% | 100% |
 | X_convexity | Student-t ν=3, 24 knots | 30 | +1.41 | 1.38 | 57% | 0% | 17% | 100% | 100% | 0% | 100% |
 | X_convexity | Gaussian, 36 knots | 20 | +1.38 | 1.09 | 55% | 0% | 20% | 100% | 100% | 0% | 100% |
 | X_convexity | Gaussian, 48 knots | 20 | +1.35 | 1.08 | 55% | 0% | 25% | 100% | 100% | 0% | 100% |
 | X_convexity | Gaussian, 48 knots + LOO exclusion | 20 | +0.04 | 0.91 | 70% | 0% | 0% | — | 5% | 0% | 100% |
+| X_convexity | 48 knots, tick floor 1¢ | 20 | +1.35 | 1.07 | 55% | 0% | 25% | 100% | 100% | 0% | 100% |
+| X_convexity | 48 knots, tick floor 2¢ | 20 | +0.97 | 0.93 | 65% | 0% | 5% | 100% | 100% | 0% | 100% |
+| X_convexity | 48 knots, tick floor 1¢ (quadrature) | 20 | +1.07 | 0.90 | 55% | 0% | 5% | 100% | 100% | 0% | 100% |
+| X_convexity | 48 knots, tick floor 1¢ + LOO exclusion | 20 | +0.04 | 0.92 | 70% | 0% | 0% | — | 0% | 0% | 100% |
+| X_convexity | 48 knots, tick floor 0.5¢ (quadrature) | 20 | +1.26 | 1.04 | 55% | 0% | 15% | 100% | 100% | 0% | 100% |
 | X_truncated_grid | Gaussian, 24 knots (current) | 30 | +0.19 | 0.91 | 83% | 0% | 0% | — | 100% | 100% | 100% |
 | X_truncated_grid | Student-t ν=3, 24 knots | 30 | +0.19 | 0.90 | 73% | 0% | 0% | — | 100% | 100% | 100% |
 | X_truncated_grid | Gaussian, 36 knots | 20 | -0.00 | 1.05 | 75% | 0% | 0% | — | 100% | 100% | 100% |
@@ -305,46 +380,7 @@ X_unconverged band width relative to the converged run on the same seeds (median
 
 ## 6. Reading
 
-
-**Why the tail form did nothing at 24 knots.** The brief's diagnosis — one scale for the whole curve, Gaussian tails, so a sharp
-feature is astronomically improbable at any τ — is right about the *prior*, but the prior was not the binding constraint. With 24
-coefficients over ±7 vol-scales the knots are 0.7 vol-scales apart; the planted humps are 2.6 apart, so the trough between them spans
-about two knot intervals, and a cubic B-spline with that spacing cannot represent a trough of that width at all. A heavier-tailed prior
-makes large second differences cheaper, but the increments the trough needs cannot be formed in the basis, so the posterior under
-Student-t ν=3 is the Gaussian posterior with a smaller τ (3.43 vs 4.95): same trough z, same 0.7¢ band, same 100% two-mode recovery with
-the wrong depth. The three hyperpriors of `FINDINGS_SYNTHETIC.md` §9 giving identical answers was the same symptom. Cauchy increments
-(ν=1) and explicit local scales (horseshoe) do not change the answer either and mix unusably: R̂ 1.05 / 1.62 on crude chains, ESS 96 / 27 —
-the docstring's warning about sampled scales was borne out (a global τ on top of local λ_j ran straight down the flat τ→0, λ→∞ ridge and
-had to be removed before the horseshoe would fit at all).
-
-**What resolution does.** 36 knots halve the trough z (+2.3), 48 knots take it to +1.3 with a 1.55¢ band that contains the truth 57% of the
-time, and the improvement carries to the shapes the brief listed: kinked peak body coverage 53% → 89%, spike 46% → 59%, half-noise bimodal
-trough z +11.2 → +1.7. `F_bimodal_close` stays honest (trough coverage 100%). The price is precision on smooth truths, not calibration: on the
-crude-skew chains coverage is unchanged (92% / 95% / 95% all / body / tail against 92% / 95% / 95%) while the body band widens from 1.90¢ to 2.70¢
-and the RMSE from 0.57¢ to 0.66¢ — the model is admitting shapes it used to rule out by construction. The eight-strike gate holds (98% vs
-97%), Stage 14 is unchanged (|z| 0.67 vs 0.72), and every injected fault is still caught at the same rate.
-
-**Sampler health at 48 knots** is inside the gate on the crude chains (bracket R̂ 1.020 vs 1.016, bracket ESS 260 vs 290, divergences 31 vs
-23 per run) and somewhat worse on the bimodal ones (bracket ESS 108 vs 147, p10 32), which is where the posterior is now genuinely
-multimodal in shape and the whitening at the MAP is a poorer guide. Run time per chain rises from 68 s to 83 s. Student-t on 48 knots
-adds nothing to the blind-spot rows and pushes bracket R̂ to 1.030 and the RMSE past the tolerance, so it is rejected.
-
-**What is still not right.** Trough coverage 57% and overall bimodal coverage 72% at 48 knots are honest by comparison with 0% and 42%,
-but they are not 90%: the band at the trough is still too narrow by a factor of about two. Two things are left to try, in order:
-(i) more resolution — 64 knots (run: trough z +1.1, trough coverage 75%, overall 74%, spike 59%; bracket R̂ 1.021, ESS 217 on crude chains — REJECTED (regresses: A_rmse_body)); (ii) knots dense where strikes are dense, which the writeup asked for and V2 deferred because a
-non-uniform knot vector changes what the second-difference penalty means (the fix is a divided-difference penalty, standard for
-unequal P-splines). The learned-prior idea the operator raised stays behind both: calibrating τ's hyperprior from real extractions is
-sound and cheap once the basis can express what the data ask for, but it cannot substitute for that.
-
-**Part B on this harness** (`m48x`: 48 knots with the LOO exclusion rule applied before the fit): coverage on the clean chains is
-unchanged (92% / 95% / 96%), 0.7% of quotes are removed on them and none on the 8-strike chains, the injected stale and crossed quotes
-are removed on 100% of the fault chains, and the bimodal truth is untouched (73% overall). The rule removes noise, not signal; what it
-does on the real chains is in `FINDINGS_REALCHAIN_V4.md` §8.
-
-**Recommendation.** Make 48 uniform knots with the Gaussian prior the default (`act3.M_COEF = 48`), re-run the real chains with it
-(`FINDINGS_REALCHAIN_V4.md`), and keep the 24-knot model runnable as the baseline. `FINDINGS_SYNTHETIC.md`'s FAIL verdict is
-superseded in its diagnosis (form of the prior) but not in its status: the harness still shows a 1.6¢-wide band that misses the
-truth by 1.3σ at the trough, so the answer to "is the blind spot closed" is **narrowed, not closed**.
+READING_PLACEHOLDER
 
 Plots: `synth/plots_prior/` — the planted bimodal, spike and kinked chains under each prior (same seed).
 

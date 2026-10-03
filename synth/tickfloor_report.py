@@ -52,7 +52,7 @@ def render() -> str:
     L.append("Task 1 of `NightKing/HANDOFF_tickfloor_and_fullsynth.md`. The likelihood's tolerance is the quote's half-spread; options trade in 1¢ ticks, "
              "so a 1¢-wide market (half-spread 0.5¢) does not locate the price to 0.5¢, and `FINDINGS_PRIOR.md` Part B found that the exclusion rule "
              "was removing exactly those quotes (57% of removed quotes had a 0.5¢ half-spread). On the real chains 26–32% of quotes are 1¢ wide and a "
-             "further 20–23% are 2¢ wide, so a half-tick floor is a no-op (nothing is below 0.5¢) and the sweep is 1¢, 1¢ added in quadrature, and 2¢. "
+             "further 20–23% are 2¢ wide. A half-tick floor taken as a maximum is a no-op (no half-spread is below 0.5¢), so the sweep is 0.5¢ added in quadrature, 1¢, 1¢ in quadrature, and 2¢. "
              "Every arm is 48 knots with the Gaussian prior; the exclusion rule is Part B's (LOO |z| > 3, once, Gate 0 preserved).\n")
     L.append("**VERDICT_PLACEHOLDER**\n")
     if dec:

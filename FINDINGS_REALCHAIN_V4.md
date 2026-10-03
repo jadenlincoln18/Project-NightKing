@@ -15,7 +15,7 @@ Response to `NightKing/HANDOFF_forward_and_sync_fix.md`. Same 30 dates, snapshot
 | `real` | the real 1-minute futures level at the snapshot instant, every snapshot | sticky-strike reprice along the real path (reconstruction only in holes > 5 min) | same |
 | `real_t3` / `real_t1` / `real_hs` | as `real` | as `real` | same; Act III prior = Student-t ν=3 / ν=1 / horseshoe on the second differences |
 
-Errors: 0 of 1950 jobs. Arms present: base, fwd, real, real_m36, real_m48, real_m48_x, real_t3, sync, sync_m.
+Errors: 0 of 2430 jobs. Arms present: base, fwd, real, real_m36, real_m48, real_m48_f1, real_m48_f1x, real_m48_x, real_t3, sync, sync_m.
 
 The `base` arm reproduces V1: over 90 extractions, max |Δχ²/strike| = 0.000 and max bracket difference = 0.000¢ against `synth/results_real/runs.pkl`.
 
@@ -33,6 +33,8 @@ Act III's own goodness of fit against the market's own half-spreads, independent
 | T-2d | 60 | V4: real path, 36 knots | 26 | 1.6 (1.0–2.2) | 77% | 65% | 1.6 | 19.8 |
 | T-2d | 60 | V4: real path, 48 knots | 26 | 1.5 (1.0–2.1) | 85% | 65% | 1.6 | 19.8 |
 | T-2d | 60 | V4: 48 knots + LOO exclusion | 26 | 1.3 (0.9–1.5) | 100% | 92% | 1.3 | 19.8 |
+| T-2d | 60 | 48 knots, tick floor 1¢ | 26 | 1.2 (0.8–1.7) | 100% | 85% | 1.2 | 19.8 |
+| T-2d | 60 | 48 knots, tick floor 1¢ + LOO exclusion | 26 | 0.9 (0.7–1.4) | 100% | 100% | 1.0 | 19.8 |
 | T-2d | 10 | futures fwd, raw | 8 | 2.1 (0.9–2.6) | 50% | 100% | 1.8 | 5.3 |
 | T-2d | 10 | V2: futures fwd + sync | 8 | 1.4 (0.7–2.2) | 88% | 100% | 1.2 | 5.3 |
 | T-2d | 10 | V3: real intraday path | 8 | 1.2 (1.0–1.9) | 88% | 100% | 1.2 | 5.3 |
@@ -40,6 +42,8 @@ Act III's own goodness of fit against the market's own half-spreads, independent
 | T-2d | 10 | V4: real path, 36 knots | 8 | 1.2 (1.0–1.9) | 88% | 100% | 1.2 | 5.3 |
 | T-2d | 10 | V4: real path, 48 knots | 8 | 1.1 (1.0–1.9) | 88% | 100% | 1.2 | 5.3 |
 | T-2d | 10 | V4: 48 knots + LOO exclusion | 8 | 1.1 (0.8–1.9) | 88% | 100% | 1.1 | 5.3 |
+| T-2d | 10 | 48 knots, tick floor 1¢ | 8 | 1.1 (0.9–1.2) | 100% | 100% | 1.0 | 5.3 |
+| T-2d | 10 | 48 knots, tick floor 1¢ + LOO exclusion | 8 | 1.1 (0.8–1.2) | 100% | 100% | 1.0 | 5.3 |
 | T-1d | 60 | V1 (parity fwd, raw) | 28 | 8.1 (2.0–23.0) | 14% | 11% | 8.1 | 14.9 |
 | T-1d | 60 | futures fwd, raw | 30 | 6.4 (1.9–25.6) | 13% | 17% | 6.1 | 14.8 |
 | T-1d | 60 | V2: futures fwd + sync | 30 | 1.6 (0.8–3.8) | 57% | 47% | 1.6 | 14.8 |
@@ -49,6 +53,8 @@ Act III's own goodness of fit against the market's own half-spreads, independent
 | T-1d | 60 | V4: real path, 36 knots | 30 | 1.8 (1.0–3.3) | 53% | 57% | 1.8 | 14.8 |
 | T-1d | 60 | V4: real path, 48 knots | 30 | 1.8 (1.0–3.2) | 53% | 53% | 1.8 | 14.8 |
 | T-1d | 60 | V4: 48 knots + LOO exclusion | 30 | 1.3 (0.7–1.8) | 97% | 100% | 1.3 | 14.8 |
+| T-1d | 60 | 48 knots, tick floor 1¢ | 30 | 1.4 (0.7–3.1) | 70% | 67% | 1.3 | 14.8 |
+| T-1d | 60 | 48 knots, tick floor 1¢ + LOO exclusion | 30 | 1.1 (0.6–1.6) | 97% | 100% | 1.1 | 14.8 |
 | T-1d | 10 | V1 (parity fwd, raw) | 9 | 2.0 (1.7–7.3) | 44% | 44% | 1.9 | 4.6 |
 | T-1d | 10 | futures fwd, raw | 21 | 1.9 (1.3–4.8) | 57% | 62% | 2.0 | 4.4 |
 | T-1d | 10 | V2: futures fwd + sync | 21 | 1.2 (0.7–1.7) | 90% | 86% | 1.2 | 4.4 |
@@ -57,6 +63,8 @@ Act III's own goodness of fit against the market's own half-spreads, independent
 | T-1d | 10 | V4: real path, 36 knots | 21 | 1.2 (0.8–2.5) | 81% | 90% | 1.2 | 4.3 |
 | T-1d | 10 | V4: real path, 48 knots | 21 | 1.2 (0.8–2.4) | 81% | 90% | 1.2 | 4.3 |
 | T-1d | 10 | V4: 48 knots + LOO exclusion | 21 | 1.2 (0.8–1.7) | 95% | 100% | 1.2 | 4.3 |
+| T-1d | 10 | 48 knots, tick floor 1¢ | 21 | 1.1 (0.8–1.7) | 90% | 95% | 1.1 | 4.3 |
+| T-1d | 10 | 48 knots, tick floor 1¢ + LOO exclusion | 21 | 1.0 (0.7–1.5) | 100% | 100% | 1.0 | 4.3 |
 | T-4h | 60 | V1 (parity fwd, raw) | 30 | 5.7 (2.3–12.0) | 7% | 0% | 5.5 | 17.7 |
 | T-4h | 60 | futures fwd, raw | 30 | 5.7 (2.3–12.0) | 7% | 0% | 5.5 | 17.7 |
 | T-4h | 60 | V2: futures fwd + sync | 30 | 1.9 (1.3–5.3) | 53% | 40% | 1.9 | 17.7 |
@@ -65,6 +73,8 @@ Act III's own goodness of fit against the market's own half-spreads, independent
 | T-4h | 60 | V4: real path, 36 knots | 30 | 1.5 (1.1–3.1) | 70% | 53% | 1.5 | 17.7 |
 | T-4h | 60 | V4: real path, 48 knots | 30 | 1.5 (1.1–3.1) | 70% | 53% | 1.4 | 17.7 |
 | T-4h | 60 | V4: 48 knots + LOO exclusion | 30 | 1.2 (0.8–1.8) | 97% | 77% | 1.1 | 17.7 |
+| T-4h | 60 | 48 knots, tick floor 1¢ | 30 | 1.1 (0.8–2.0) | 90% | 77% | 1.1 | 17.7 |
+| T-4h | 60 | 48 knots, tick floor 1¢ + LOO exclusion | 30 | 0.9 (0.7–1.4) | 100% | 100% | 0.9 | 17.7 |
 | T-4h | 10 | V1 (parity fwd, raw) | 9 | 2.2 (1.1–7.9) | 44% | 44% | 2.2 | 4.4 |
 | T-4h | 10 | futures fwd, raw | 9 | 2.2 (1.1–7.9) | 44% | 44% | 2.2 | 4.4 |
 | T-4h | 10 | V2: futures fwd + sync | 9 | 1.5 (1.0–2.8) | 56% | 67% | 1.5 | 4.4 |
@@ -73,16 +83,18 @@ Act III's own goodness of fit against the market's own half-spreads, independent
 | T-4h | 10 | V4: real path, 36 knots | 9 | 1.5 (0.9–2.5) | 78% | 78% | 1.3 | 4.1 |
 | T-4h | 10 | V4: real path, 48 knots | 9 | 1.5 (0.8–2.5) | 78% | 78% | 1.3 | 4.1 |
 | T-4h | 10 | V4: 48 knots + LOO exclusion | 9 | 1.3 (0.7–1.7) | 89% | 89% | 1.3 | 4.1 |
+| T-4h | 10 | 48 knots, tick floor 1¢ | 9 | 1.3 (0.8–1.7) | 100% | 89% | 1.2 | 4.1 |
+| T-4h | 10 | 48 knots, tick floor 1¢ + LOO exclusion | 9 | 1.2 (0.7–1.6) | 100% | 100% | 1.1 | 4.1 |
 
 Paired on the dates all three arms extracted:
 
-| snapshot | window | n | χ² med: V1 → fwd → V2 → V3 → V4(t3) → V4(m36) → V4(m48) → V4(m48_x) | χ² < 2: V1 → fwd → V2 → V3 → V4(t3) → V4(m36) → V4(m48) → V4(m48_x) | >50% draws multimodal: V1 → fwd → V2 → V3 → V4(t3) → V4(m36) → V4(m48) → V4(m48_x) | 90% body width med (¢): V1 → fwd → V2 → V3 → V4(t3) → V4(m36) → V4(m48) → V4(m48_x) |
+| snapshot | window | n | χ² med: V1 → fwd → V2 → V3 → V4(t3) → V4(m36) → V4(m48) → V4(m48_x) → V4(m48_f1) → V4(m48_f1x) | χ² < 2: V1 → fwd → V2 → V3 → V4(t3) → V4(m36) → V4(m48) → V4(m48_x) → V4(m48_f1) → V4(m48_f1x) | >50% draws multimodal: V1 → fwd → V2 → V3 → V4(t3) → V4(m36) → V4(m48) → V4(m48_x) → V4(m48_f1) → V4(m48_f1x) | 90% body width med (¢): V1 → fwd → V2 → V3 → V4(t3) → V4(m36) → V4(m48) → V4(m48_x) → V4(m48_f1) → V4(m48_f1x) |
 |---|---|---|---|---|---|---|
-| T-2d | 60 | 13 | 4.4 → 4.6 → 1.9 → 1.6 → 1.5 → 1.5 → 1.5 → 1.0 | 15% → 15% → 54% → 85% → 85% → 85% → 92% → 100% | 46% → 46% → 8% → 0% → 0% → 0% → 0% → 0% | 2.6 → 2.7 → 1.8 → 1.5 → 1.5 → 1.8 → 2.1 → 1.9 |
-| T-1d | 60 | 28 | 8.1 → 6.9 → 1.8 → 1.8 → 1.9 → 1.8 → 1.8 → 1.3 | 14% → 11% → 54% → 54% → 54% → 54% → 54% → 96% | 43% → 36% → 0% → 4% → 4% → 4% → 11% → 0% | 4.5 → 4.2 → 2.3 → 2.5 → 2.7 → 3.2 → 3.5 → 3.2 |
-| T-1d | 10 | 9 | 2.0 → 1.9 → 1.0 → 1.2 → 1.2 → 1.1 → 1.1 → 1.0 | 44% → 56% → 100% → 89% → 89% → 89% → 89% → 89% | 0% → 11% → 0% → 0% → 0% → 0% → 0% → 0% | 3.3 → 3.0 → 2.5 → 2.6 → 2.7 → 3.1 → 3.4 → 3.3 |
-| T-4h | 60 | 30 | 5.7 → 5.7 → 1.9 → 1.5 → 1.5 → 1.5 → 1.5 → 1.2 | 7% → 7% → 53% → 70% → 70% → 70% → 70% → 97% | 43% → 43% → 23% → 7% → 7% → 7% → 10% → 3% | 8.2 → 8.2 → 5.7 → 5.5 → 5.5 → 6.1 → 7.2 → 7.0 |
-| T-4h | 10 | 9 | 2.2 → 2.2 → 1.5 → 1.5 → 1.6 → 1.5 → 1.5 → 1.3 | 44% → 44% → 56% → 78% → 78% → 78% → 78% → 89% | 11% → 11% → 0% → 0% → 0% → 0% → 0% → 0% | 6.8 → 6.8 → 5.1 → 6.3 → 7.4 → 6.7 → 8.0 → 8.0 |
+| T-2d | 60 | 13 | 4.4 → 4.6 → 1.9 → 1.6 → 1.5 → 1.5 → 1.5 → 1.0 → 1.1 → 0.9 | 15% → 15% → 54% → 85% → 85% → 85% → 92% → 100% → 100% → 100% | 46% → 46% → 8% → 0% → 0% → 0% → 0% → 0% → 0% → 0% | 2.6 → 2.7 → 1.8 → 1.5 → 1.5 → 1.8 → 2.1 → 1.9 → 2.0 → 2.0 |
+| T-1d | 60 | 28 | 8.1 → 6.9 → 1.8 → 1.8 → 1.9 → 1.8 → 1.8 → 1.3 → 1.5 → 1.2 | 14% → 11% → 54% → 54% → 54% → 54% → 54% → 96% → 68% → 96% | 43% → 36% → 0% → 4% → 4% → 4% → 11% → 0% → 4% → 0% | 4.5 → 4.2 → 2.3 → 2.5 → 2.7 → 3.2 → 3.5 → 3.2 → 2.9 → 2.8 |
+| T-1d | 10 | 9 | 2.0 → 1.9 → 1.0 → 1.2 → 1.2 → 1.1 → 1.1 → 1.0 → 1.0 → 1.0 | 44% → 56% → 100% → 89% → 89% → 89% → 89% → 89% → 100% → 100% | 0% → 11% → 0% → 0% → 0% → 0% → 0% → 0% → 0% → 0% | 3.3 → 3.0 → 2.5 → 2.6 → 2.7 → 3.1 → 3.4 → 3.3 → 3.8 → 3.4 |
+| T-4h | 60 | 30 | 5.7 → 5.7 → 1.9 → 1.5 → 1.5 → 1.5 → 1.5 → 1.2 → 1.1 → 0.9 | 7% → 7% → 53% → 70% → 70% → 70% → 70% → 97% → 90% → 100% | 43% → 43% → 23% → 7% → 7% → 7% → 10% → 3% → 7% → 0% | 8.2 → 8.2 → 5.7 → 5.5 → 5.5 → 6.1 → 7.2 → 7.0 → 7.1 → 7.1 |
+| T-4h | 10 | 9 | 2.2 → 2.2 → 1.5 → 1.5 → 1.6 → 1.5 → 1.5 → 1.3 → 1.3 → 1.2 | 44% → 44% → 56% → 78% → 78% → 78% → 78% → 89% → 100% → 100% | 11% → 11% → 0% → 0% → 0% → 0% → 0% → 0% → 0% → 0% | 6.8 → 6.8 → 5.1 → 6.3 → 7.4 → 6.7 → 8.0 → 8.0 → 7.1 → 7.1 |
 
 ## 2. The forward: parity vs the futures, and the synchronisation itself
 
@@ -177,6 +189,8 @@ Shape error by distance from the anchor (minutes; RMSE / MAD / p90 of the absolu
 | T-2d | 60 | V4: real path, 36 knots | 30 | 30 | 26 | 26 | futures (intraday) 26 | 20 | 20 | 2 | 19.8 | 4% | 1.0 | -0.46 |
 | T-2d | 60 | V4: real path, 48 knots | 30 | 30 | 26 | 26 | futures (intraday) 26 | 20 | 20 | 2 | 19.8 | 4% | 1.0 | -0.46 |
 | T-2d | 60 | V4: 48 knots + LOO exclusion | 30 | 30 | 26 | 26 | futures (intraday) 26 | 20 | 19 | 2 | 19.8 | 4% | 1.0 | -0.46 |
+| T-2d | 60 | 48 knots, tick floor 1¢ | 30 | 30 | 26 | 26 | futures (intraday) 26 | 20 | 20 | 2 | 19.8 | 4% | 1.0 | -0.46 |
+| T-2d | 60 | 48 knots, tick floor 1¢ + LOO exclusion | 30 | 30 | 26 | 26 | futures (intraday) 26 | 20 | 19 | 2 | 19.8 | 4% | 1.0 | -0.46 |
 | T-2d | 10 | V1 (parity fwd, raw) | 30 | 13 | 0 | 0 |  | 6 | — | — | — | — | 0.0 | — |
 | T-2d | 10 | futures fwd, raw | 30 | 13 | 8 | 8 | futures 8 | 6 | 10 | 0 | 5.3 | 0% | 1.0 | -0.47 |
 | T-2d | 10 | V2: futures fwd + sync | 30 | 13 | 8 | 8 | futures+path 8 | 6 | 10 | 0 | 5.3 | 0% | 1.0 | -0.47 |
@@ -185,6 +199,8 @@ Shape error by distance from the anchor (minutes; RMSE / MAD / p90 of the absolu
 | T-2d | 10 | V4: real path, 36 knots | 30 | 13 | 8 | 8 | futures (intraday) 8 | 6 | 10 | 0 | 5.3 | 0% | 1.0 | -0.46 |
 | T-2d | 10 | V4: real path, 48 knots | 30 | 13 | 8 | 8 | futures (intraday) 8 | 6 | 10 | 0 | 5.3 | 0% | 1.0 | -0.46 |
 | T-2d | 10 | V4: 48 knots + LOO exclusion | 30 | 13 | 8 | 8 | futures (intraday) 8 | 6 | 9 | 0 | 5.3 | 0% | 1.0 | -0.46 |
+| T-2d | 10 | 48 knots, tick floor 1¢ | 30 | 13 | 8 | 8 | futures (intraday) 8 | 6 | 10 | 0 | 5.3 | 0% | 1.0 | -0.46 |
+| T-2d | 10 | 48 knots, tick floor 1¢ + LOO exclusion | 30 | 13 | 8 | 8 | futures (intraday) 8 | 6 | 9 | 0 | 5.3 | 0% | 1.0 | -0.46 |
 | T-1d | 60 | V1 (parity fwd, raw) | 30 | 30 | 28 | 28 | parity 28 | 31 | 29 | 6 | 14.9 | 6% | 1.2 | -0.44 |
 | T-1d | 60 | futures fwd, raw | 30 | 30 | 30 | 30 | futures 30 | 31 | 28 | 6 | 14.8 | 6% | 1.0 | -0.46 |
 | T-1d | 60 | V2: futures fwd + sync | 30 | 30 | 30 | 30 | futures+path 30 | 31 | 28 | 6 | 14.8 | 5% | 1.0 | -0.44 |
@@ -194,6 +210,8 @@ Shape error by distance from the anchor (minutes; RMSE / MAD / p90 of the absolu
 | T-1d | 60 | V4: real path, 36 knots | 30 | 30 | 30 | 30 | futures (intraday) 30 | 31 | 28 | 6 | 14.8 | 5% | 1.0 | -0.43 |
 | T-1d | 60 | V4: real path, 48 knots | 30 | 30 | 30 | 30 | futures (intraday) 30 | 31 | 28 | 6 | 14.8 | 5% | 1.0 | -0.43 |
 | T-1d | 60 | V4: 48 knots + LOO exclusion | 30 | 30 | 30 | 30 | futures (intraday) 30 | 31 | 25 | 6 | 14.8 | 5% | 1.0 | -0.43 |
+| T-1d | 60 | 48 knots, tick floor 1¢ | 30 | 30 | 30 | 30 | futures (intraday) 30 | 31 | 28 | 6 | 14.8 | 5% | 1.0 | -0.43 |
+| T-1d | 60 | 48 knots, tick floor 1¢ + LOO exclusion | 30 | 30 | 30 | 30 | futures (intraday) 30 | 31 | 25 | 6 | 14.8 | 5% | 1.0 | -0.43 |
 | T-1d | 10 | V1 (parity fwd, raw) | 30 | 24 | 9 | 9 | parity 9 | 13 | 14 | 2 | 4.6 | 0% | 2.0 | -0.04 |
 | T-1d | 10 | futures fwd, raw | 30 | 24 | 21 | 21 | futures 21 | 13 | 13 | 1 | 4.4 | 0% | 1.5 | -0.16 |
 | T-1d | 10 | V2: futures fwd + sync | 30 | 24 | 21 | 21 | futures+path 21 | 13 | 13 | 1 | 4.4 | 0% | 1.5 | -0.20 |
@@ -202,6 +220,8 @@ Shape error by distance from the anchor (minutes; RMSE / MAD / p90 of the absolu
 | T-1d | 10 | V4: real path, 36 knots | 30 | 24 | 21 | 21 | futures (intraday) 21 | 13 | 13 | 1 | 4.3 | 0% | 1.5 | -0.20 |
 | T-1d | 10 | V4: real path, 48 knots | 30 | 24 | 21 | 21 | futures (intraday) 21 | 13 | 13 | 1 | 4.3 | 0% | 1.5 | -0.20 |
 | T-1d | 10 | V4: 48 knots + LOO exclusion | 30 | 24 | 21 | 21 | futures (intraday) 21 | 13 | 11 | 1 | 4.3 | 0% | 1.5 | -0.20 |
+| T-1d | 10 | 48 knots, tick floor 1¢ | 30 | 24 | 21 | 21 | futures (intraday) 21 | 13 | 13 | 1 | 4.3 | 0% | 1.5 | -0.20 |
+| T-1d | 10 | 48 knots, tick floor 1¢ + LOO exclusion | 30 | 24 | 21 | 21 | futures (intraday) 21 | 13 | 12 | 1 | 4.3 | 0% | 1.5 | -0.20 |
 | T-4h | 60 | V1 (parity fwd, raw) | 30 | 30 | 30 | 30 | parity 30 | 28 | 26 | 10 | 17.7 | 21% | 1.0 | -0.38 |
 | T-4h | 60 | futures fwd, raw | 30 | 30 | 30 | 30 | parity 30 | 28 | 26 | 10 | 17.7 | 21% | 1.0 | -0.38 |
 | T-4h | 60 | V2: futures fwd + sync | 30 | 30 | 30 | 30 | parity (synchronised) 30 | 28 | 26 | 10 | 17.7 | 29% | 1.0 | -0.26 |
@@ -210,6 +230,8 @@ Shape error by distance from the anchor (minutes; RMSE / MAD / p90 of the absolu
 | T-4h | 60 | V4: real path, 36 knots | 30 | 30 | 30 | 30 | futures (intraday) 30 | 28 | 26 | 10 | 17.7 | 27% | 1.0 | -0.33 |
 | T-4h | 60 | V4: real path, 48 knots | 30 | 30 | 30 | 30 | futures (intraday) 30 | 28 | 26 | 10 | 17.7 | 27% | 1.0 | -0.33 |
 | T-4h | 60 | V4: 48 knots + LOO exclusion | 30 | 30 | 30 | 30 | futures (intraday) 30 | 28 | 24 | 10 | 17.7 | 27% | 1.0 | -0.33 |
+| T-4h | 60 | 48 knots, tick floor 1¢ | 30 | 30 | 30 | 30 | futures (intraday) 30 | 28 | 26 | 10 | 17.7 | 27% | 1.0 | -0.33 |
+| T-4h | 60 | 48 knots, tick floor 1¢ + LOO exclusion | 30 | 30 | 30 | 30 | futures (intraday) 30 | 28 | 25 | 10 | 17.7 | 27% | 1.0 | -0.33 |
 | T-4h | 10 | V1 (parity fwd, raw) | 30 | 23 | 9 | 9 | parity 9 | 10 | 13 | 3 | 4.4 | 14% | 2.5 | 0.47 |
 | T-4h | 10 | futures fwd, raw | 30 | 23 | 9 | 9 | parity 9 | 10 | 13 | 3 | 4.4 | 14% | 2.5 | 0.47 |
 | T-4h | 10 | V2: futures fwd + sync | 30 | 23 | 9 | 9 | parity (synchronised) 9 | 10 | 13 | 3 | 4.4 | 8% | 2.5 | 0.47 |
@@ -218,6 +240,8 @@ Shape error by distance from the anchor (minutes; RMSE / MAD / p90 of the absolu
 | T-4h | 10 | V4: real path, 36 knots | 30 | 23 | 9 | 9 | futures (intraday) 9 | 10 | 13 | 3 | 4.1 | 11% | 2.5 | 0.48 |
 | T-4h | 10 | V4: real path, 48 knots | 30 | 23 | 9 | 9 | futures (intraday) 9 | 10 | 13 | 3 | 4.1 | 11% | 2.5 | 0.48 |
 | T-4h | 10 | V4: 48 knots + LOO exclusion | 30 | 23 | 9 | 9 | futures (intraday) 9 | 10 | 13 | 3 | 4.1 | 11% | 2.5 | 0.48 |
+| T-4h | 10 | 48 knots, tick floor 1¢ | 30 | 23 | 9 | 9 | futures (intraday) 9 | 10 | 13 | 3 | 4.1 | 11% | 2.5 | 0.48 |
+| T-4h | 10 | 48 knots, tick floor 1¢ + LOO exclusion | 30 | 23 | 9 | 9 | futures (intraday) 9 | 10 | 13 | 3 | 4.1 | 11% | 2.5 | 0.48 |
 | T-0 | 60 | V1 (parity fwd, raw) | 30 | 29 | 20 | 0 | parity 20 | 18 | 20 | 6 | 18.4 | 75% | 1.0 | 0.20 |
 | T-0 | 60 | futures fwd, raw | 30 | 29 | 20 | 0 | futures 20 | 18 | 19 | 6 | 18.7 | 77% | 1.0 | 0.20 |
 | T-0 | 60 | V2: futures fwd + sync | 30 | 29 | 19 | 0 | futures+path 19 | 18 | 20 | 5 | 18.8 | 100% | 0.5 | -0.40 |
@@ -226,6 +250,8 @@ Shape error by distance from the anchor (minutes; RMSE / MAD / p90 of the absolu
 | T-0 | 60 | V4: real path, 36 knots | 30 | 29 | 20 | 0 | futures (intraday) 20 | 18 | 19 | 6 | 18.8 | 100% | 0.5 | -0.40 |
 | T-0 | 60 | V4: real path, 48 knots | 30 | 29 | 20 | 0 | futures (intraday) 20 | 18 | 19 | 6 | 18.8 | 100% | 0.5 | -0.40 |
 | T-0 | 60 | V4: 48 knots + LOO exclusion | 30 | 29 | 20 | 0 | futures (intraday) 20 | 18 | 19 | 6 | 18.8 | 100% | 0.5 | -0.40 |
+| T-0 | 60 | 48 knots, tick floor 1¢ | 30 | 29 | 20 | 0 | futures (intraday) 20 | 18 | 19 | 6 | 18.8 | 100% | 0.5 | -0.40 |
+| T-0 | 60 | 48 knots, tick floor 1¢ + LOO exclusion | 30 | 29 | 20 | 0 | futures (intraday) 20 | 18 | 19 | 6 | 18.8 | 100% | 0.5 | -0.40 |
 | T-0 | 10 | V1 (parity fwd, raw) | 30 | 15 | 5 | 0 | parity 5 | 8 | 10 | 3 | 5.5 | 82% | 2.0 | 0.77 |
 | T-0 | 10 | futures fwd, raw | 30 | 15 | 7 | 0 | futures 7 | 8 | 9 | 3 | 5.1 | 82% | 2.0 | 0.65 |
 | T-0 | 10 | V2: futures fwd + sync | 30 | 15 | 6 | 0 | futures+path 6 | 8 | 8 | 2 | 4.9 | 100% | 0.7 | -0.04 |
@@ -234,6 +260,8 @@ Shape error by distance from the anchor (minutes; RMSE / MAD / p90 of the absolu
 | T-0 | 10 | V4: real path, 36 knots | 30 | 15 | 7 | 0 | futures (intraday) 7 | 8 | 9 | 3 | 5.1 | 100% | 0.7 | 0.01 |
 | T-0 | 10 | V4: real path, 48 knots | 30 | 15 | 7 | 0 | futures (intraday) 7 | 8 | 9 | 3 | 5.1 | 100% | 0.7 | 0.01 |
 | T-0 | 10 | V4: 48 knots + LOO exclusion | 30 | 15 | 7 | 0 | futures (intraday) 7 | 8 | 9 | 3 | 5.1 | 100% | 0.7 | 0.01 |
+| T-0 | 10 | 48 knots, tick floor 1¢ | 30 | 15 | 7 | 0 | futures (intraday) 7 | 8 | 9 | 3 | 5.1 | 100% | 0.7 | 0.01 |
+| T-0 | 10 | 48 knots, tick floor 1¢ + LOO exclusion | 30 | 15 | 7 | 0 | futures (intraday) 7 | 8 | 9 | 3 | 5.1 | 100% | 0.7 | 0.01 |
 
 ## 4. What shape are real WTI weekly densities?
 
@@ -249,6 +277,8 @@ Mode count of the Act III posterior-mean density (constrained / unconstrained), 
 | T-2d | 60 | V4: real path, 36 knots | 26 | {'1': 26} | {'1': 25, '2': 1} | 4% | 65% (41%–97%) | 4.10 | 0.87 | 96% |
 | T-2d | 60 | V4: real path, 48 knots | 26 | {'1': 24, '2': 2} | {'1': 25, '2': 1} | 8% | 65% (41%–97%) | 4.10 | 0.86 | 96% |
 | T-2d | 60 | V4: 48 knots + LOO exclusion | 26 | {'1': 26} | {'1': 26} | 0% | 65% (41%–97%) | 4.10 | 0.83 | 92% |
+| T-2d | 60 | 48 knots, tick floor 1¢ | 26 | {'1': 26} | {'1': 26} | 0% | 65% (41%–97%) | 4.10 | 0.82 | 92% |
+| T-2d | 60 | 48 knots, tick floor 1¢ + LOO exclusion | 26 | {'1': 26} | {'1': 26} | 0% | 65% (41%–97%) | 4.10 | 0.82 | 88% |
 | T-2d | 10 | futures fwd, raw | 8 | {'1': 8} | {'1': 8} | 0% | 66% (52%–118%) | 3.96 | 1.31 | 100% |
 | T-2d | 10 | V2: futures fwd + sync | 8 | {'1': 8} | {'1': 8} | 0% | 64% (52%–120%) | 3.93 | 1.23 | 100% |
 | T-2d | 10 | V3: real intraday path | 8 | {'1': 8} | {'1': 8} | 0% | 65% (52%–124%) | 3.98 | 1.12 | 100% |
@@ -256,6 +286,8 @@ Mode count of the Act III posterior-mean density (constrained / unconstrained), 
 | T-2d | 10 | V4: real path, 36 knots | 8 | {'1': 8} | {'1': 8} | 0% | 65% (52%–124%) | 3.96 | 1.14 | 100% |
 | T-2d | 10 | V4: real path, 48 knots | 8 | {'1': 8} | {'1': 8} | 0% | 65% (52%–124%) | 3.96 | 1.13 | 100% |
 | T-2d | 10 | V4: 48 knots + LOO exclusion | 8 | {'1': 8} | {'1': 8} | 0% | 65% (52%–124%) | 3.96 | 1.00 | 100% |
+| T-2d | 10 | 48 knots, tick floor 1¢ | 8 | {'1': 8} | {'1': 8} | 0% | 65% (52%–124%) | 3.96 | 1.17 | 100% |
+| T-2d | 10 | 48 knots, tick floor 1¢ + LOO exclusion | 8 | {'1': 8} | {'1': 8} | 0% | 65% (52%–124%) | 3.96 | 1.05 | 100% |
 | T-1d | 60 | V1 (parity fwd, raw) | 28 | {'1': 17, '2': 4, '3': 3, '4': 3, '5': 1} | {'1': 18, '2': 3, '3': 3, '4': 3, '6': 1} | 43% | 67% (42%–103%) | 3.24 | 0.50 | 93% |
 | T-1d | 60 | futures fwd, raw | 30 | {'1': 20, '2': 3, '3': 1, '4': 6} | {'1': 20, '2': 3, '3': 2, '4': 3, '5': 1, '6': 1} | 33% | 63% (41%–98%) | 3.24 | 0.50 | 93% |
 | T-1d | 60 | V2: futures fwd + sync | 30 | {'1': 30} | {'1': 30} | 0% | 62% (41%–100%) | 2.95 | 0.61 | 87% |
@@ -265,6 +297,8 @@ Mode count of the Act III posterior-mean density (constrained / unconstrained), 
 | T-1d | 60 | V4: real path, 36 knots | 30 | {'1': 29, '3': 1} | {'1': 28, '2': 1, '4': 1} | 3% | 63% (40%–98%) | 2.96 | 0.65 | 87% |
 | T-1d | 60 | V4: real path, 48 knots | 30 | {'1': 29, '3': 1} | {'1': 28, '2': 1, '4': 1} | 10% | 63% (40%–98%) | 2.96 | 0.62 | 90% |
 | T-1d | 60 | V4: 48 knots + LOO exclusion | 30 | {'1': 30} | {'1': 30} | 0% | 63% (40%–98%) | 2.91 | 0.50 | 90% |
+| T-1d | 60 | 48 knots, tick floor 1¢ | 30 | {'1': 29, '3': 1} | {'1': 29, '4': 1} | 3% | 63% (40%–98%) | 2.91 | 0.58 | 93% |
+| T-1d | 60 | 48 knots, tick floor 1¢ + LOO exclusion | 30 | {'1': 30} | {'1': 30} | 0% | 63% (40%–98%) | 2.85 | 0.46 | 90% |
 | T-1d | 10 | V1 (parity fwd, raw) | 9 | {'1': 9} | {'1': 9} | 0% | 67% (47%–111%) | 3.19 | 0.43 | 89% |
 | T-1d | 10 | futures fwd, raw | 21 | {'1': 20, '2': 1} | {'1': 20, '2': 1} | 5% | 66% (43%–104%) | 3.19 | 0.40 | 90% |
 | T-1d | 10 | V2: futures fwd + sync | 21 | {'1': 21} | {'1': 21} | 0% | 69% (43%–103%) | 3.29 | 0.44 | 86% |
@@ -273,6 +307,8 @@ Mode count of the Act III posterior-mean density (constrained / unconstrained), 
 | T-1d | 10 | V4: real path, 36 knots | 21 | {'1': 21} | {'1': 21} | 0% | 69% (42%–103%) | 3.27 | 0.42 | 81% |
 | T-1d | 10 | V4: real path, 48 knots | 21 | {'1': 21} | {'1': 21} | 0% | 69% (42%–103%) | 3.27 | 0.36 | 81% |
 | T-1d | 10 | V4: 48 knots + LOO exclusion | 21 | {'1': 21} | {'1': 21} | 0% | 69% (42%–103%) | 3.27 | 0.35 | 81% |
+| T-1d | 10 | 48 knots, tick floor 1¢ | 21 | {'1': 21} | {'1': 21} | 0% | 69% (42%–103%) | 3.27 | 0.35 | 81% |
+| T-1d | 10 | 48 knots, tick floor 1¢ + LOO exclusion | 21 | {'1': 21} | {'1': 21} | 0% | 69% (42%–103%) | 3.31 | 0.35 | 81% |
 | T-4h | 60 | V1 (parity fwd, raw) | 30 | {'1': 17, '2': 5, '3': 6, '4': 2} | {'1': 16, '2': 7, '3': 5, '4': 2} | 43% | 82% (55%–142%) | 1.50 | 0.29 | 70% |
 | T-4h | 60 | futures fwd, raw | 30 | {'1': 17, '2': 5, '3': 6, '4': 2} | {'1': 16, '2': 7, '3': 5, '4': 2} | 43% | 82% (55%–142%) | 1.50 | 0.29 | 70% |
 | T-4h | 60 | V2: futures fwd + sync | 30 | {'1': 23, '2': 3, '3': 3, '4': 1} | {'1': 23, '2': 3, '3': 3, '4': 1} | 23% | 75% (53%–122%) | 1.39 | 0.28 | 70% |
@@ -281,6 +317,8 @@ Mode count of the Act III posterior-mean density (constrained / unconstrained), 
 | T-4h | 60 | V4: real path, 36 knots | 30 | {'1': 28, '3': 2} | {'1': 28, '3': 2} | 7% | 79% (52%–122%) | 1.50 | 0.26 | 73% |
 | T-4h | 60 | V4: real path, 48 knots | 30 | {'1': 28, '4': 2} | {'1': 28, '3': 2} | 10% | 79% (52%–122%) | 1.50 | 0.25 | 73% |
 | T-4h | 60 | V4: 48 knots + LOO exclusion | 30 | {'1': 30} | {'1': 30} | 3% | 79% (52%–122%) | 1.49 | 0.25 | 73% |
+| T-4h | 60 | 48 knots, tick floor 1¢ | 30 | {'1': 28, '2': 1, '3': 1} | {'1': 28, '2': 1, '3': 1} | 7% | 79% (52%–122%) | 1.48 | 0.31 | 70% |
+| T-4h | 60 | 48 knots, tick floor 1¢ + LOO exclusion | 30 | {'1': 30} | {'1': 30} | 0% | 79% (52%–122%) | 1.46 | 0.22 | 77% |
 | T-4h | 10 | V1 (parity fwd, raw) | 9 | {'1': 8, '2': 1} | {'1': 6, '2': 2, '3': 1} | 11% | 114% (87%–156%) | 2.51 | 0.46 | 78% |
 | T-4h | 10 | futures fwd, raw | 9 | {'1': 8, '2': 1} | {'1': 6, '2': 2, '3': 1} | 11% | 114% (87%–156%) | 2.51 | 0.46 | 78% |
 | T-4h | 10 | V2: futures fwd + sync | 9 | {'1': 9} | {'1': 9} | 0% | 113% (90%–157%) | 2.39 | 0.31 | 67% |
@@ -289,6 +327,8 @@ Mode count of the Act III posterior-mean density (constrained / unconstrained), 
 | T-4h | 10 | V4: real path, 36 knots | 9 | {'1': 9} | {'1': 9} | 0% | 115% (87%–157%) | 2.41 | 0.30 | 56% |
 | T-4h | 10 | V4: real path, 48 knots | 9 | {'1': 9} | {'1': 9} | 0% | 115% (87%–157%) | 2.40 | 0.24 | 67% |
 | T-4h | 10 | V4: 48 knots + LOO exclusion | 9 | {'1': 9} | {'1': 9} | 0% | 115% (87%–157%) | 2.40 | 0.16 | 67% |
+| T-4h | 10 | 48 knots, tick floor 1¢ | 9 | {'1': 9} | {'1': 9} | 0% | 115% (87%–157%) | 2.41 | 0.05 | 67% |
+| T-4h | 10 | 48 knots, tick floor 1¢ + LOO exclusion | 9 | {'1': 9} | {'1': 9} | 0% | 115% (87%–157%) | 2.41 | 0.05 | 56% |
 
 ## 5. Gate 4: the old detector and the new one
 
@@ -314,6 +354,8 @@ Cutoff in use: max|z| > 2.65 (the null p95).
 | T-2d | 60 | V4: real path, 36 knots | 26 | 19% | 0.85 | 3.90 | **23%** | 1.34 | 2.96 | 3.28 | 1.33 | 3.65 | 4.91 | 73% | 1.7 |
 | T-2d | 60 | V4: real path, 48 knots | 26 | 19% | 0.91 | 3.63 | **23%** | 1.27 | 2.82 | 3.23 | 1.25 | 3.77 | 5.22 | 77% | 1.8 |
 | T-2d | 60 | V4: 48 knots + LOO exclusion | 26 | 12% | 0.72 | 2.31 | **0%** | 1.20 | 1.67 | 2.54 | 1.12 | 2.74 | 3.69 | 19% | 0.2 |
+| T-2d | 60 | 48 knots, tick floor 1¢ | 26 | 8% | 0.82 | 2.07 | **12%** | 1.18 | 2.65 | 3.05 | 1.14 | 3.68 | 5.05 | 77% | 1.7 |
+| T-2d | 60 | 48 knots, tick floor 1¢ + LOO exclusion | 26 | 12% | 0.71 | 2.54 | **0%** | 1.00 | 1.68 | 2.05 | 0.89 | 2.74 | 3.42 | 31% | 0.3 |
 | T-2d | 10 | futures fwd, raw | 8 | 38% | 0.82 | 6.43 | **12%** | 1.97 | 3.01 | 4.03 | 2.33 | 4.02 | 5.63 | 75% | 1.1 |
 | T-2d | 10 | V2: futures fwd + sync | 8 | 12% | 1.22 | 2.61 | **0%** | 1.21 | 1.69 | 1.75 | 1.36 | 3.02 | 3.52 | 50% | 0.8 |
 | T-2d | 10 | V3: real intraday path | 8 | 25% | 0.76 | 7.17 | **0%** | 1.35 | 1.89 | 1.90 | 1.70 | 3.10 | 3.65 | 50% | 0.6 |
@@ -321,6 +363,8 @@ Cutoff in use: max|z| > 2.65 (the null p95).
 | T-2d | 10 | V4: real path, 36 knots | 8 | 25% | 0.85 | 6.63 | **0%** | 1.26 | 1.53 | 1.57 | 1.59 | 3.14 | 4.08 | 50% | 0.6 |
 | T-2d | 10 | V4: real path, 48 knots | 8 | 25% | 0.99 | 6.40 | **0%** | 1.25 | 1.40 | 1.51 | 1.58 | 3.22 | 4.43 | 62% | 0.6 |
 | T-2d | 10 | V4: 48 knots + LOO exclusion | 8 | 25% | 1.15 | 7.36 | **0%** | 1.16 | 1.46 | 1.77 | 1.25 | 2.58 | 3.77 | 25% | 0.2 |
+| T-2d | 10 | 48 knots, tick floor 1¢ | 8 | 25% | 0.98 | 7.01 | **0%** | 1.18 | 1.41 | 1.51 | 1.63 | 3.07 | 3.75 | 62% | 0.8 |
+| T-2d | 10 | 48 knots, tick floor 1¢ + LOO exclusion | 8 | 25% | 0.91 | 7.01 | **0%** | 1.08 | 1.39 | 1.77 | 1.35 | 2.95 | 3.94 | 38% | 0.5 |
 | T-1d | 60 | V1 (parity fwd, raw) | 28 | 68% | 3.71 | 18.88 | **79%** | 4.90 | 10.25 | 17.73 | 6.51 | 10.49 | 21.60 | 100% | 8.6 |
 | T-1d | 60 | futures fwd, raw | 30 | 80% | 4.27 | 18.08 | **73%** | 4.17 | 12.60 | 15.53 | 7.07 | 8.68 | 22.98 | 97% | 8.0 |
 | T-1d | 60 | V2: futures fwd + sync | 30 | 7% | 0.90 | 2.24 | **17%** | 1.76 | 3.18 | 4.26 | 1.47 | 3.88 | 6.10 | 70% | 2.2 |
@@ -330,6 +374,8 @@ Cutoff in use: max|z| > 2.65 (the null p95).
 | T-1d | 60 | V4: real path, 36 knots | 30 | 13% | 1.19 | 2.60 | **27%** | 1.93 | 3.04 | 5.04 | 2.17 | 4.14 | 7.37 | 80% | 2.6 |
 | T-1d | 60 | V4: real path, 48 knots | 30 | 17% | 1.27 | 2.64 | **27%** | 1.87 | 3.19 | 5.89 | 2.35 | 4.15 | 7.37 | 87% | 2.9 |
 | T-1d | 60 | V4: 48 knots + LOO exclusion | 30 | 0% | 0.90 | 1.63 | **0%** | 1.19 | 1.73 | 2.21 | 1.48 | 2.78 | 3.27 | 20% | 0.2 |
+| T-1d | 60 | 48 knots, tick floor 1¢ | 30 | 10% | 1.14 | 2.43 | **3%** | 1.51 | 2.16 | 3.90 | 1.81 | 4.25 | 7.33 | 87% | 2.6 |
+| T-1d | 60 | 48 knots, tick floor 1¢ + LOO exclusion | 30 | 3% | 0.72 | 1.52 | **0%** | 1.18 | 1.74 | 2.28 | 1.53 | 2.81 | 3.12 | 20% | 0.2 |
 | T-1d | 10 | V1 (parity fwd, raw) | 9 | 44% | 1.04 | 7.06 | **33%** | 1.66 | 3.32 | 4.59 | 1.81 | 5.26 | 7.92 | 89% | 2.1 |
 | T-1d | 10 | futures fwd, raw | 21 | 38% | 1.53 | 11.00 | **24%** | 1.53 | 2.80 | 4.73 | 2.09 | 4.61 | 7.19 | 76% | 1.7 |
 | T-1d | 10 | V2: futures fwd + sync | 21 | 19% | 0.83 | 3.24 | **0%** | 1.28 | 2.03 | 2.33 | 1.06 | 2.43 | 4.06 | 29% | 0.5 |
@@ -338,6 +384,8 @@ Cutoff in use: max|z| > 2.65 (the null p95).
 | T-1d | 10 | V4: real path, 36 knots | 21 | 19% | 0.88 | 4.88 | **5%** | 1.33 | 2.22 | 2.65 | 1.62 | 2.88 | 4.31 | 38% | 0.8 |
 | T-1d | 10 | V4: real path, 48 knots | 21 | 19% | 0.90 | 5.14 | **0%** | 1.45 | 2.08 | 2.57 | 1.97 | 2.92 | 4.39 | 33% | 0.8 |
 | T-1d | 10 | V4: 48 knots + LOO exclusion | 21 | 19% | 0.90 | 2.74 | **0%** | 1.19 | 1.78 | 2.08 | 1.62 | 2.72 | 3.00 | 10% | 0.1 |
+| T-1d | 10 | 48 knots, tick floor 1¢ | 21 | 19% | 0.90 | 4.87 | **5%** | 1.11 | 1.87 | 2.68 | 1.74 | 2.95 | 4.36 | 43% | 0.8 |
+| T-1d | 10 | 48 knots, tick floor 1¢ + LOO exclusion | 21 | 14% | 1.06 | 2.72 | **0%** | 0.92 | 1.35 | 1.88 | 1.58 | 2.53 | 3.03 | 14% | 0.1 |
 | T-4h | 60 | V1 (parity fwd, raw) | 30 | 77% | 5.81 | 26.24 | **60%** | 3.46 | 10.74 | 13.86 | 10.14 | 8.36 | 15.70 | 100% | 5.4 |
 | T-4h | 60 | futures fwd, raw | 30 | 77% | 5.81 | 26.24 | **60%** | 3.46 | 10.74 | 13.86 | 10.14 | 8.36 | 15.70 | 100% | 5.4 |
 | T-4h | 60 | V2: futures fwd + sync | 30 | 53% | 2.74 | 10.39 | **17%** | 1.75 | 3.28 | 8.45 | 2.96 | 3.97 | 11.93 | 70% | 2.7 |
@@ -346,6 +394,8 @@ Cutoff in use: max|z| > 2.65 (the null p95).
 | T-4h | 60 | V4: real path, 36 knots | 30 | 53% | 2.85 | 6.27 | **13%** | 1.33 | 2.90 | 3.46 | 3.41 | 3.52 | 7.00 | 77% | 1.7 |
 | T-4h | 60 | V4: real path, 48 knots | 30 | 53% | 2.92 | 6.32 | **13%** | 1.31 | 2.66 | 3.51 | 3.69 | 3.67 | 7.15 | 77% | 1.8 |
 | T-4h | 60 | V4: 48 knots + LOO exclusion | 30 | 37% | 1.54 | 4.23 | **3%** | 1.02 | 2.09 | 2.74 | 2.54 | 2.97 | 3.06 | 17% | 0.2 |
+| T-4h | 60 | 48 knots, tick floor 1¢ | 30 | 53% | 2.66 | 6.79 | **7%** | 1.03 | 1.99 | 2.78 | 2.67 | 3.78 | 6.53 | 77% | 1.5 |
+| T-4h | 60 | 48 knots, tick floor 1¢ + LOO exclusion | 30 | 33% | 1.83 | 3.84 | **3%** | 0.94 | 1.74 | 2.78 | 2.68 | 3.00 | 3.47 | 23% | 0.3 |
 | T-4h | 10 | V1 (parity fwd, raw) | 9 | 56% | 2.59 | 10.38 | **22%** | 1.62 | 4.89 | 7.01 | 3.26 | 4.23 | 7.48 | 78% | 2.0 |
 | T-4h | 10 | futures fwd, raw | 9 | 56% | 2.59 | 10.38 | **22%** | 1.62 | 4.89 | 7.01 | 3.26 | 4.23 | 7.48 | 78% | 2.0 |
 | T-4h | 10 | V2: futures fwd + sync | 9 | 22% | 1.19 | 2.95 | **11%** | 1.16 | 2.41 | 2.69 | 2.84 | 3.00 | 4.66 | 44% | 0.7 |
@@ -354,6 +404,8 @@ Cutoff in use: max|z| > 2.65 (the null p95).
 | T-4h | 10 | V4: real path, 36 knots | 9 | 11% | 1.63 | 2.36 | **11%** | 1.25 | 2.05 | 3.86 | 1.97 | 2.84 | 4.44 | 22% | 0.3 |
 | T-4h | 10 | V4: real path, 48 knots | 9 | 11% | 1.76 | 2.54 | **11%** | 1.04 | 1.83 | 3.73 | 1.90 | 3.00 | 5.27 | 44% | 0.8 |
 | T-4h | 10 | V4: 48 knots + LOO exclusion | 9 | 0% | 1.23 | 1.97 | **0%** | 0.95 | 1.30 | 1.36 | 2.46 | 2.78 | 3.97 | 22% | 0.3 |
+| T-4h | 10 | 48 knots, tick floor 1¢ | 9 | 22% | 1.11 | 2.74 | **0%** | 1.02 | 1.53 | 2.19 | 1.96 | 3.00 | 5.12 | 44% | 1.0 |
+| T-4h | 10 | 48 knots, tick floor 1¢ + LOO exclusion | 9 | 11% | 1.11 | 2.28 | **0%** | 1.02 | 1.36 | 1.37 | 2.28 | 2.81 | 3.43 | 22% | 0.4 |
 
 What the new gate fires on (fired vs quiet chains):
 
@@ -367,6 +419,8 @@ What the new gate fires on (fired vs quiet chains):
 | T-2d | 60 | V4: real path, 36 knots | 6 / 20 | 0% / 0% | 1.8 / 1.5 | 19.4 / 19.8 | 20 / 20 | 4.9 / 3.3 | 1.1 / 0.8 |
 | T-2d | 60 | V4: real path, 48 knots | 6 / 20 | 17% / 5% | 1.8 / 1.5 | 19.4 / 19.8 | 20 / 20 | 5.0 / 3.4 | 1.4 / 0.9 |
 | T-2d | 60 | V4: 48 knots + LOO exclusion | 0 / 26 | — / 0% | — / 1.3 | — / 19.8 | — / 19 | — / 2.7 | — / 0.7 |
+| T-2d | 60 | 48 knots, tick floor 1¢ | 3 / 23 | 0% / 0% | 1.6 / 1.1 | 20.8 / 19.6 | 25 / 20 | 4.9 / 3.5 | 0.9 / 0.8 |
+| T-2d | 60 | 48 knots, tick floor 1¢ + LOO exclusion | 0 / 26 | — / 0% | — / 0.9 | — / 19.8 | — / 19 | — / 2.7 | — / 0.7 |
 | T-2d | 10 | futures fwd, raw | 1 / 7 | 0% / 0% | 3.1 / 1.9 | 3.1 / 5.3 | 13 / 9 | 6.2 / 3.8 | 0.8 / 0.8 |
 | T-2d | 10 | V2: futures fwd + sync | 0 / 8 | — / 0% | — / 1.4 | — / 5.3 | — / 10 | — / 3.0 | — / 1.2 |
 | T-2d | 10 | V3: real intraday path | 0 / 8 | — / 0% | — / 1.2 | — / 5.3 | — / 10 | — / 3.1 | — / 0.8 |
@@ -374,6 +428,8 @@ What the new gate fires on (fired vs quiet chains):
 | T-2d | 10 | V4: real path, 36 knots | 0 / 8 | — / 0% | — / 1.2 | — / 5.3 | — / 10 | — / 3.1 | — / 0.9 |
 | T-2d | 10 | V4: real path, 48 knots | 0 / 8 | — / 0% | — / 1.1 | — / 5.3 | — / 10 | — / 3.2 | — / 1.0 |
 | T-2d | 10 | V4: 48 knots + LOO exclusion | 0 / 8 | — / 0% | — / 1.1 | — / 5.3 | — / 9 | — / 2.6 | — / 1.1 |
+| T-2d | 10 | 48 knots, tick floor 1¢ | 0 / 8 | — / 0% | — / 1.1 | — / 5.3 | — / 10 | — / 3.1 | — / 1.0 |
+| T-2d | 10 | 48 knots, tick floor 1¢ + LOO exclusion | 0 / 8 | — / 0% | — / 1.1 | — / 5.3 | — / 9 | — / 3.0 | — / 0.9 |
 | T-1d | 60 | V1 (parity fwd, raw) | 22 / 6 | 50% / 0% | 10.0 / 2.2 | 14.7 / 17.0 | 30 / 24 | 11.5 / 4.0 | 4.9 / 2.3 |
 | T-1d | 60 | futures fwd, raw | 22 / 8 | 45% / 0% | 8.3 / 2.2 | 14.8 / 15.2 | 30 / 24 | 11.5 / 4.1 | 6.3 / 2.9 |
 | T-1d | 60 | V2: futures fwd + sync | 5 / 25 | 0% / 0% | 3.4 / 1.5 | 19.0 / 14.1 | 22 / 28 | 5.4 / 3.4 | 1.7 / 0.8 |
@@ -383,6 +439,8 @@ What the new gate fires on (fired vs quiet chains):
 | T-1d | 60 | V4: real path, 36 knots | 8 / 22 | 12% / 0% | 2.9 / 1.5 | 15.9 / 14.0 | 30 / 28 | 6.6 / 3.5 | 2.2 / 1.0 |
 | T-1d | 60 | V4: real path, 48 knots | 8 / 22 | 12% / 0% | 2.7 / 1.5 | 15.9 / 14.0 | 30 / 28 | 6.8 / 3.5 | 2.3 / 1.0 |
 | T-1d | 60 | V4: 48 knots + LOO exclusion | 0 / 30 | — / 0% | — / 1.3 | — / 14.8 | — / 25 | — / 2.8 | — / 0.9 |
+| T-1d | 60 | 48 knots, tick floor 1¢ | 1 / 29 | 100% / 0% | 2.3 / 1.3 | 20.8 / 14.8 | 48 / 27 | 8.0 / 4.1 | 4.8 / 1.1 |
+| T-1d | 60 | 48 knots, tick floor 1¢ + LOO exclusion | 0 / 30 | — / 0% | — / 1.1 | — / 14.8 | — / 25 | — / 2.8 | — / 0.7 |
 | T-1d | 10 | V1 (parity fwd, raw) | 3 / 6 | 0% / 0% | 6.9 / 1.9 | 4.8 / 4.5 | 14 / 16 | 7.9 / 4.6 | 1.0 / 2.2 |
 | T-1d | 10 | futures fwd, raw | 5 / 16 | 20% / 0% | 3.0 / 1.8 | 4.3 / 4.4 | 10 / 13 | 6.4 / 3.3 | 4.0 / 1.4 |
 | T-1d | 10 | V2: futures fwd + sync | 0 / 21 | — / 0% | — / 1.2 | — / 4.4 | — / 13 | — / 2.4 | — / 0.8 |
@@ -391,6 +449,8 @@ What the new gate fires on (fired vs quiet chains):
 | T-1d | 10 | V4: real path, 36 knots | 1 / 20 | 0% / 0% | 4.0 / 1.2 | 5.4 / 4.0 | 13 / 13 | 3.9 / 2.8 | 4.9 / 0.9 |
 | T-1d | 10 | V4: real path, 48 knots | 0 / 21 | — / 0% | — / 1.2 | — / 4.3 | — / 13 | — / 2.9 | — / 0.9 |
 | T-1d | 10 | V4: 48 knots + LOO exclusion | 0 / 21 | — / 0% | — / 1.2 | — / 4.3 | — / 11 | — / 2.7 | — / 0.9 |
+| T-1d | 10 | 48 knots, tick floor 1¢ | 1 / 20 | 0% / 0% | 3.1 / 1.1 | 5.4 / 4.0 | 13 / 13 | 3.8 / 2.9 | 4.9 / 0.9 |
+| T-1d | 10 | 48 knots, tick floor 1¢ + LOO exclusion | 0 / 21 | — / 0% | — / 1.0 | — / 4.3 | — / 12 | — / 2.5 | — / 1.1 |
 | T-4h | 60 | V1 (parity fwd, raw) | 18 / 12 | 56% / 25% | 7.3 / 3.4 | 17.3 / 17.8 | 26 / 24 | 11.8 / 5.2 | 11.7 / 3.9 |
 | T-4h | 60 | futures fwd, raw | 18 / 12 | 56% / 25% | 7.3 / 3.4 | 17.3 / 17.8 | 26 / 24 | 11.8 / 5.2 | 11.7 / 3.9 |
 | T-4h | 60 | V2: futures fwd + sync | 5 / 25 | 80% / 12% | 6.3 / 1.8 | 15.4 / 17.9 | 23 / 26 | 11.9 / 3.8 | 9.0 / 2.1 |
@@ -399,6 +459,8 @@ What the new gate fires on (fired vs quiet chains):
 | T-4h | 60 | V4: real path, 36 knots | 4 / 26 | 25% / 4% | 3.6 / 1.4 | 13.6 / 18.0 | 40 / 24 | 7.2 / 3.5 | 3.0 / 2.6 |
 | T-4h | 60 | V4: real path, 48 knots | 4 / 26 | 25% / 4% | 3.5 / 1.4 | 13.6 / 18.0 | 40 / 24 | 7.2 / 3.6 | 3.3 / 2.7 |
 | T-4h | 60 | V4: 48 knots + LOO exclusion | 1 / 29 | 0% / 0% | 1.8 / 1.2 | 20.7 / 17.4 | 39 / 23 | 3.0 / 3.0 | 3.1 / 1.5 |
+| T-4h | 60 | 48 knots, tick floor 1¢ | 2 / 28 | 0% / 7% | 2.3 / 1.0 | 16.7 / 17.7 | 40 / 24 | 4.9 / 3.8 | 1.6 / 2.7 |
+| T-4h | 60 | 48 knots, tick floor 1¢ + LOO exclusion | 1 / 29 | 0% / 0% | 1.8 / 0.9 | 20.7 / 17.4 | 39 / 25 | 2.9 / 3.0 | 2.9 / 1.8 |
 | T-4h | 10 | V1 (parity fwd, raw) | 2 / 7 | 0% / 14% | 8.3 / 1.9 | 4.3 / 4.4 | 13 / 13 | 7.9 / 4.2 | 6.0 / 2.6 |
 | T-4h | 10 | futures fwd, raw | 2 / 7 | 0% / 14% | 8.3 / 1.9 | 4.3 / 4.4 | 13 / 13 | 7.9 / 4.2 | 6.0 / 2.6 |
 | T-4h | 10 | V2: futures fwd + sync | 1 / 8 | 0% / 0% | 2.7 / 1.4 | 3.8 / 4.4 | 18 / 13 | 5.3 / 2.8 | 3.3 / 1.1 |
@@ -407,6 +469,8 @@ What the new gate fires on (fired vs quiet chains):
 | T-4h | 10 | V4: real path, 36 knots | 1 / 8 | 0% / 0% | 3.5 / 1.4 | 3.8 / 4.3 | 18 / 13 | 7.4 / 2.8 | 3.6 / 1.3 |
 | T-4h | 10 | V4: real path, 48 knots | 1 / 8 | 0% / 0% | 3.5 / 1.4 | 3.8 / 4.3 | 18 / 13 | 7.6 / 2.9 | 4.1 / 1.5 |
 | T-4h | 10 | V4: 48 knots + LOO exclusion | 0 / 9 | — / 0% | — / 1.3 | — / 4.1 | — / 13 | — / 2.8 | — / 1.2 |
+| T-4h | 10 | 48 knots, tick floor 1¢ | 0 / 9 | — / 0% | — / 1.3 | — / 4.1 | — / 13 | — / 3.0 | — / 1.1 |
+| T-4h | 10 | 48 knots, tick floor 1¢ + LOO exclusion | 0 / 9 | — / 0% | — / 1.2 | — / 4.1 | — / 13 | — / 2.8 | — / 1.1 |
 
 ## 6. The three checks on real data
 
@@ -422,6 +486,8 @@ Convexity = Act II g(k) ≥ 0 on the used range and density ≥ 0 (Act III is po
 | T-2d | 60 | V4: real path, 36 knots | 26 | 100% | 100% | 77% | 73% | 100% | 96% | 1.0 | 1 ± 5 | 0.4 |
 | T-2d | 60 | V4: real path, 48 knots | 26 | 100% | 100% | 77% | 73% | 100% | 96% | 1.1 | 1 ± 5 | 0.3 |
 | T-2d | 60 | V4: 48 knots + LOO exclusion | 26 | 100% | 100% | 73% | 69% | 100% | 96% | 0.9 | 2 ± 3 | 0.2 |
+| T-2d | 60 | 48 knots, tick floor 1¢ | 26 | 100% | 100% | 77% | 73% | 100% | 96% | 1.0 | 2 ± 4 | 0.2 |
+| T-2d | 60 | 48 knots, tick floor 1¢ + LOO exclusion | 26 | 100% | 100% | 73% | 69% | 100% | 96% | 0.9 | 2 ± 3 | 0.2 |
 | T-2d | 10 | futures fwd, raw | 8 | 100% | 100% | 100% | 88% | 100% | 62% | 2.2 | 15 ± 17 | 0.9 |
 | T-2d | 10 | V2: futures fwd + sync | 8 | 100% | 100% | 75% | 75% | 100% | 75% | 0.9 | 10 ± 12 | 0.8 |
 | T-2d | 10 | V3: real intraday path | 8 | 100% | 100% | 62% | 62% | 100% | 100% | 1.3 | 12 ± 8 | 0.7 |
@@ -429,6 +495,8 @@ Convexity = Act II g(k) ≥ 0 on the used range and density ≥ 0 (Act III is po
 | T-2d | 10 | V4: real path, 36 knots | 8 | 100% | 100% | 62% | 62% | 100% | 100% | 0.9 | 11 ± 8 | 0.4 |
 | T-2d | 10 | V4: real path, 48 knots | 8 | 100% | 100% | 62% | 62% | 100% | 100% | 0.8 | 8 ± 9 | 0.3 |
 | T-2d | 10 | V4: 48 knots + LOO exclusion | 8 | 100% | 100% | 62% | 50% | 100% | 100% | 1.1 | 10 ± 9 | 0.3 |
+| T-2d | 10 | 48 knots, tick floor 1¢ | 8 | 100% | 100% | 62% | 62% | 100% | 100% | 1.0 | 12 ± 7 | 0.3 |
+| T-2d | 10 | 48 knots, tick floor 1¢ + LOO exclusion | 8 | 100% | 100% | 62% | 50% | 100% | 100% | 1.0 | 12 ± 7 | 0.3 |
 | T-1d | 60 | V1 (parity fwd, raw) | 28 | 100% | 100% | 86% | 71% | 100% | 36% | 3.9 | -2 ± 11 | 1.2 |
 | T-1d | 60 | futures fwd, raw | 30 | 100% | 97% | 87% | 80% | 97% | 30% | 5.2 | -3 ± 21 | 1.4 |
 | T-1d | 60 | V2: futures fwd + sync | 30 | 100% | 100% | 77% | 73% | 100% | 70% | 1.8 | 1 ± 4 | 0.7 |
@@ -438,6 +506,8 @@ Convexity = Act II g(k) ≥ 0 on the used range and density ≥ 0 (Act III is po
 | T-1d | 60 | V4: real path, 36 knots | 30 | 97% | 100% | 83% | 67% | 100% | 90% | 1.4 | 2 ± 5 | 0.4 |
 | T-1d | 60 | V4: real path, 48 knots | 30 | 97% | 100% | 83% | 67% | 100% | 87% | 1.3 | 1 ± 4 | 0.3 |
 | T-1d | 60 | V4: 48 knots + LOO exclusion | 30 | 100% | 100% | 93% | 67% | 100% | 100% | 0.9 | 1 ± 3 | 0.2 |
+| T-1d | 60 | 48 knots, tick floor 1¢ | 30 | 97% | 100% | 83% | 67% | 100% | 93% | 1.2 | 1 ± 4 | 0.2 |
+| T-1d | 60 | 48 knots, tick floor 1¢ + LOO exclusion | 30 | 100% | 100% | 90% | 73% | 100% | 100% | 0.8 | 1 ± 3 | 0.2 |
 | T-1d | 10 | V1 (parity fwd, raw) | 9 | 100% | 100% | 67% | 56% | 100% | 56% | 2.6 | -5 ± 10 | 0.8 |
 | T-1d | 10 | futures fwd, raw | 21 | 100% | 95% | 71% | 71% | 100% | 62% | 1.6 | 2 ± 8 | 0.8 |
 | T-1d | 10 | V2: futures fwd + sync | 21 | 100% | 95% | 62% | 52% | 100% | 86% | 1.3 | 3 ± 5 | 0.6 |
@@ -446,6 +516,8 @@ Convexity = Act II g(k) ≥ 0 on the used range and density ≥ 0 (Act III is po
 | T-1d | 10 | V4: real path, 36 knots | 21 | 100% | 100% | 57% | 57% | 100% | 90% | 0.9 | 0 ± 5 | 0.4 |
 | T-1d | 10 | V4: real path, 48 knots | 21 | 100% | 100% | 57% | 57% | 100% | 90% | 0.9 | 0 ± 4 | 0.3 |
 | T-1d | 10 | V4: 48 knots + LOO exclusion | 21 | 100% | 100% | 62% | 62% | 100% | 95% | 0.9 | 1 ± 3 | 0.2 |
+| T-1d | 10 | 48 knots, tick floor 1¢ | 21 | 100% | 100% | 57% | 57% | 100% | 90% | 0.9 | 0 ± 4 | 0.2 |
+| T-1d | 10 | 48 knots, tick floor 1¢ + LOO exclusion | 21 | 100% | 100% | 62% | 57% | 100% | 95% | 0.9 | 3 ± 5 | 0.2 |
 | T-4h | 60 | V1 (parity fwd, raw) | 30 | 97% | 100% | 60% | 57% | 100% | 40% | 3.5 | 1 ± 10 | 1.2 |
 | T-4h | 60 | futures fwd, raw | 30 | 97% | 100% | 60% | 57% | 100% | 40% | 3.5 | 1 ± 10 | 1.2 |
 | T-4h | 60 | V2: futures fwd + sync | 30 | 93% | 97% | 70% | 57% | 100% | 80% | 1.6 | 3 ± 4 | 1.0 |
@@ -454,6 +526,8 @@ Convexity = Act II g(k) ≥ 0 on the used range and density ≥ 0 (Act III is po
 | T-4h | 60 | V4: real path, 36 knots | 30 | 100% | 100% | 70% | 57% | 100% | 90% | 1.0 | 0 ± 4 | 0.5 |
 | T-4h | 60 | V4: real path, 48 knots | 30 | 100% | 100% | 70% | 57% | 100% | 90% | 1.0 | 1 ± 4 | 0.3 |
 | T-4h | 60 | V4: 48 knots + LOO exclusion | 30 | 100% | 100% | 63% | 50% | 100% | 97% | 1.1 | -0 ± 4 | 0.3 |
+| T-4h | 60 | 48 knots, tick floor 1¢ | 30 | 100% | 100% | 70% | 57% | 100% | 97% | 1.0 | 1 ± 4 | 0.3 |
+| T-4h | 60 | 48 knots, tick floor 1¢ + LOO exclusion | 30 | 100% | 100% | 53% | 43% | 100% | 100% | 0.9 | 0 ± 3 | 0.3 |
 | T-4h | 10 | V1 (parity fwd, raw) | 9 | 100% | 100% | 78% | 78% | 100% | 56% | 2.5 | 8 ± 12 | 1.0 |
 | T-4h | 10 | futures fwd, raw | 9 | 100% | 100% | 78% | 78% | 100% | 56% | 2.5 | 8 ± 12 | 1.0 |
 | T-4h | 10 | V2: futures fwd + sync | 9 | 100% | 100% | 56% | 56% | 100% | 78% | 1.1 | 2 ± 7 | 0.7 |
@@ -462,6 +536,8 @@ Convexity = Act II g(k) ≥ 0 on the used range and density ≥ 0 (Act III is po
 | T-4h | 10 | V4: real path, 36 knots | 9 | 89% | 100% | 78% | 44% | 100% | 100% | 1.2 | -4 ± 4 | 0.4 |
 | T-4h | 10 | V4: real path, 48 knots | 9 | 89% | 100% | 78% | 44% | 100% | 100% | 1.3 | -4 ± 4 | 0.3 |
 | T-4h | 10 | V4: 48 knots + LOO exclusion | 9 | 100% | 100% | 56% | 44% | 100% | 100% | 0.9 | -4 ± 4 | 0.3 |
+| T-4h | 10 | 48 knots, tick floor 1¢ | 9 | 89% | 100% | 78% | 44% | 100% | 100% | 1.0 | -4 ± 4 | 0.3 |
+| T-4h | 10 | 48 knots, tick floor 1¢ + LOO exclusion | 9 | 100% | 100% | 67% | 44% | 100% | 100% | 0.8 | -4 ± 3 | 0.3 |
 
 ## 7. Sampler health
 
@@ -476,6 +552,8 @@ Convexity = Act II g(k) ≥ 0 on the used range and density ≥ 0 (Act III is po
 | T-2d, 60 min, V4: real path, 36 knots (n=26) | 1.025 (1.116) | 185 | 22 | 1.015 (1.106) | 270 | 81% | 54 | 93 | 0 |
 | T-2d, 60 min, V4: real path, 48 knots (n=26) | 1.027 (1.097) | 164 | 21 | 1.021 (1.116) | 227 | 81% | 63 | 113 | 1 |
 | T-2d, 60 min, V4: 48 knots + LOO exclusion (n=26) | 1.023 (1.036) | 187 | 26 | 1.014 (1.028) | 295 | 96% | 56 | 109 | 1 |
+| T-2d, 60 min, 48 knots, tick floor 1¢ (n=26) | 1.019 (1.147) | 205 | 20 | 1.016 (1.097) | 269 | 77% | 61 | 102 | 1 |
+| T-2d, 60 min, 48 knots, tick floor 1¢ + LOO exclusion (n=26) | 1.022 (1.113) | 219 | 21 | 1.015 (1.081) | 281 | 85% | 64 | 114 | 1 |
 | T-2d, 10 min, futures fwd, raw (n=8) | 1.032 (1.054) | 217 | 32 | 1.025 (1.054) | 182 | 88% | 51 | 108 | 0 |
 | T-2d, 10 min, V2: futures fwd + sync (n=8) | 1.044 (1.063) | 177 | 38 | 1.023 (1.076) | 335 | 75% | 51 | 103 | 0 |
 | T-2d, 10 min, V3: real intraday path (n=8) | 1.021 (1.061) | 182 | 35 | 1.019 (1.045) | 228 | 88% | 53 | 99 | 0 |
@@ -483,6 +561,8 @@ Convexity = Act II g(k) ≥ 0 on the used range and density ≥ 0 (Act III is po
 | T-2d, 10 min, V4: real path, 36 knots (n=8) | 1.020 (1.132) | 231 | 29 | 1.017 (1.159) | 298 | 88% | 58 | 103 | 0 |
 | T-2d, 10 min, V4: real path, 48 knots (n=8) | 1.033 (1.076) | 157 | 31 | 1.024 (1.077) | 259 | 75% | 56 | 126 | 0 |
 | T-2d, 10 min, V4: 48 knots + LOO exclusion (n=8) | 1.039 (1.056) | 152 | 44 | 1.024 (1.063) | 201 | 75% | 56 | 117 | 0 |
+| T-2d, 10 min, 48 knots, tick floor 1¢ (n=8) | 1.018 (1.086) | 235 | 23 | 1.016 (1.051) | 277 | 88% | 54 | 111 | 0 |
+| T-2d, 10 min, 48 knots, tick floor 1¢ + LOO exclusion (n=8) | 1.028 (1.174) | 165 | 41 | 1.028 (1.101) | 194 | 75% | 59 | 117 | 0 |
 | T-1d, 60 min, V1 (parity fwd, raw) (n=28) | 1.037 (1.741) | 119 | 24 | 1.038 (1.328) | 135 | 64% | 86 | 129 | 1 |
 | T-1d, 60 min, futures fwd, raw (n=30) | 1.071 (2.180) | 75 | 21 | 1.065 (1.496) | 88 | 50% | 85 | 127 | 0 |
 | T-1d, 60 min, V2: futures fwd + sync (n=30) | 1.023 (1.062) | 236 | 17 | 1.016 (1.089) | 246 | 83% | 53 | 91 | 1 |
@@ -492,6 +572,8 @@ Convexity = Act II g(k) ≥ 0 on the used range and density ≥ 0 (Act III is po
 | T-1d, 60 min, V4: real path, 36 knots (n=30) | 1.030 (1.115) | 187 | 18 | 1.021 (1.078) | 214 | 80% | 55 | 89 | 0 |
 | T-1d, 60 min, V4: real path, 48 knots (n=30) | 1.025 (1.088) | 162 | 20 | 1.017 (1.100) | 159 | 70% | 70 | 114 | 1 |
 | T-1d, 60 min, V4: 48 knots + LOO exclusion (n=30) | 1.022 (1.072) | 209 | 15 | 1.021 (1.082) | 258 | 87% | 62 | 99 | 1 |
+| T-1d, 60 min, 48 knots, tick floor 1¢ (n=30) | 1.023 (1.069) | 201 | 14 | 1.021 (1.098) | 213 | 83% | 65 | 121 | 1 |
+| T-1d, 60 min, 48 knots, tick floor 1¢ + LOO exclusion (n=30) | 1.023 (1.159) | 240 | 28 | 1.022 (1.205) | 277 | 80% | 69 | 113 | 1 |
 | T-1d, 10 min, V1 (parity fwd, raw) (n=9) | 1.046 (1.254) | 139 | 21 | 1.047 (1.721) | 174 | 78% | 46 | 84 | 0 |
 | T-1d, 10 min, futures fwd, raw (n=21) | 1.028 (1.302) | 170 | 34 | 1.031 (1.264) | 196 | 67% | 49 | 66 | 0 |
 | T-1d, 10 min, V2: futures fwd + sync (n=21) | 1.024 (1.121) | 224 | 26 | 1.020 (1.083) | 225 | 81% | 43 | 79 | 0 |
@@ -500,6 +582,8 @@ Convexity = Act II g(k) ≥ 0 on the used range and density ≥ 0 (Act III is po
 | T-1d, 10 min, V4: real path, 36 knots (n=21) | 1.027 (1.149) | 197 | 28 | 1.022 (1.047) | 232 | 90% | 49 | 82 | 0 |
 | T-1d, 10 min, V4: real path, 48 knots (n=21) | 1.028 (1.113) | 142 | 32 | 1.024 (1.116) | 185 | 71% | 63 | 105 | 1 |
 | T-1d, 10 min, V4: 48 knots + LOO exclusion (n=21) | 1.025 (1.121) | 167 | 26 | 1.024 (1.117) | 224 | 67% | 53 | 97 | 0 |
+| T-1d, 10 min, 48 knots, tick floor 1¢ (n=21) | 1.038 (1.113) | 178 | 33 | 1.027 (1.218) | 181 | 76% | 43 | 91 | 1 |
+| T-1d, 10 min, 48 knots, tick floor 1¢ + LOO exclusion (n=21) | 1.031 (1.125) | 179 | 33 | 1.027 (1.116) | 185 | 76% | 64 | 98 | 1 |
 | T-4h, 60 min, V1 (parity fwd, raw) (n=30) | 1.040 (1.591) | 126 | 13 | 1.024 (1.313) | 166 | 67% | 83 | 141 | 0 |
 | T-4h, 60 min, futures fwd, raw (n=30) | 1.040 (1.591) | 126 | 13 | 1.024 (1.313) | 166 | 67% | 72 | 131 | 0 |
 | T-4h, 60 min, V2: futures fwd + sync (n=30) | 1.033 (1.132) | 155 | 11 | 1.032 (1.154) | 177 | 70% | 65 | 124 | 0 |
@@ -508,6 +592,8 @@ Convexity = Act II g(k) ≥ 0 on the used range and density ≥ 0 (Act III is po
 | T-4h, 60 min, V4: real path, 36 knots (n=30) | 1.026 (1.100) | 163 | 6 | 1.018 (1.045) | 220 | 90% | 57 | 110 | 0 |
 | T-4h, 60 min, V4: real path, 48 knots (n=30) | 1.029 (1.104) | 182 | 12 | 1.023 (1.055) | 231 | 83% | 70 | 128 | 1 |
 | T-4h, 60 min, V4: 48 knots + LOO exclusion (n=30) | 1.022 (1.090) | 200 | 9 | 1.021 (1.038) | 229 | 93% | 67 | 120 | 1 |
+| T-4h, 60 min, 48 knots, tick floor 1¢ (n=30) | 1.027 (1.078) | 194 | 15 | 1.022 (1.100) | 185 | 80% | 73 | 119 | 1 |
+| T-4h, 60 min, 48 knots, tick floor 1¢ + LOO exclusion (n=30) | 1.022 (1.102) | 189 | 12 | 1.024 (1.096) | 228 | 83% | 77 | 145 | 1 |
 | T-4h, 10 min, V1 (parity fwd, raw) (n=9) | 1.020 (1.152) | 168 | 21 | 1.013 (1.129) | 194 | 89% | 59 | 100 | 0 |
 | T-4h, 10 min, futures fwd, raw (n=9) | 1.020 (1.152) | 168 | 21 | 1.013 (1.129) | 194 | 89% | 54 | 77 | 0 |
 | T-4h, 10 min, V2: futures fwd + sync (n=9) | 1.039 (1.084) | 181 | 12 | 1.025 (1.077) | 149 | 67% | 47 | 99 | 0 |
@@ -516,114 +602,12 @@ Convexity = Act II g(k) ≥ 0 on the used range and density ≥ 0 (Act III is po
 | T-4h, 10 min, V4: real path, 36 knots (n=9) | 1.029 (1.212) | 197 | 21 | 1.019 (1.345) | 237 | 67% | 48 | 82 | 0 |
 | T-4h, 10 min, V4: real path, 48 knots (n=9) | 1.030 (1.095) | 191 | 15 | 1.019 (1.120) | 170 | 67% | 58 | 110 | 1 |
 | T-4h, 10 min, V4: 48 knots + LOO exclusion (n=9) | 1.029 (1.095) | 173 | 15 | 1.031 (1.120) | 132 | 67% | 57 | 112 | 1 |
+| T-4h, 10 min, 48 knots, tick floor 1¢ (n=9) | 1.028 (1.058) | 162 | 28 | 1.023 (1.053) | 255 | 89% | 59 | 117 | 1 |
+| T-4h, 10 min, 48 knots, tick floor 1¢ + LOO exclusion (n=9) | 1.028 (1.056) | 162 | 28 | 1.025 (1.053) | 255 | 89% | 60 | 113 | 1 |
 
 ## 8. Verdicts
 
-### V3 → V4 on the 60-minute windows, all extracted dates
+_(written by hand after the numbers; see the end of this file.)_
 
-| snapshot | arm | n | χ²/strike med (p90) | χ² < 2 | multimodal majority | posterior-mean modes | Stage 14 pass | \|z\| med | Gate 4 fired | Act II fired | LOO flags / chain | 90% body width (¢) | bracket R̂ med | bracket ESS med | τ med | s / run |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| T-2d | V3 (24 knots) | 26 | 1.6 (2.3) | 77% | 0% | {'1': 26} | 92% | 1.1 | 19% | 12% | 1.7 | 2.1 | 1.023 | 196 | 0.7 | 49 |
-| T-2d | V4 36 knots | 26 | 1.6 (2.2) | 77% | 4% | {'1': 26} | 96% | 1.0 | 23% | 19% | 1.7 | 2.3 | 1.015 | 270 | 0.4 | 54 |
-| T-2d | V4 48 knots | 26 | 1.5 (2.1) | 85% | 8% | {'1': 24, '2': 2} | 96% | 1.1 | 23% | 19% | 1.8 | 2.7 | 1.021 | 227 | 0.3 | 63 |
-| T-2d | V4 48 knots + LOO exclusion | 26 | 1.3 (1.5) | 100% | 0% | {'1': 26} | 96% | 0.9 | 0% | 12% | 0.2 | 2.1 | 1.014 | 295 | 0.2 | 56 |
-| T-1d | V3 (24 knots) | 30 | 1.8 (3.4) | 53% | 3% | {'1': 29, '3': 1} | 90% | 1.5 | 30% | 10% | 2.3 | 2.8 | 1.021 | 202 | 0.8 | 52 |
-| T-1d | V4 36 knots | 30 | 1.8 (3.3) | 53% | 3% | {'1': 29, '3': 1} | 90% | 1.4 | 27% | 13% | 2.6 | 3.3 | 1.021 | 214 | 0.4 | 55 |
-| T-1d | V4 48 knots | 30 | 1.8 (3.2) | 53% | 10% | {'1': 29, '3': 1} | 87% | 1.3 | 27% | 17% | 2.9 | 3.8 | 1.017 | 159 | 0.3 | 70 |
-| T-1d | V4 48 knots + LOO exclusion | 30 | 1.3 (1.8) | 97% | 0% | {'1': 30} | 100% | 0.9 | 0% | 0% | 0.2 | 3.3 | 1.021 | 258 | 0.2 | 62 |
-| T-4h | V3 (24 knots) | 30 | 1.5 (3.1) | 70% | 7% | {'1': 28, '2': 1, '3': 1} | 90% | 1.0 | 13% | 50% | 1.6 | 5.5 | 1.025 | 191 | 0.8 | 58 |
-| T-4h | V4 36 knots | 30 | 1.5 (3.1) | 70% | 7% | {'1': 28, '3': 2} | 90% | 1.0 | 13% | 53% | 1.7 | 6.1 | 1.018 | 220 | 0.5 | 57 |
-| T-4h | V4 48 knots | 30 | 1.5 (3.1) | 70% | 10% | {'1': 28, '4': 2} | 90% | 1.0 | 13% | 53% | 1.8 | 7.2 | 1.023 | 231 | 0.3 | 70 |
-| T-4h | V4 48 knots + LOO exclusion | 30 | 1.2 (1.8) | 97% | 3% | {'1': 30} | 97% | 1.1 | 3% | 37% | 0.2 | 7.0 | 1.021 | 229 | 0.3 | 67 |
-
-### The chains to watch: 2026-05-01 and 2026-03-06 at T-4h (and 2026-05-29, which lost its modes under the real path)
-
-| date | arm | strikes | χ²/strike | modes (posterior mean) | draws multimodal | τ med | 90% body width (¢) | split-half max\|z\| | LOO flags | Act II Δ (¢) | bracket R̂ | bracket ESS | Stage 14 z |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 2026-05-01 | V3 (24 knots) | 48 | 4.25 | 3 | 100% | 11.78 | 13.8 | 3.0 | 8 | 25.19 | 1.070 | 67 | 4.9 |
-| 2026-05-01 | V4 Student-t | 48 | 4.30 | 2 | 100% | 6.91 | 11.8 | 3.2 | 8 | 25.71 | 1.031 | 107 | 4.3 |
-| 2026-05-01 | V4 36 knots | 48 | 4.20 | 3 | 100% | 5.12 | 13.8 | 3.3 | 8 | 26.85 | 1.025 | 199 | 4.1 |
-| 2026-05-01 | V4 48 knots | 48 | 4.11 | 4 | 100% | 3.92 | 17.4 | 3.2 | 8 | 25.83 | 1.104 | 46 | 3.9 |
-| 2026-05-01 | V4 48 knots + LOO exclusion | 40 | 1.35 | 1 | 10% | 0.27 | 7.1 | 1.6 | 0 | 1.46 | 1.005 | 408 | 1.3 |
-| 2026-03-06 | V3 (24 knots) | 41 | 4.41 | 1 | 0% | 0.79 | 1.9 | 3.2 | 6 | 0.89 | 1.012 | 289 | -1.0 |
-| 2026-03-06 | V4 Student-t | 41 | 4.41 | 1 | 0% | 0.60 | 1.9 | 3.5 | 5 | 1.00 | 1.012 | 350 | -0.7 |
-| 2026-03-06 | V4 36 knots | 41 | 4.38 | 1 | 0% | 0.46 | 2.6 | 2.9 | 6 | 1.03 | 1.019 | 186 | -0.7 |
-| 2026-03-06 | V4 48 knots | 41 | 4.32 | 1 | 4% | 0.28 | 3.0 | 2.7 | 6 | 0.95 | 1.054 | 63 | -0.6 |
-| 2026-03-06 | V4 48 knots + LOO exclusion | 35 | 1.94 | 1 | 0% | 0.25 | 3.1 | 2.3 | 0 | 0.78 | 1.020 | 245 | -0.5 |
-| 2026-05-29 | V3 (24 knots) | 28 | 3.06 | 1 | 2% | 0.79 | 4.7 | 3.3 | 2 | 2.37 | 1.025 | 93 | 0.6 |
-| 2026-05-29 | V4 Student-t | 28 | 3.06 | 1 | 2% | 0.59 | 4.0 | 3.5 | 2 | 2.43 | 1.030 | 166 | 0.6 |
-| 2026-05-29 | V4 36 knots | 28 | 3.02 | 1 | 4% | 0.42 | 5.6 | 3.5 | 2 | 2.96 | 1.008 | 210 | 0.6 |
-| 2026-05-29 | V4 48 knots | 28 | 2.98 | 1 | 10% | 0.28 | 7.1 | 3.5 | 2 | 3.39 | 1.073 | 79 | 0.5 |
-| 2026-05-29 | V4 48 knots + LOO exclusion | 26 | 0.98 | 1 | 1% | 0.26 | 5.9 | 0.5 | 0 | 2.61 | 1.013 | 316 | 0.3 |
-
-Chains whose posterior mean is multimodal under 48 knots (60-minute windows), with their V3 state:
-
-| date | snap | V3 modes | V3 draws multimodal | V4(48) modes | V4(48) draws multimodal | V4(48) χ²/strike | V4(48) τ | V4(48) LOO flags | V4(48) split max\|z\| |
-|---|---|---|---|---|---|---|---|---|---|
-| 2026-02-13 | T-2d | 1 | 48% | 2 | 71% | 2.77 | 0.79 | 5 | 2.2 |
-| 2026-04-10 | T-1d | 3 | 99% | 3 | 100% | 2.35 | 2.08 | 7 | 5.9 |
-| 2026-04-17 | T-4h | 2 | 100% | 4 | 100% | 2.41 | 1.18 | 4 | 2.1 |
-| 2026-05-01 | T-4h | 3 | 100% | 4 | 100% | 4.11 | 3.92 | 8 | 3.2 |
-| 2026-08-21 | T-2d | 1 | 2% | 2 | 91% | 2.44 | 1.14 | 2 | 3.2 |
-
-### Part B — quote-level exclusion at 48 knots (rule fixed in advance: LOO |z| > 3, one pass, Gate 0 preserved)
-
-Over 124 chains and 2734 quotes the rule removed 211 quotes (7.7%); 36 chains (29%) lost more than 10% of their quotes and are marked suspect. Removed quotes: 48% calls / 52% puts; moneyness rank median 11 (0 = nearest the money; chain median 21 strikes); quote age median 14.7 min (all quotes: 13.9); half-spread median 0.5¢ (all: 1.0¢); |z| median 3.7.
-
-| snapshot | window | chains | quotes removed / chain (mean) | share removed | chains > 10% | χ²/strike med: 48 knots → + exclusion | χ² < 2 | max resid < 3 | Gate 4 fired | LOO flags after | multimodal majority | Stage 14 pass | 90% body width (¢) |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| T-2d | 60 | 26 | 1.7 | 9% | 38% | 1.5 → 1.3 | 85% → 100% | 65% → 92% | 23% → 0% | 1.8 → 0.2 | 8% → 0% | 96% → 96% | 2.7 → 2.1 |
-| T-2d | 10 | 8 | 0.4 | 3% | 0% | 1.1 → 1.1 | 88% → 88% | 100% → 100% | 0% → 0% | 0.6 → 0.2 | 0% → 0% | 100% → 100% | 4.5 → 4.5 |
-| T-1d | 60 | 30 | 2.9 | 10% | 47% | 1.8 → 1.3 | 53% → 97% | 53% → 100% | 27% → 0% | 2.9 → 0.2 | 10% → 0% | 87% → 100% | 3.8 → 3.3 |
-| T-1d | 10 | 21 | 0.8 | 5% | 19% | 1.2 → 1.2 | 81% → 95% | 90% → 100% | 0% → 0% | 0.8 → 0.1 | 0% → 0% | 90% → 95% | 3.5 → 3.3 |
-| T-4h | 60 | 30 | 1.8 | 7% | 20% | 1.5 → 1.2 | 70% → 97% | 53% → 77% | 13% → 3% | 1.8 → 0.2 | 10% → 3% | 90% → 97% | 7.2 → 7.0 |
-| T-4h | 10 | 9 | 0.7 | 5% | 22% | 1.5 → 1.3 | 78% → 89% | 78% → 89% | 11% → 0% | 0.8 → 0.3 | 0% → 0% | 100% → 100% | 8.0 → 8.0 |
-
-Removed quotes by position (moneyness rank quartile of the chain), age and spread:
-
-| | rank 0–4 | rank 5–9 | rank 10–19 | rank ≥ 20 | age < 5 min | 5–20 | 20–40 | > 40 | half-spread ≤ 1¢ | 1–2¢ | > 2¢ |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| removed quotes | 48 | 47 | 65 | 51 | 45 | 79 | 56 | 31 | 165 | 30 | 16 |
-
-### Reading
-
-**Verdict for the real chains.** The 48-knot model changes nothing that measures data consistency and everything that measures
-what the posterior is allowed to say. χ²/strike (1.5 / 1.8 / 1.5 at T-2d / T-1d / T-4h), the Stage 14 pass rate, the split-half
-gate and the LOO flags are V3's numbers to the decimal, because those are properties of the quotes, not of the basis. The 90% body
-bands widen by about a third (2.1 → 2.7¢, 2.8 → 3.8¢, 5.5 → 7.2¢) and τ falls from 0.7–0.8 to 0.3 — the finer basis takes over
-what the roughness scale used to do — while bracket R̂ (1.017–1.023) and ESS (159–231) stay inside the gate. Act II disagrees a
-little more often (12 → 19% at T-2d, 10 → 17% at T-1d) because Act III's bands and shapes now move where Act II's cannot.
-
-**The chains to watch.** 2026-05-01 at T-4h stays multimodal under every prior — three modes at 24 knots, four at 48, 100% of
-draws in both — and the finer basis sharpens rather than flattens it (band 13.8 → 17.4¢). But it is not evidence of a bimodal
-market: χ²/strike is 4.1, LOO names eight strikes, the split-half gate fires (z 3.2) and Act II is 26¢ away; Part B's rule removes
-eight of its 48 quotes, after which it is a clean unimodal chain (χ² 1.35, no flags, split-half z 1.6, ESS 408). 2026-03-06 lost its
-modes when the real path replaced the reconstruction (V3) and stays unimodal at 36 and 48 knots (4% of draws multimodal), as does
-2026-05-29. The five chains whose posterior mean is multimodal at 48 knots (2026-02-13 T-2d, 2026-04-10 T-1d, 2026-04-17 T-4h,
-2026-05-01 T-4h, 2026-08-21 T-2d) all have χ²/strike 2.4–4.1, 2–8 LOO flags and split-half z 2.1–5.9, and none survives the
-exclusion rule as multimodal. **The project still has no chain that is both internally consistent and bimodal.** The finer basis
-does turn more inconsistent chains multimodal, which is the "fitting quote noise" behaviour the brief said to watch for — it is
-confined to chains the gates already reject, and the gates are what should be trusted.
-
-**Part B — the exclusion rule.** Fixed in advance: drop every strike whose leave-one-out standardised residual exceeds 3, once,
-never below Gate 0. On the synthetic harness (`FINDINGS_PRIOR.md`, candidate `m48x`) it removes 0.7% of quotes on clean chains
-and none on the 8-strike chains, leaves coverage unchanged (crude-skew 92 / 95 / 96%, bimodal 73%), removes the injected stale or
-crossed quote on 100% of the fault chains and repairs the Stage 14 bias they cause (+24¢ → 0). It removes noise, not signal. On
-the real chains it removes 7.7% of quotes overall — 10% at T-1d/60, where 47% of chains lose more than a tenth of their quotes and
-are marked suspect — and the effect is large: χ²/strike 1.8 → 1.3 at T-1d with 97% of chains under 2 (was 53%), Gate 4 27% → 0%,
-Stage 14 87% → 100%, the residual multimodality 10% → 0%, bands 3.8 → 3.3¢. What gets removed is not what the brief expected: the
-removed quotes are no staler than the rest (age 14.7 vs 13.9 minutes), sit at every moneyness, and are *tighter* than average
-(half-spread 0.5¢ against 1.0¢). A 0.5¢ half-spread makes a 2¢ disagreement a 4σ event, so the rule is picking off precisely quoted
-strikes that disagree with their neighbours by a few cents — adjacent-strike inconsistency at the tick level, of which real chains
-carry ten times what the synthetic noise model plants. Two consequences: the fix does not belong upstream in the window definition
-(the exclusions do not cluster on stale quotes), and the quantity being removed looks less like bad quotes than like an error model
-that is too tight for one-cent markets. `FINDINGS_SYNTHETIC.md` §10 already flagged this (`NF_crude_tickfloor`: a one-tick floor on
-the tolerance improved coverage 93% → 96%). The recommendation is therefore to keep the rule as a *diagnostic* — it is the first thing
-that has made every T-1d chain consistent — but to test a tick-floored likelihood against it before adopting either as the default,
-because a rule that removes a tenth of the quotes on half the chains is doing the error model's job by other means.
-
-**Recommendation.** 48 knots with the Gaussian prior is the model (`act3.M_COEF = 48`); the real-chain numbers in this document
-are its before/after. Next, in order: (i) the error model at the tick (a floored half-spread), judged against Part B's rule on both
-harnesses; (ii) knots dense where strikes are dense with a divided-difference penalty, for the spike and the last of the trough;
-(iii) only then a calibrated τ hyperprior. Nothing here reads a Kalshi price.
+Plots: `synth/plots_real_v2/_summary.png` and one `<date>_<snap>_w<window>_<arm>.png` per extraction (the sync arms add the estimated path).
 

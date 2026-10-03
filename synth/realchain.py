@@ -63,7 +63,9 @@ RATE = 0.04          # D = exp(-r T): fixed analytically. At T <= 2 days D is wi
                      # price here; the chain cannot identify it (V1: 0.947 at expiry) and the forward no longer
                      # depends on the regression slope, so there is nothing left for the slope to do.
 ARMS = ("base", "fwd", "sync", "sync_m", "real", "real_t3", "real_t1", "real_hs", "real_x", "real_t3_x", "real_m36", "real_m48", "real_m48t3", "real_m48_x", "real_m36_x", "real_m64", "real_m48_f1", "real_m48_f2", "real_m48_f1q", "real_m48_f1x", "real_m48_f05q")
-EXCLUDE_LOO_Z = 3.0   # Part B rule: drop strikes with LOO |z| > 3 once before the fit (arms ending in _x)
+EXCLUDE_LOO_Z = 3.0   # Part B rule: drop strikes with LOO |z| > 3 once before the fit (arms ending in x)
+RECOMMENDED_HS_FLOOR = 0.01   # FINDINGS_TICKFLOOR.md: the likelihood tolerance for real chains is max(half-spread, 1c); the synthetic
+                              # harness runs at 0 (its noise model has no tick inconsistency). Arms real_m48_f1* use it; the backtest should.
 ARM_SNAPS = {"sync_m": {("T-1d", 60)}}   # sensitivity arm: T-1d / 60 min only
 ARM_PRIOR = {"real_t3": ("student", 3.0, 24), "real_t1": ("student", 1.0, 24), "real_hs": ("horseshoe", 3.0, 24),
              "real_t3_x": ("student", 3.0, 24), "real_m36": ("gauss", 3.0, 36), "real_m48": ("gauss", 3.0, 48),

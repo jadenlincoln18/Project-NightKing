@@ -17,3 +17,5 @@ data_cme/parquet/
 data_cme/db.log
 synth/results/*.pkl
 synth/results_real/*.pkl
+synth/results48/*.pkl
+synth/results_prior/*/*.pkl

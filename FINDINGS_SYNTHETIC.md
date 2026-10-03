@@ -1,6 +1,6 @@
 # FINDINGS_SYNTHETIC — synthetic validation of the density extractor
 
-> **Superseded in part (2026-09-26, `FINDINGS_PRIOR.md`).** The FAIL verdict of §9 stands as a status - the bimodal trough band is still too narrow - but its diagnosis does not: the blind spot was the B-spline basis (24 uniform knots, 0.7 vol-scales apart, cannot carve a trough between humps 2.6 apart), not the roughness prior's form. Heavy-tailed and local-scale priors on 24 knots changed nothing; the unchanged Gaussian prior on 48 knots took the trough z from +6.8 to +1.3 and trough coverage from 0% to 57% with no regression elsewhere. The default is now 48 knots; the numbers below are the 24-knot run.
+> **Superseded (2026-09-29, `FINDINGS_SYNTHETIC_V2.md`).** This is the 24-knot study. The default is now 48 knots and the definitive numbers, 24 vs 48 side by side on every table, are in `FINDINGS_SYNTHETIC_V2.md`: operating configurations at or above nominal (crude-skew 95 / 97 / 97%), bimodal trough z +7.8 → +1.4 and trough coverage 3% → 57%, every injected fault still caught, body bands +40%. The FAIL verdict below stands as a status — narrowed, not closed — but its diagnosis (the prior's form) was wrong: the limit was the basis (`FINDINGS_PRIOR.md`).
 
 **Verdict: FAIL** — calibrated and fault-detecting on smooth densities; confidently wrong, with no alarm, on bimodal and other prior-disfavoured shapes (§9).
 
