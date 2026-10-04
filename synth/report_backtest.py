@@ -97,7 +97,7 @@ def gap_by_moneyness(rs: List[Dict[str, Any]], snap: str) -> List[Dict[str, Any]
         rows.append({"band": name, "n": len(sub), "n_dates": len({(b.get("_date")) for b in sub}) if sub and "_date" in sub[0] else None,
                      "g_mean": float(g.mean()), "g_median": float(np.median(g)), "g_sd": float(g.std(ddof=1)) if len(g) > 1 else None,
                      "g_mid_mean": float(gm.mean()), "frac_pos": float(np.mean(g > 0)), "band_mean": float(w.mean()),
-                     "friction_mean": float(np.nanmean(fr)), "frac_gt_band": float(np.mean(np.abs(g) > w)),
+                     "friction_mean": float(np.nanmean(fr)) if np.isfinite(fr).any() else None, "frac_gt_band": float(np.mean(np.abs(g) > w)),
                      "frac_gt_band_friction": float(np.mean(np.abs(g) > w + np.where(np.isnan(fr), np.inf, fr))),
                      "kalshi_spread_mean": float(np.mean([b["kalshi_spread"] for b in sub])),
                      "pq_mean": float(np.mean([b["pq_mean"] for b in sub])), "pmkt_mean": float(np.mean([b["kalshi_mid"] for b in sub]))})
@@ -169,11 +169,18 @@ def pnl_summary(tr: List[Dict[str, Any]]) -> Dict[str, Any]:
             "by_date": dict(by_date)}
 
 
-def verdict(rs: List[Dict[str, Any]]) -> Dict[str, Any]:
-    lead, other = bt.LEAD_SNAP, [s for s in bt.SNAPS if s != bt.LEAD_SNAP][0]
+def verdict(rs: List[Dict[str, Any]], lead: Optional[str] = None) -> Dict[str, Any]:
+    """The bar of protocol §2. `lead` defaults to the protocol's lead snapshot; the secondary arm (T-4h only, amendment 6)
+    passes its own, and with no second snapshot B1 is assessed on one and said so."""
+    lead = lead or bt.LEAD_SNAP
+    other = [s for s in bt.SNAPS if s != lead][0]
     p_lead, p_other = pooled_stage18(rs, lead), pooled_stage18(rs, other)
     b1 = False
     b1_reason = "pooled Stage 18 unavailable"
+    if p_lead and not p_other:
+        b1 = bool(p_lead["b_below_1"] or p_lead["b_above_1"] or p_lead["c_excludes_0"])
+        b1_reason = "single snapshot (%s): b 90%% CI [%.2f, %.2f], c [%.3f, %.3f]; the two-snapshot agreement the protocol asks for cannot be tested" % (
+            lead, p_lead["b"][0], p_lead["b"][2], p_lead["c"][0], p_lead["c"][2])
     if p_lead and p_other:
         same_b = (p_lead["b_below_1"] and p_other["b_below_1"]) or (p_lead["b_above_1"] and p_other["b_above_1"])
         same_c = p_lead["c_excludes_0"] and p_other["c_excludes_0"] and np.sign(p_lead["c"][1]) == np.sign(p_other["c"][1])
@@ -303,7 +310,9 @@ def render_series(rs: List[Dict[str, Any]], series: str, lead_section: bool) -> 
                 "g0d_no_intraday_bars", "no_kalshi_candles", "no_kalshi_event", "extraction_error"]
     for o in outcomes:
         L.append("| %s | %s |" % (o, " | ".join(str(den.get(s, {}).get(o, 0)) for s in bt.SNAPS)))
-    L.append("| **total dates** | %s |" % " | ".join(str(sum(den.get(s, {}).values())) for s in bt.SNAPS))
+    all_dates = {r["settle_date"] for r in rs}
+    L.append("| not_attempted (snapshot not run for the date) | %s |" % " | ".join(str(len(all_dates) - sum(den.get(s, {}).values())) for s in bt.SNAPS))
+    L.append("| **total dates** | %s |" % " | ".join(str(len(all_dates)) for s in bt.SNAPS))
     L.append("")
     L.append("Bracket statuses (every bracket of every date that reached the comparison):\n")
     L.append("| status | " + " | ".join(bt.SNAPS) + " |\n|---|" + "---|" * len(bt.SNAPS))
@@ -326,7 +335,7 @@ def render_series(rs: List[Dict[str, Any]], series: str, lead_section: bool) -> 
             L.append("| %s | %d | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s |" % (
                 row["band"], row["n"], _c(row["pmkt_mean"]).replace("+", ""), _c(row["pq_mean"]).replace("+", ""), _c(row["g_mean"]), _c(row["g_median"]),
                 _f(100 * row["g_sd"], "%.1f") if row["g_sd"] is not None else "—", _pct(row["frac_pos"]), _f(100 * row["band_mean"], "%.1f"),
-                _f(100 * row["friction_mean"], "%.1f"), _pct(row["frac_gt_band"]), _pct(row["frac_gt_band_friction"]), _f(100 * row["kalshi_spread_mean"], "%.1f")))
+                _f(100 * row["friction_mean"], "%.1f") if row["friction_mean"] is not None else "—", _pct(row["frac_gt_band"]), _pct(row["frac_gt_band_friction"]), _f(100 * row["kalshi_spread_mean"], "%.1f")))
         L.append("")
     L.append("### Per date — %s" % series)
     L.append("| date | snap | outcome | n two-sided | mean gap | mean tail gap (pq<20¢) | mean \\|gap\\| | mean band | traded | interior-min removed | χ²/strike | E[F]−F₀ (¢) | path | Stage 18 b [5,50,95] | c |")
@@ -472,9 +481,10 @@ def render(series_list: List[str]) -> str:
         if not rs2:
             continue
         L.append("## 3. %s — the secondary arm (own denominator, never pooled into the bar)\n" % s)
-        V2 = verdict(rs2)
-        L.append("Mechanical reading on the same conditions, for the record only: B1 %s, B2 %s, B3 %s → %s. %s\n" % (
-            "yes" if V2["B1"] else "no", "yes" if V2["B2"] else "no", "yes" if V2["B3"] else "no", V2["verdict"], V2["B1_reason"]))
+        lead2 = next((sn for sn in (bt.LEAD_SNAP,) + tuple(bt.SNAPS) if tradeable_dates(rs2, sn)), bt.LEAD_SNAP)
+        V2 = verdict(rs2, lead=lead2)
+        L.append("Mechanical reading on the same conditions, for the record only (lead %s): B1 %s, B2 %s, B3 %s → %s. %s\n" % (
+            lead2, "yes" if V2["B1"] else "no", "yes" if V2["B2"] else "no", "yes" if V2["B3"] else "no", V2["verdict"], V2["B1_reason"]))
         L.extend(render_series(rs2, s, False))
     L.append("## 4. Plots\n")
     for s in series_list:

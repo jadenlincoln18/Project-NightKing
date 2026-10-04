@@ -1,0 +1,55 @@
+{
+ "B1": true,
+ "B1_reason": "b 90% CI [0.68, 0.71] at T-1d, [0.66, 0.70] at T-4h; c 90% CI [0.020, 0.027] at T-1d, [-0.015, -0.003] at T-4h",
+ "B2": false,
+ "B2_detail": {
+  "n_dates": 0,
+  "n_months": 0,
+  "sign_agreement": null,
+  "direction": "longshots rich"
+ },
+ "B3": false,
+ "B3_detail": {
+  "n": 0,
+  "pnl_total_per_contract": null,
+  "frac_dates_positive": null,
+  "pnl_without_best3_per_contract": null
+ },
+ "verdict": "STRUCTURE, NOT AN EDGE",
+ "pooled": {
+  "T-1d": {
+   "n_dates": 24,
+   "n_brackets": 259,
+   "b": [
+    0.6792260059103814,
+    0.6940272867922945,
+    0.7078919646520996
+   ],
+   "c": [
+    0.020319700916518607,
+    0.023362975406473224,
+    0.02660674839826624
+   ],
+   "b_below_1": true,
+   "b_above_1": false,
+   "c_excludes_0": true
+  },
+  "T-4h": {
+   "n_dates": 22,
+   "n_brackets": 164,
+   "b": [
+    0.6643054693295916,
+    0.6805845771584684,
+    0.6964673388953625
+   ],
+   "c": [
+    -0.014939048633817762,
+    -0.009125977112815887,
+    -0.003312028539855383
+   ],
+   "b_below_1": true,
+   "b_above_1": false,
+   "c_excludes_0": true
+  }
+ }
+}

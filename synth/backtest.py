@@ -473,6 +473,30 @@ def compare_bracket(b: Dict[str, Any], ctx: Dict[str, Any]) -> None:
         b["pnl_per_contract"] = None
 
 
+def state_variable(lo: float, hi: float) -> Optional[float]:
+    """Stage 18's m_j: the bracket midpoint for a two-sided bracket, the threshold itself for a one-sided market (the
+    cumulative ladders of KXWTI are all 'Above $X')."""
+    if np.isfinite(lo) and np.isfinite(hi):
+        return 0.5 * (lo + hi)
+    if np.isfinite(lo):
+        return float(lo)
+    if np.isfinite(hi):
+        return float(hi)
+    return None
+
+
+def stage18_for_record(rec: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    F0 = rec.get("F0")
+    ok = [b for b in rec["brackets"] if b.get("kalshi_mid") is not None and STAGE18_MID_MIN <= b["kalshi_mid"] <= STAGE18_MID_MAX
+          and b.get("mid_dollar") is not None and b.get("pq_draws") is not None]
+    if len(ok) < 4 or F0 is None:
+        return None
+    abc = stage18(np.array([b["kalshi_mid"] for b in ok]), np.stack([b["pq_draws"] for b in ok], axis=1).astype(float),
+                  np.array([b["mid_dollar"] - F0 for b in ok]))
+    return None if abc is None else {"q05": np.percentile(abc, 5, axis=0).tolist(), "q50": np.percentile(abc, 50, axis=0).tolist(),
+                                     "q95": np.percentile(abc, 95, axis=0).tolist(), "n": len(ok)}
+
+
 def contract_check(d: Dict[str, Any], under: Optional[str], settles: Dict[Tuple[str, str], float], ice_by_date: Dict[str, float]) -> Dict[str, Any]:
     """Gate 0b verified ex post (protocol amendment 4): Kalshi's realised settlement value (the event's own, else the same-day KXWTI
     event's) must equal the NYMEX settlement of the option's underlying to the cent. If it instead equals another month's, the
@@ -520,9 +544,11 @@ def reprocess_record(rec: Dict[str, Any], settles: Dict[Tuple[str, str], float],
            "f_mean": np.asarray(x["act3_grid_f_mean"], float), "chain_K": x["K"], "chain_hs": x["hs"],
            "date_ok": bool(rec.get("sampler_ok") and not rec.get("split_half_fired") and not rec["contract_check"]["mismatch"])}
     for b in rec["brackets"]:
+        b["mid_dollar"] = state_variable(b["lo"], b["hi"])
         if b.get("kalshi") is None or b.get("pq_draws") is None:
             continue
         compare_bracket(b, ctx)
+    rec["stage18"] = stage18_for_record(rec)
     any_price = any(b.get("kalshi_mid") is not None for b in rec["brackets"])
     if not any_price:
         rec["outcome"] = "no_kalshi_candles"
@@ -632,7 +658,7 @@ def run_job(job: Dict[str, Any]) -> Dict[str, Any]:
                "date_ok": bool(sampler_ok and not split_fired and not rec["contract_check"]["mismatch"])}
         for j, r in enumerate(rows):
             b: Dict[str, Any] = dict(r)
-            b.update({"idx": j, "mid_dollar": (0.5 * (r["lo"] + r["hi"])) if np.isfinite(r["lo"]) and np.isfinite(r["hi"]) else None,
+            b.update({"idx": j, "mid_dollar": state_variable(r["lo"], r["hi"]),
                       "pq_mean": float(pq[:, j].mean()), "pq_q05": float(np.percentile(pq[:, j], 5)), "pq_q50": float(np.percentile(pq[:, j], 50)),
                       "pq_q95": float(np.percentile(pq[:, j], 95)), "pq_draws": pq[:, j].astype(np.float32)})
             b["band90"] = b["pq_q95"] - b["pq_q05"]
