@@ -78,12 +78,33 @@ class TestCondor(unittest.TestCase):
         F0, D = 84.3, 1.0
         rows = [{"strike": k, "right": "C", "bid_px_00": 0.1, "ask_px_00": 0.12, "age_min": 1.0} for k in (83.25, 83.75, 85.0, 85.5)]
         q = pd.DataFrame(rows)
-        st, ks, shifts = bt.find_structure(q, 83.995, 84.995, F0, D)
+        st, spec, shifts = bt.find_structure(q, 83.995, 84.995, F0, D)
         self.assertIsNotNone(st)
-        self.assertEqual(ks, [83.25, 83.75, 85.0, 85.5])
+        self.assertEqual(spec["strikes"], [83.25, 83.75, 85.0, 85.5])
         self.assertEqual(shifts, (1, 0))
         st2, _, _ = bt.find_structure(q.iloc[:2], 83.995, 84.995, F0, D)
         self.assertIsNone(st2)
+
+    def test_tails_are_two_leg_spreads_with_the_ramp_outside(self):
+        up = bt.structure_spec(95.995, np.inf)              # 'Above $95.99': S >= 96
+        self.assertEqual(up["strikes"], [95.5, 96.0])
+        self.assertEqual(up["k0"], 0.0)
+        np.testing.assert_allclose(bt.condor_payoff([95.0, 95.75, 96.0, 99.0], up), [0, 0.25, 0.5, 0.5])
+        dn = bt.structure_spec(-np.inf, 84.995)             # '$84.99 or below': S <= 84.99
+        self.assertEqual(dn["strikes"], [85.0, 85.5])
+        self.assertEqual(dn["k0"], bt.SPREAD_WIDTH)
+        np.testing.assert_allclose(bt.condor_payoff([80.0, 84.99, 85.25, 85.5, 90.0], dn), [0.5, 0.5, 0.25, 0, 0])
+        rows = [{"strike": k, "right": "C", "bid_px_00": c - 0.01, "ask_px_00": c + 0.01, "age_min": 1.0} for k, c in ((85.0, 1.30), (85.5, 1.05))]
+        st = bt.structure_quotes(pd.DataFrame(rows), dn, 86.0, 1.0)
+        self.assertAlmostEqual(st["mid"], 0.5 - 0.25)         # 0.5 cash minus the 25c spread
+        self.assertAlmostEqual(st["digital_mid"], 0.5)
+
+    def test_estimated_leg_half_spread_uses_the_nearest_quoted_strikes(self):
+        K = np.array([83.0, 84.0, 86.0, 90.0])
+        hs = np.array([0.01, 0.03, 0.05, 0.02])
+        # within $1: 83.5 -> {83, 84}; 84.0 -> {83, 84}; 85.0 -> {84, 86}; 85.5 -> {86}
+        self.assertAlmostEqual(bt.estimate_leg_hs(K, hs, [83.5, 84.0, 85.0, 85.5]), 0.02 + 0.02 + 0.04 + 0.05)
+        self.assertIsNone(bt.estimate_leg_hs(K, hs, [95.0, 95.5]))
 
 
 class TestFriction(unittest.TestCase):

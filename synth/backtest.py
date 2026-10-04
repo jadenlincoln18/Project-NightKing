@@ -165,30 +165,48 @@ def kalshi_at(candles, ticker: str, snap_utc) -> Optional[Dict[str, Any]]:
 # the hedge: outer condor on the $0.50 grid, four legs, OTM side of each strike
 # --------------------------------------------------------------------------
 
-def condor_strikes(lo_edge: float, hi_edge: float, shift_lo: int = 0, shift_hi: int = 0) -> List[float]:
-    """Edges at X-0.005 and X+0.995 -> legs X-0.5, X (lower spread) and X+1, X+1.5 (upper spread); shifts move a
-    spread outward in 0.25 steps when a strike is not quoted (the ramp widens away from the bracket)."""
-    X = round(lo_edge + 0.005, 2)
-    Y = round(hi_edge - 0.995 + 1.0, 2)   # the upper boundary dollar, X+1 for a $1 bracket
+def structure_spec(lo_edge: float, hi_edge: float, shift_lo: int = 0, shift_hi: int = 0) -> Dict[str, Any]:
+    """The replicating structure in call terms: value = k0 * D + sum(sign * C(K)).
+    Bracket [X-0.005, X+0.995): the outer condor C(X-0.5) - C(X) - C(X+1) + C(X+1.5), four legs, k0 = 0.
+    Upper tail (X-0.005, inf): the lower spread C(X-0.5) - C(X), two legs.
+    Lower tail (-inf, Y-0.005]: 0.5 - [C(Y) - C(Y+0.5)], two legs and k0 = SPREAD_WIDTH of cash.
+    Every structure pays SPREAD_WIDTH per bbl inside the bracket and 0 beyond its ramps, which lie outside the bracket.
+    Shifts move a spread outward in 0.25 steps when a strike is not quoted (the ramp widens away from the bracket)."""
     s_lo, s_hi = 0.25 * shift_lo, 0.25 * shift_hi
-    return [round(X - SPREAD_WIDTH - s_lo, 2), round(X - s_lo, 2), round(Y + s_hi, 2), round(Y + SPREAD_WIDTH + s_hi, 2)]
+    w = SPREAD_WIDTH
+    legs: List[Tuple[float, int]] = []
+    k0 = 0.0
+    if np.isfinite(lo_edge):
+        X = round(lo_edge + 0.005, 2)
+        legs += [(round(X - w - s_lo, 2), +1), (round(X - s_lo, 2), -1)]
+    if np.isfinite(hi_edge):
+        Y = round(hi_edge + 0.005, 2)
+        legs += [(round(Y + s_hi, 2), -1), (round(Y + w + s_hi, 2), +1)]
+        if not np.isfinite(lo_edge):
+            k0 = w
+    return {"legs": legs, "k0": k0, "strikes": [k for k, _ in legs]}
 
 
-LEG_SIGNS = (+1, -1, -1, +1)   # long the structure = long C(K1), short C(K2), short C(K3), long C(K4)
+def condor_strikes(lo_edge: float, hi_edge: float, shift_lo: int = 0, shift_hi: int = 0) -> List[float]:
+    return structure_spec(lo_edge, hi_edge, shift_lo, shift_hi)["strikes"]
 
 
-def condor_payoff(S, strikes: List[float]) -> np.ndarray:
-    """Payoff per bbl of the long structure, in call terms."""
+def condor_payoff(S, spec) -> np.ndarray:
+    """Payoff per bbl of the long structure. `spec` is a structure_spec dict (a bare strike list is the 4-leg condor)."""
     S = np.asarray(S, float)
-    return sum(sg * np.maximum(S - k, 0.0) for sg, k in zip(LEG_SIGNS, strikes))
+    if not isinstance(spec, dict):
+        spec = {"legs": list(zip(spec, (+1, -1, -1, +1))), "k0": 0.0}
+    return spec["k0"] + sum(sg * np.maximum(S - k, 0.0) for k, sg in spec["legs"])
 
 
-def structure_quotes(raw_q, strikes: List[float], F0: float, D: float) -> Optional[Dict[str, Any]]:
-    """Executable quotes of the four legs from the raw TBBO snapshot (last two-sided quote per instrument in the
-    window). Each leg is taken on its OTM side (call above the forward, put below, equivalent by parity) and
-    expressed in call terms so the structure value is the condor's. Returns None if a leg is unquoted."""
+def structure_quotes(raw_q, spec, F0: float, D: float) -> Optional[Dict[str, Any]]:
+    """Executable quotes of the legs from the raw TBBO snapshot (last two-sided quote per instrument in the window).
+    Each leg is taken on its OTM side (call above the forward, put below, equivalent by parity) and expressed in call
+    terms so the structure value is the spec's. Returns None if a leg is unquoted."""
+    if not isinstance(spec, dict):
+        spec = {"legs": list(zip(spec, (+1, -1, -1, +1))), "k0": 0.0}
     legs = []
-    for sg, k in zip(LEG_SIGNS, strikes):
+    for k, sg in spec["legs"]:
         right = "C" if k >= F0 else "P"
         row = raw_q[(np.isclose(raw_q["strike"].values, k)) & (raw_q["right"].values == right)]
         if row.empty:
@@ -202,21 +220,40 @@ def structure_quotes(raw_q, strikes: List[float], F0: float, D: float) -> Option
         legs.append({"strike": k, "right": right, "sign": sg, "bid": bid, "ask": ask, "hs": 0.5 * (ask - bid),
                      "mid_call": 0.5 * (bid + ask) + conv, "bid_call": bid + conv, "ask_call": ask + conv,
                      "age_min": float(r["age_min"])})
-    buy = sum(l["ask_call"] if l["sign"] > 0 else -l["bid_call"] for l in legs)    # pay to buy the structure
-    sell = sum(l["bid_call"] if l["sign"] > 0 else -l["ask_call"] for l in legs)   # receive to sell it
-    mid = sum(l["sign"] * l["mid_call"] for l in legs)
-    return {"legs": legs, "buy": buy, "sell": sell, "mid": mid, "sum_hs": sum(l["hs"] for l in legs),
+    k0 = spec["k0"] * D
+    buy = k0 + sum(l["ask_call"] if l["sign"] > 0 else -l["bid_call"] for l in legs)    # pay to buy the structure
+    sell = k0 + sum(l["bid_call"] if l["sign"] > 0 else -l["ask_call"] for l in legs)   # receive to sell it
+    mid = k0 + sum(l["sign"] * l["mid_call"] for l in legs)
+    return {"legs": legs, "buy": buy, "sell": sell, "mid": mid, "sum_hs": sum(l["hs"] for l in legs), "n_legs": len(legs),
             "max_age_min": max(l["age_min"] for l in legs), "digital_mid": mid / SPREAD_WIDTH}
 
 
-def find_structure(raw_q, lo_edge: float, hi_edge: float, F0: float, D: float) -> Tuple[Optional[Dict[str, Any]], List[float], Tuple[int, int]]:
+def find_structure(raw_q, lo_edge: float, hi_edge: float, F0: float, D: float) -> Tuple[Optional[Dict[str, Any]], Dict[str, Any], Tuple[int, int]]:
     for shift in range(LEG_SHIFT_MAX + 1):
         for s_lo, s_hi in sorted({(a, b) for a in range(shift + 1) for b in range(shift + 1) if max(a, b) == shift}):
-            ks = condor_strikes(lo_edge, hi_edge, s_lo, s_hi)
-            st = structure_quotes(raw_q, ks, F0, D)
+            spec = structure_spec(lo_edge, hi_edge, s_lo, s_hi)
+            st = structure_quotes(raw_q, spec, F0, D)
             if st is not None:
-                return st, ks, (s_lo, s_hi)
-    return None, condor_strikes(lo_edge, hi_edge), (0, 0)
+                return st, spec, (s_lo, s_hi)
+    return None, structure_spec(lo_edge, hi_edge), (0, 0)
+
+
+def estimate_leg_hs(chain_K: np.ndarray, chain_hs: np.ndarray, strikes: List[float], radius: float = 1.0) -> Optional[float]:
+    """Sum over legs of the median synchronised half-spread of the chain's quoted strikes within `radius` dollars of
+    the leg (within 2 * radius if none). An ESTIMATE of the CME spread cost, used only for the signal record of
+    brackets whose legs were not all quoted in the window - never for a trade (protocol §5, amendment 3)."""
+    K = np.asarray(chain_K, float)
+    hs = np.asarray(chain_hs, float)
+    total = 0.0
+    for k in strikes:
+        for rad in (radius, 2 * radius):
+            near = np.abs(K - k) <= rad + 1e-9
+            if near.any():
+                total += float(np.median(hs[near]))
+                break
+        else:
+            return None
+    return total
 
 
 # --------------------------------------------------------------------------
@@ -460,15 +497,18 @@ def run_job(job: Dict[str, Any]) -> Dict[str, Any]:
             b["P_exec"] = P
             b["g"] = P - b["pq_mean"]
             # hedge legs
-            st, ks, shifts = (None, None, (0, 0))
-            if np.isfinite(r["lo"]) and np.isfinite(r["hi"]):
-                st, ks, shifts = find_structure(raw_q, r["lo"], r["hi"], F0, D)
+            st, spec, shifts = find_structure(raw_q, r["lo"], r["hi"], F0, D)
+            ks = spec["strikes"]
             b["legs"] = None if st is None else [{kk: vv for kk, vv in l.items()} for l in st["legs"]]
-            b["leg_strikes"], b["leg_shifts"] = ks, shifts
+            b["leg_strikes"], b["leg_shifts"], b["n_legs"] = ks, shifts, len(ks)
             b["structure"] = None if st is None else {kk: vv for kk, vv in st.items() if kk != "legs"}
             b["chain_digital_mid"] = None if st is None else st["digital_mid"]
             fr = friction(P, st["sum_hs"] if st is not None else float("nan"))
             b["friction"] = fr
+            # the estimate from the synchronised chain's own half-spreads, for the signal record only
+            hs_est = estimate_leg_hs(x["K"], x["hs"], ks)
+            b["friction_est"] = None if hs_est is None else friction(P, hs_est)
+            b["excess_est"] = None if hs_est is None else abs(P - b["pq_mean"]) - b["band90"] - b["friction_est"]["total"]
             # Stage 19
             status = None
             if not (sampler_ok and not split_fired):
@@ -487,6 +527,8 @@ def run_job(job: Dict[str, Any]) -> Dict[str, Any]:
                 status = "traded"
             b["status"] = status
             b["excess"] = abs(b["g"]) - b["band90"] - (fr["total"] if st is not None else float("nan"))
+            # signal record: a bracket whose legs were not all quoted, but whose gap would clear band + estimated friction
+            b["would_clear_est"] = bool(status == "cme_leg_unquoted" and b["excess_est"] is not None and b["excess_est"] > 0)
             # settlement and P&L (computed for every bracket with a structure, so the untraded signals carry a record too)
             res = (r["result"] or "").lower()
             settled_yes = True if res == "yes" else False if res == "no" else None
@@ -500,7 +542,7 @@ def run_job(job: Dict[str, Any]) -> Dict[str, Any]:
             b["settled_yes"] = settled_yes
             if st is not None and S_T is not None and settled_yes is not None:
                 s_k = +1 if b["side"] == "buy_kalshi" else -1
-                pi_T = float(condor_payoff(S_T, ks))
+                pi_T = float(condor_payoff(S_T, spec))
                 pi_exec = st["sell"] if s_k > 0 else st["buy"]        # long Kalshi -> short structure at the sell side
                 pnl_k = s_k * ((1.0 if settled_yes else 0.0) - P) - fr["kalshi_fee"]
                 pnl_c = -s_k * (pi_T - pi_exec) / SPREAD_WIDTH - fr["cme_fees"]
@@ -512,7 +554,7 @@ def run_job(job: Dict[str, Any]) -> Dict[str, Any]:
                 b["in_ramp"] = bool(abs(mism) > 1e-9)
                 # posterior view of the ramp before the fact
                 s_grid = model.s
-                pay = condor_payoff(s_grid, ks) / SPREAD_WIDTH
+                pay = condor_payoff(s_grid, spec) / SPREAD_WIDTH
                 ind = ((s_grid > r["lo"]) & (s_grid <= r["hi"])).astype(float)
                 mm = pay - ind
                 p_mean = np.asarray(x["act3_grid_f_mean"], float) * model.w     # posterior-mean density -> cell masses
@@ -611,7 +653,8 @@ def write_logs(series: str, results: List[Dict[str, Any]]) -> None:
         w = csv.writer(fh)
         w.writerow(["settle_date", "snap", "ticker", "lo", "hi", "status", "side", "P_exec", "kalshi_bid", "kalshi_ask", "kalshi_age_min", "pq_mean", "pq_q05", "pq_q95",
                     "band90", "g", "friction_total", "kalshi_fee", "cme_spread", "cme_fees", "excess", "interior_minimum", "loo_near_edge", "chain_digital_mid",
-                    "settled_yes", "pnl_per_contract", "locked_gap", "in_ramp", "ramp_prob", "bar_volume", "open_interest", "lifetime_volume", "leg_shifts", "edge_note"])
+                    "settled_yes", "pnl_per_contract", "locked_gap", "in_ramp", "ramp_prob", "bar_volume", "open_interest", "lifetime_volume", "leg_shifts", "edge_note",
+                    "n_legs", "friction_est_total", "excess_est", "would_clear_est"])
         for r in sorted(results, key=lambda r: (r["settle_date"], r["snap"])):
             for b in r["brackets"]:
                 k = b.get("kalshi") or {}
@@ -620,7 +663,8 @@ def write_logs(series: str, results: List[Dict[str, Any]]) -> None:
                             k.get("age_min"), b.get("pq_mean"), b.get("pq_q05"), b.get("pq_q95"), b.get("band90"), b.get("g"), fr.get("total"), fr.get("kalshi_fee"),
                             fr.get("cme_spread"), fr.get("cme_fees"), b.get("excess"), b.get("interior_minimum"), b.get("loo_near_edge"), b.get("chain_digital_mid"),
                             b.get("settled_yes"), b.get("pnl_per_contract"), b.get("locked_gap"), b.get("in_ramp"), b.get("ramp_prob"), k.get("bar_volume"),
-                            k.get("open_interest"), b.get("lifetime_volume"), b.get("leg_shifts"), b.get("edge_note")])
+                            k.get("open_interest"), b.get("lifetime_volume"), b.get("leg_shifts"), b.get("edge_note"),
+                            b.get("n_legs"), (b.get("friction_est") or {}).get("total"), b.get("excess_est"), b.get("would_clear_est")])
 
 
 def main(argv: Optional[List[str]] = None) -> int:

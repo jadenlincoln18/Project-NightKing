@@ -204,7 +204,18 @@ mid-based edge.
 3. the executable Kalshi price on the needed side is in **[2¢, 98¢]**;
 4. $w_j \le 20¢$ (a wider band is an uninformative extraction, not a trade);
 5. the bracket does not overlap an interior trough region (§3);
-6. all four replicating legs have a two-sided TBBO quote in the 60-minute window.
+6. all replicating legs have a two-sided TBBO quote in the 60-minute window (four for a bracket; the open tails are
+   replicated by the single spread at their one edge, two legs, same $0.50 width and the same ramp-outside property).
+
+**Amendment 3 (before the full run, after a one-date smoke run — 2026-03-13 T-1d — showed 14 of 15 brackets with at
+least one replicating strike untraded, hence unquoted on the TBBO, in the window).** Condition 6 stands for a *trade*.
+For a bracket that fails only condition 6, the record additionally carries an **estimated** CME spread cost: for each
+leg, the median synchronised half-spread of the chain's quoted strikes within $1 of the leg (within $2 if none), summed
+and divided by the spread width. A bracket whose |g| exceeds band + estimated friction is counted in the report as a
+**signal with estimated friction** — logged, tabulated, never traded, never in B2 or B3, and its P&L is not computed.
+The smoke run also showed the measured legs at 4–5¢/bbl half-spread near the money, i.e. a four-leg stack of 30–40¢
+per Kalshi dollar; that number is reported as measured, and the next-pass list inherits the question of whether any
+CME replication of a $1 bracket can be cheaper than the gaps it is meant to capture.
 
 No depth threshold: the stored data (1-minute candles with per-minute volume and open interest) cannot establish
 resting depth, so feasibility at size is reported as **unknown from stored data** with the bar's volume and the

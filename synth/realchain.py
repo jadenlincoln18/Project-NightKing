@@ -117,7 +117,7 @@ def load_inputs(series: str = SERIES, clears_only: bool = True) -> Dict[str, Any
                               "strikes_60m_settle": 0, "clears_at_settle": False, "series": series})
     # option definitions: the underlying contract of each (root, expiry)
     under: Dict[Tuple[str, str], str] = {}
-    for root in sorted({d["root"] for d in dates}):
+    for root in sorted({d["root"] for d in dates if d["root"] is not None}):
         files = sorted((DATA_CME / "options_definition" / ("root=%s" % root)).glob("*.parquet"))
         if not files:
             continue

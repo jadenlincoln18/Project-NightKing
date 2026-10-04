@@ -376,17 +376,42 @@ def render_series(rs: List[Dict[str, Any]], series: str, lead_section: bool) -> 
                      _c(ps["pnl_without_best3_per_contract"]), _pct(ps["frac_in_ramp"]), _pct(ps["ramp_prob_mean"]), ps["n_loo_near_edge"],
                      (" (their P&L %s¢)" % _c(ps["pnl_loo_near_edge"])) if ps["pnl_loo_near_edge"] is not None else ""))
     # signals below threshold, logged anyway
-    L.append("### The signal record below the threshold — %s" % series)
+    L.append("### The signal record — %s" % series)
+    L.append("Brackets on cleared dates that did not become trades, by reason, with what the gap did against the band alone and against the "
+             "band plus friction. Where the legs were not all quoted in the window the friction is the chain-estimated one (protocol amendment 3) "
+             "and the bracket is a *signal*, not a trade.\n")
     for snap in bt.SNAPS:
-        bs = [b for r in tradeable_dates(rs, snap) for b in r["brackets"] if b.get("status") == "below_threshold"]
-        if not bs:
-            L.append("- %s: none" % snap)
+        rows_ok = tradeable_dates(rs, snap)
+        bs = [b for r in rows_ok for b in r["brackets"] if b.get("status") == "below_threshold"]
+        if bs:
+            ex = np.array([b["excess"] for b in bs if b.get("excess") is not None and b["excess"] == b["excess"]])
+            g = np.array([b["g"] for b in bs])
+            L.append("- %s, legs quoted, below threshold: %d brackets; |gap| > band alone on %s; shortfall to band + friction median %.1f¢ (p90 %.1f¢); gap > 0 on %s."
+                     % (snap, len(bs), _pct(np.mean([abs(b["g"]) > b["band90"] for b in bs])), -100 * np.median(ex) if len(ex) else float("nan"),
+                        -100 * np.percentile(ex, 10) if len(ex) else float("nan"), _pct(np.mean(g > 0))))
+        else:
+            L.append("- %s, legs quoted, below threshold: none." % snap)
+        un = [dict(b, _date=r["settle_date"]) for r in rows_ok for b in r["brackets"] if b.get("status") == "cme_leg_unquoted"]
+        if un:
+            est = [b for b in un if b.get("friction_est") is not None]
+            wc = [b for b in un if b.get("would_clear_est")]
+            fe = np.array([b["friction_est"]["total"] for b in est]) if est else np.array([])
+            L.append("- %s, legs not all quoted in the window: %d brackets; |gap| > band alone on %s; estimated friction median %.1f¢ (p10 %.1f¢, p90 %.1f¢); "
+                     "**%d would clear band + estimated friction** on %d dates (%s)."
+                     % (snap, len(un), _pct(np.mean([abs(b["g"]) > b["band90"] for b in un])), 100 * np.median(fe) if len(fe) else float("nan"),
+                        100 * np.percentile(fe, 10) if len(fe) else float("nan"), 100 * np.percentile(fe, 90) if len(fe) else float("nan"),
+                        len(wc), len({b.get("_date") for b in wc}), ", ".join(sorted({b.get("_date") or "" for b in wc})) if wc else "—"))
+    for snap in bt.SNAPS:
+        wc = [dict(b, _date=r["settle_date"]) for r in tradeable_dates(rs, snap) for b in r["brackets"] if b.get("would_clear_est")]
+        if not wc:
             continue
-        ex = np.array([b["excess"] for b in bs if b.get("excess") is not None and b["excess"] == b["excess"]])
-        g = np.array([b["g"] for b in bs])
-        L.append("- %s: %d brackets; |gap| exceeded the band alone on %s of them; shortfall to band + friction median %.1f¢ (p90 %.1f¢); gap > 0 on %s"
-                 % (snap, len(bs), _pct(np.mean([abs(b["g"]) > b["band90"] for b in bs])), -100 * np.median(ex) if len(ex) else float("nan"),
-                    -100 * np.percentile(ex, 10) if len(ex) else float("nan"), _pct(np.mean(g > 0))))
+        L.append("\nSignals with estimated friction, %s (not trades):\n" % snap)
+        L.append("| date | bracket | side | Kalshi exec | Act III | band | gap | est. friction | excess | interior-min | LOO near edge | settled |\n|---|---|---|---:|---:|---:|---:|---:|---:|---|---|---|")
+        for b in sorted(wc, key=lambda b: (b["_date"], b["lo"])):
+            L.append("| %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s |" % (
+                b["_date"], b["sub_title"], b["side"].replace("_kalshi", " Kalshi"), _f(100 * b["P_exec"], "%.0f¢"), _f(100 * b["pq_mean"], "%.1f¢"),
+                _f(100 * b["band90"], "%.1f"), _c(b["g"]), _f(100 * b["friction_est"]["total"], "%.1f"), _f(100 * b["excess_est"], "%.1f"),
+                "yes" if b["interior_minimum"] else "", "yes" if b["loo_near_edge"] else "", "yes" if b.get("settled_yes") else "no"))
     L.append("")
     return L
 
