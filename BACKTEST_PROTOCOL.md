@@ -99,8 +99,11 @@ Per bracket, after the date clears:
 **Interior-local-minimum rule (new, pre-stated).** On the posterior-mean density $\bar f(s)$ over the Act III grid,
 an *interior local minimum* is a grid point $s^*$ that is a local minimum of $\bar f$ with a local maximum on each
 side whose height is at least $0.02\,\max\bar f$, and with $\bar f(s^*) \le 0.98 \times \min(\text{peak}_L,\text{peak}_R)$
-(a 2% dip, to ignore grid ripple). Its *trough region* is the contiguous interval around $s^*$ on which
-$\bar f < 0.98 \times \min(\text{peak}_L,\text{peak}_R)$. **A bracket whose edges overlap any trough region is not traded.**
+(a 2% dip, to ignore grid ripple). Its *trough region* is the contiguous interval around $s^*$ on which $\bar f$ lies
+in the **lower half of the dip**, $\bar f < \bar f(s^*) + \tfrac12\,[\min(\text{peak}_L,\text{peak}_R) - \bar f(s^*)]$
+(amended from "below 98% of the lower peak" before the first run, commit 2, because that version declared the
+shoulders of both humps a trough on the unit test's planted bimodal; the blind spot is at the bottom of the dip).
+**A bracket whose edges overlap any trough region is not traded.**
 It stays in the gap tables, marked. The count removed is reported per snapshot. Rationale: the residual bimodal blind
 spot has trough coverage 57% (`FINDINGS_SYNTHETIC_V2.md`), so a mid-density dip is wrong roughly two times in five.
 
@@ -254,9 +257,10 @@ reason not in this list.
 | `no_kalshi_candles` | the event has no candle within 10 minutes of the snapshot on any bracket |
 | `cleared` | enters §5 |
 
-Bracket statuses: `traded`, `no_two_sided_kalshi_quote`, `side_unavailable`, `price_out_of_range`,
-`band_too_wide`, `interior_minimum`, `cme_leg_unquoted`, `below_threshold` (|g| ≤ band + friction, the logged signal),
-`result_missing`.
+Bracket statuses: `traded`, `no_two_sided_kalshi_quote`, `date_gated` (the date's split-half or sampler check
+failed; the bracket is in the gap tables, not tradeable), `price_out_of_range` (covers a missing or 0¢/100¢ side),
+`band_too_wide`, `interior_minimum`, `cme_leg_unquoted`, `below_threshold` (|g| ≤ band + friction, the logged signal).
+A bracket with no `result` settles by `expiration_value` against its edges and says so.
 
 **Artifact checks (§6 of the brief), all reported before the verdict:** (i) gap vs residual forward error — the
 posterior mean of $F$ minus the futures level, and the correlation of per-date mean gap with it; (ii) asynchronicity —

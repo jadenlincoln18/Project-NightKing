@@ -86,14 +86,18 @@ PARITY_ABS_CENTS = 10.0
 # inputs from the local stores (read-only)
 # --------------------------------------------------------------------------
 
-def load_inputs() -> Dict[str, Any]:
+def load_inputs(series: str = SERIES, clears_only: bool = True) -> Dict[str, Any]:
+    """Dates (Kalshi events joined to a CME expiry on disk), option underlyings, NYMEX settlements, intraday bars.
+    clears_only=False keeps the events whose chain did not clear Gate 0 at settlement (the backtest's denominator)."""
     import pandas as pd
     sys.path.insert(0, str(ROOT))
     import db_common as dc
     import db_pull
-    ev = dc.kalshi_settlements(series=(SERIES,))
+    ev = dc.kalshi_settlements(series=(series,))
     cd = pd.read_parquet(DATA_CME / "chain_density" / "part.parquet")
-    cd = cd[(cd["series"] == SERIES) & (cd["clears"])]
+    cd = cd[(cd["series"] == series) & ((cd["clears"]) if clears_only else True)]
+    if not clears_only:   # several roots can expire on one date; keep the densest chain per event
+        cd = cd.sort_values(["settle_date", "clears", "strikes_60m"], ascending=[True, False, False]).drop_duplicates("settle_date")
     dates = []
     for r in cd.itertuples():
         e = ev[ev["settle_date"] == r.settle_date]
@@ -101,9 +105,16 @@ def load_inputs() -> Dict[str, Any]:
             continue
         e = e.iloc[0]
         dates.append({"settle_date": str(r.settle_date), "root": r.root, "settle_ts": e["settle_ts"],
-                      "event_ticker": e["event_ticker"], "cl_contract": e["cl_contract"],
+                      "event_ticker": e["event_ticker"], "cl_contract": e["cl_contract"], "contract_source": e.get("front_month_source"),
                       "ice_settle": float(e["expiration_value"]) if e["expiration_value"] == e["expiration_value"] else None,
-                      "strikes_60m_settle": int(r.strikes_60m)})
+                      "strikes_60m_settle": int(r.strikes_60m), "clears_at_settle": bool(r.clears), "series": series})
+    if not clears_only:   # events with no CME expiry on disk at all: Gate 0a fails, but they belong in the denominator
+        have = {d["settle_date"] for d in dates}
+        for e in ev.itertuples():
+            if str(e.settle_date) not in have and e.expiration_value == e.expiration_value:
+                dates.append({"settle_date": str(e.settle_date), "root": None, "settle_ts": e.settle_ts, "event_ticker": e.event_ticker,
+                              "cl_contract": e.cl_contract, "contract_source": e.front_month_source, "ice_settle": float(e.expiration_value),
+                              "strikes_60m_settle": 0, "clears_at_settle": False, "series": series})
     # option definitions: the underlying contract of each (root, expiry)
     under: Dict[Tuple[str, str], str] = {}
     for root in sorted({d["root"] for d in dates}):
@@ -407,6 +418,10 @@ def run_one(job: Dict[str, Any]) -> Dict[str, Any]:
             res = act3.sample(model, rng, sampler="nuts", **NUTS)
             if mart:
                 psi_map = res["psi_map"]
+                if job.get("keep_thetas"):   # the backtest integrates every draw over Kalshi's own bracket edges (Stage 16)
+                    out["act3_thetas"] = res["thetas"]
+                    out["act3_model_args"] = {"atm_sigma": asig, "se_F0": se, "prior": act3_kind, "nu": act3_nu, "m": act3_m,
+                                              "hs_floor": fl, "hs_mode": fm}
             summ = model.summarise(res["thetas"], edges)
             br = summ["bracket"]
             n_ch = NUTS["n_chains"]
