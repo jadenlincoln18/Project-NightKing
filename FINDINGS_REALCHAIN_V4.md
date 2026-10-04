@@ -607,7 +607,73 @@ Convexity = Act II g(k) ≥ 0 on the used range and density ≥ 0 (Act III is po
 
 ## 8. Verdicts
 
-_(written by hand after the numbers; see the end of this file.)_
+### V3 → V4 on the 60-minute windows, all extracted dates
 
-Plots: `synth/plots_real_v2/_summary.png` and one `<date>_<snap>_w<window>_<arm>.png` per extraction (the sync arms add the estimated path).
+| snapshot | arm | n | χ²/strike med (p90) | χ² < 2 | multimodal majority | posterior-mean modes | Stage 14 pass | \|z\| med | Gate 4 fired | Act II fired | LOO flags / chain | 90% body width (¢) | bracket R̂ med | bracket ESS med | τ med | s / run |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| T-2d | V3 (24 knots) | 26 | 1.6 (2.3) | 77% | 0% | {'1': 26} | 92% | 1.1 | 19% | 12% | 1.7 | 2.1 | 1.023 | 196 | 0.7 | 49 |
+| T-2d | V4 36 knots | 26 | 1.6 (2.2) | 77% | 4% | {'1': 26} | 96% | 1.0 | 23% | 19% | 1.7 | 2.3 | 1.015 | 270 | 0.4 | 54 |
+| T-2d | V4 48 knots | 26 | 1.5 (2.1) | 85% | 8% | {'1': 24, '2': 2} | 96% | 1.1 | 23% | 19% | 1.8 | 2.7 | 1.021 | 227 | 0.3 | 63 |
+| T-2d | V4 48 knots + LOO exclusion | 26 | 1.3 (1.5) | 100% | 0% | {'1': 26} | 96% | 0.9 | 0% | 12% | 0.2 | 2.1 | 1.014 | 295 | 0.2 | 56 |
+| T-1d | V3 (24 knots) | 30 | 1.8 (3.4) | 53% | 3% | {'1': 29, '3': 1} | 90% | 1.5 | 30% | 10% | 2.3 | 2.8 | 1.021 | 202 | 0.8 | 52 |
+| T-1d | V4 36 knots | 30 | 1.8 (3.3) | 53% | 3% | {'1': 29, '3': 1} | 90% | 1.4 | 27% | 13% | 2.6 | 3.3 | 1.021 | 214 | 0.4 | 55 |
+| T-1d | V4 48 knots | 30 | 1.8 (3.2) | 53% | 10% | {'1': 29, '3': 1} | 87% | 1.3 | 27% | 17% | 2.9 | 3.8 | 1.017 | 159 | 0.3 | 70 |
+| T-1d | V4 48 knots + LOO exclusion | 30 | 1.3 (1.8) | 97% | 0% | {'1': 30} | 100% | 0.9 | 0% | 0% | 0.2 | 3.3 | 1.021 | 258 | 0.2 | 62 |
+| T-4h | V3 (24 knots) | 30 | 1.5 (3.1) | 70% | 7% | {'1': 28, '2': 1, '3': 1} | 90% | 1.0 | 13% | 50% | 1.6 | 5.5 | 1.025 | 191 | 0.8 | 58 |
+| T-4h | V4 36 knots | 30 | 1.5 (3.1) | 70% | 7% | {'1': 28, '3': 2} | 90% | 1.0 | 13% | 53% | 1.7 | 6.1 | 1.018 | 220 | 0.5 | 57 |
+| T-4h | V4 48 knots | 30 | 1.5 (3.1) | 70% | 10% | {'1': 28, '4': 2} | 90% | 1.0 | 13% | 53% | 1.8 | 7.2 | 1.023 | 231 | 0.3 | 70 |
+| T-4h | V4 48 knots + LOO exclusion | 30 | 1.2 (1.8) | 97% | 3% | {'1': 30} | 97% | 1.1 | 3% | 37% | 0.2 | 7.0 | 1.021 | 229 | 0.3 | 67 |
+
+### The chains to watch: 2026-05-01 and 2026-03-06 at T-4h (and 2026-05-29, which lost its modes under the real path)
+
+| date | arm | strikes | χ²/strike | modes (posterior mean) | draws multimodal | τ med | 90% body width (¢) | split-half max\|z\| | LOO flags | Act II Δ (¢) | bracket R̂ | bracket ESS | Stage 14 z |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-05-01 | V3 (24 knots) | 48 | 4.25 | 3 | 100% | 11.78 | 13.8 | 3.0 | 8 | 25.19 | 1.070 | 67 | 4.9 |
+| 2026-05-01 | V4 Student-t | 48 | 4.30 | 2 | 100% | 6.91 | 11.8 | 3.2 | 8 | 25.71 | 1.031 | 107 | 4.3 |
+| 2026-05-01 | V4 36 knots | 48 | 4.20 | 3 | 100% | 5.12 | 13.8 | 3.3 | 8 | 26.85 | 1.025 | 199 | 4.1 |
+| 2026-05-01 | V4 48 knots | 48 | 4.11 | 4 | 100% | 3.92 | 17.4 | 3.2 | 8 | 25.83 | 1.104 | 46 | 3.9 |
+| 2026-05-01 | V4 48 knots + LOO exclusion | 40 | 1.35 | 1 | 10% | 0.27 | 7.1 | 1.6 | 0 | 1.46 | 1.005 | 408 | 1.3 |
+| 2026-03-06 | V3 (24 knots) | 41 | 4.41 | 1 | 0% | 0.79 | 1.9 | 3.2 | 6 | 0.89 | 1.012 | 289 | -1.0 |
+| 2026-03-06 | V4 Student-t | 41 | 4.41 | 1 | 0% | 0.60 | 1.9 | 3.5 | 5 | 1.00 | 1.012 | 350 | -0.7 |
+| 2026-03-06 | V4 36 knots | 41 | 4.38 | 1 | 0% | 0.46 | 2.6 | 2.9 | 6 | 1.03 | 1.019 | 186 | -0.7 |
+| 2026-03-06 | V4 48 knots | 41 | 4.32 | 1 | 4% | 0.28 | 3.0 | 2.7 | 6 | 0.95 | 1.054 | 63 | -0.6 |
+| 2026-03-06 | V4 48 knots + LOO exclusion | 35 | 1.94 | 1 | 0% | 0.25 | 3.1 | 2.3 | 0 | 0.78 | 1.020 | 245 | -0.5 |
+| 2026-05-29 | V3 (24 knots) | 28 | 3.06 | 1 | 2% | 0.79 | 4.7 | 3.3 | 2 | 2.37 | 1.025 | 93 | 0.6 |
+| 2026-05-29 | V4 Student-t | 28 | 3.06 | 1 | 2% | 0.59 | 4.0 | 3.5 | 2 | 2.43 | 1.030 | 166 | 0.6 |
+| 2026-05-29 | V4 36 knots | 28 | 3.02 | 1 | 4% | 0.42 | 5.6 | 3.5 | 2 | 2.96 | 1.008 | 210 | 0.6 |
+| 2026-05-29 | V4 48 knots | 28 | 2.98 | 1 | 10% | 0.28 | 7.1 | 3.5 | 2 | 3.39 | 1.073 | 79 | 0.5 |
+| 2026-05-29 | V4 48 knots + LOO exclusion | 26 | 0.98 | 1 | 1% | 0.26 | 5.9 | 0.5 | 0 | 2.61 | 1.013 | 316 | 0.3 |
+
+Chains whose posterior mean is multimodal under 48 knots (60-minute windows), with their V3 state:
+
+| date | snap | V3 modes | V3 draws multimodal | V4(48) modes | V4(48) draws multimodal | V4(48) χ²/strike | V4(48) τ | V4(48) LOO flags | V4(48) split max\|z\| |
+|---|---|---|---|---|---|---|---|---|---|
+| 2026-02-13 | T-2d | 1 | 48% | 2 | 71% | 2.77 | 0.79 | 5 | 2.2 |
+| 2026-04-10 | T-1d | 3 | 99% | 3 | 100% | 2.35 | 2.08 | 7 | 5.9 |
+| 2026-04-17 | T-4h | 2 | 100% | 4 | 100% | 2.41 | 1.18 | 4 | 2.1 |
+| 2026-05-01 | T-4h | 3 | 100% | 4 | 100% | 4.11 | 3.92 | 8 | 3.2 |
+| 2026-08-21 | T-2d | 1 | 2% | 2 | 91% | 2.44 | 1.14 | 2 | 3.2 |
+
+### Part B — quote-level exclusion at 48 knots (rule fixed in advance: LOO |z| > 3, one pass, Gate 0 preserved)
+
+Over 124 chains and 2734 quotes the rule removed 211 quotes (7.7%); 36 chains (29%) lost more than 10% of their quotes and are marked suspect. Removed quotes: 48% calls / 52% puts; moneyness rank median 11 (0 = nearest the money; chain median 21 strikes); quote age median 14.7 min (all quotes: 13.9); half-spread median 0.5¢ (all: 1.0¢); |z| median 3.7.
+
+| snapshot | window | chains | quotes removed / chain (mean) | share removed | chains > 10% | χ²/strike med: 48 knots → + exclusion | χ² < 2 | max resid < 3 | Gate 4 fired | LOO flags after | multimodal majority | Stage 14 pass | 90% body width (¢) |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| T-2d | 60 | 26 | 1.7 | 9% | 38% | 1.5 → 1.3 | 85% → 100% | 65% → 92% | 23% → 0% | 1.8 → 0.2 | 8% → 0% | 96% → 96% | 2.7 → 2.1 |
+| T-2d | 10 | 8 | 0.4 | 3% | 0% | 1.1 → 1.1 | 88% → 88% | 100% → 100% | 0% → 0% | 0.6 → 0.2 | 0% → 0% | 100% → 100% | 4.5 → 4.5 |
+| T-1d | 60 | 30 | 2.9 | 10% | 47% | 1.8 → 1.3 | 53% → 97% | 53% → 100% | 27% → 0% | 2.9 → 0.2 | 10% → 0% | 87% → 100% | 3.8 → 3.3 |
+| T-1d | 10 | 21 | 0.8 | 5% | 19% | 1.2 → 1.2 | 81% → 95% | 90% → 100% | 0% → 0% | 0.8 → 0.1 | 0% → 0% | 90% → 95% | 3.5 → 3.3 |
+| T-4h | 60 | 30 | 1.8 | 7% | 20% | 1.5 → 1.2 | 70% → 97% | 53% → 77% | 13% → 3% | 1.8 → 0.2 | 10% → 3% | 90% → 97% | 7.2 → 7.0 |
+| T-4h | 10 | 9 | 0.7 | 5% | 22% | 1.5 → 1.3 | 78% → 89% | 78% → 89% | 11% → 0% | 0.8 → 0.3 | 0% → 0% | 100% → 100% | 8.0 → 8.0 |
+
+Removed quotes by position (moneyness rank quartile of the chain), age and spread:
+
+| | rank 0–4 | rank 5–9 | rank 10–19 | rank ≥ 20 | age < 5 min | 5–20 | 20–40 | > 40 | half-spread ≤ 1¢ | 1–2¢ | > 2¢ |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| removed quotes | 48 | 47 | 65 | 51 | 45 | 79 | 56 | 31 | 165 | 30 | 16 |
+
+### Reading
+
+READING_V4_PLACEHOLDER
 

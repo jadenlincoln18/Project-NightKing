@@ -13,7 +13,7 @@ Part A of `NightKing/HANDOFF_prior_fix.md`. Every candidate runs through the syn
 | `m64` | as `base` with 64 knots (0.22 vol-scales between knots) | +40 coefficients | as `base` |
 | `m48x` | `m48` with Part B's exclusion rule applied before the fit (drop strikes with LOO \|z\| > 3, once) | none | as `base` |
 
-**VERDICT_PLACEHOLDER**
+**Verdict: the bimodal blind spot is a basis-resolution problem before it is a prior-form problem, and it is now half closed. Every heavy-tailed or local-scale prior on 24 knots leaves it untouched (Student-t ν=3: trough z +6.8 → +6.4, trough coverage 0% → 5%; ν=1 and the horseshoe are rejected on the sampler gate), while the unchanged Gaussian prior on 48 knots takes the trough z from +6.8 to +1.3, trough coverage from 0% to 57%, overall bimodal coverage from 42% to 72% and kinked-peak body coverage from 53% to 89%, with no must-not-regress item failing, every injected fault still caught, and bracket R̂ / ESS on crude chains of 1.020 / 260 against 1.016 / 290. Adding the Student-t tail on top of 48 knots buys nothing and costs sampler health. Recommendation: 48 uniform knots with the current Gaussian prior is the new default; the trough (57% coverage), the overall bimodal (72%) and the spike (59%) are still short of the 80% bar, so the blind spot is narrowed, not closed; 64 knots (§3) is the test of whether more resolution keeps paying: trough z +1.1, trough coverage 75%, overall 74%, spike 59%, at bracket R̂ 1.021 / ESS 217 on crude chains.**
 
 ## 1. Checklist, per candidate
 
@@ -380,7 +380,46 @@ X_unconverged band width relative to the converged run on the same seeds (median
 
 ## 6. Reading
 
-READING_PLACEHOLDER
+
+**Why the tail form did nothing at 24 knots.** The brief's diagnosis — one scale for the whole curve, Gaussian tails, so a sharp
+feature is astronomically improbable at any τ — is right about the *prior*, but the prior was not the binding constraint. With 24
+coefficients over ±7 vol-scales the knots are 0.7 vol-scales apart; the planted humps are 2.6 apart, so the trough between them spans
+about two knot intervals, and a cubic B-spline with that spacing cannot represent a trough of that width at all. A heavier-tailed prior
+makes large second differences cheaper, but the increments the trough needs cannot be formed in the basis, so the posterior under
+Student-t ν=3 is the Gaussian posterior with a smaller τ (3.43 vs 4.95): same trough z, same 0.7¢ band, same 100% two-mode recovery with
+the wrong depth. The three hyperpriors of `FINDINGS_SYNTHETIC.md` §9 giving identical answers was the same symptom. Cauchy increments
+(ν=1) and explicit local scales (horseshoe) do not change the answer either and mix unusably: R̂ 1.05 / 1.62 on crude chains, ESS 96 / 27 —
+the docstring's warning about sampled scales was borne out (a global τ on top of local λ_j ran straight down the flat τ→0, λ→∞ ridge and
+had to be removed before the horseshoe would fit at all).
+
+**What resolution does.** 36 knots halve the trough z (+2.3), 48 knots take it to +1.3 with a 1.55¢ band that contains the truth 57% of the
+time, and the improvement carries to the shapes the brief listed: kinked peak body coverage 53% → 89%, spike 46% → 59%, half-noise bimodal
+trough z +11.2 → +1.7. `F_bimodal_close` stays honest (trough coverage 100%). The price is precision on smooth truths, not calibration: on the
+crude-skew chains coverage is unchanged (92% / 95% / 95% all / body / tail against 92% / 95% / 95%) while the body band widens from 1.90¢ to 2.70¢
+and the RMSE from 0.57¢ to 0.66¢ — the model is admitting shapes it used to rule out by construction. The eight-strike gate holds (98% vs
+97%), Stage 14 is unchanged (|z| 0.67 vs 0.72), and every injected fault is still caught at the same rate.
+
+**Sampler health at 48 knots** is inside the gate on the crude chains (bracket R̂ 1.020 vs 1.016, bracket ESS 260 vs 290, divergences 31 vs
+23 per run) and somewhat worse on the bimodal ones (bracket ESS 108 vs 147, p10 32), which is where the posterior is now genuinely
+multimodal in shape and the whitening at the MAP is a poorer guide. Run time per chain rises from 68 s to 83 s. Student-t on 48 knots
+adds nothing to the blind-spot rows and pushes bracket R̂ to 1.030 and the RMSE past the tolerance, so it is rejected.
+
+**What is still not right.** Trough coverage 57% and overall bimodal coverage 72% at 48 knots are honest by comparison with 0% and 42%,
+but they are not 90%: the band at the trough is still too narrow by a factor of about two. Two things are left to try, in order:
+(i) more resolution — 64 knots (run: trough z +1.1, trough coverage 75%, overall 74%, spike 59%; bracket R̂ 1.021, ESS 217 on crude chains — REJECTED (regresses: A_rmse_body)); (ii) knots dense where strikes are dense, which the writeup asked for and V2 deferred because a
+non-uniform knot vector changes what the second-difference penalty means (the fix is a divided-difference penalty, standard for
+unequal P-splines). The learned-prior idea the operator raised stays behind both: calibrating τ's hyperprior from real extractions is
+sound and cheap once the basis can express what the data ask for, but it cannot substitute for that.
+
+**Part B on this harness** (`m48x`: 48 knots with the LOO exclusion rule applied before the fit): coverage on the clean chains is
+unchanged (92% / 95% / 96%), 0.7% of quotes are removed on them and none on the 8-strike chains, the injected stale and crossed quotes
+are removed on 100% of the fault chains, and the bimodal truth is untouched (73% overall). The rule removes noise, not signal; what it
+does on the real chains is in `FINDINGS_REALCHAIN_V4.md` §8.
+
+**Recommendation.** Make 48 uniform knots with the Gaussian prior the default (`act3.M_COEF = 48`), re-run the real chains with it
+(`FINDINGS_REALCHAIN_V4.md`), and keep the 24-knot model runnable as the baseline. `FINDINGS_SYNTHETIC.md`'s FAIL verdict is
+superseded in its diagnosis (form of the prior) but not in its status: the harness still shows a 1.6¢-wide band that misses the
+truth by 1.3σ at the trough, so the answer to "is the blind spot closed" is **narrowed, not closed**.
 
 Plots: `synth/plots_prior/` — the planted bimodal, spike and kinked chains under each prior (same seed).
 
