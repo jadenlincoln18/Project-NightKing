@@ -170,6 +170,59 @@ class TestStage16And18(unittest.TestCase):
         self.assertIsNone(bt.stage18(pm[:3], draws[:, :3], m[:3]))
 
 
+class TestContractCheck(unittest.TestCase):
+    def test_calendar_fallback_caught_when_kalshi_settled_on_the_other_month(self):
+        settles = {("2026-04-17", "CLK6"): 83.85, ("2026-04-17", "CLM6"): 82.59, ("2026-04-17", "CLN6"): 80.22}
+        d = {"settle_date": "2026-04-17", "ice_settle": None, "contract_source": "calendar"}
+        out = bt.contract_check(d, "CLM6", settles, {"2026-04-17": 83.85})
+        self.assertTrue(out["mismatch"])
+        self.assertIn("CLK6", out["reason"])
+        ok = bt.contract_check(dict(d, ice_settle=82.59), "CLM6", settles, {})
+        self.assertFalse(ok["mismatch"])
+        anomaly = bt.contract_check(dict(d, ice_settle=76.05), "CLM6", settles, {})
+        self.assertFalse(anomaly["mismatch"])
+        self.assertTrue(anomaly["basis_anomaly"])
+        self.assertIn("unverifiable", bt.contract_check(d, "CLM6", settles, {})["reason"])
+
+
+class TestCompareBracket(unittest.TestCase):
+    def _ctx(self, raw_q):
+        s = np.linspace(80, 100, 401)
+        f = np.exp(-0.5 * ((s - 90) / 2.0) ** 2)
+        return {"F0": 90.0, "D": 1.0, "raw_q": raw_q, "S_T": 85.5, "ice_settle": 85.5, "grid_s": s, "f_mean": f,
+                "chain_K": np.array([85.0, 86.0, 94.0]), "chain_hs": np.array([0.01, 0.01, 0.01]), "date_ok": True}
+
+    def _bracket(self):
+        return {"ticker": "X", "sub_title": "$85.00 to $85.99", "lo": 84.995, "hi": 85.995, "result": "yes", "mid_dollar": 85.495,
+                "pq_mean": 0.03, "pq_q05": 0.025, "pq_q95": 0.035, "band90": 0.01, "pq_draws": np.full(10, 0.03, np.float32),
+                "interior_minimum": False, "loo_near_edge": False, "kalshi": {"bid": 0.30, "ask": 0.32, "age_min": 0.0}}
+
+    def test_stale_legs_are_not_executable_but_are_reported(self):
+        rows = [{"strike": k, "right": "P", "bid_px_00": 0.50, "ask_px_00": 0.52, "age_min": age} for k, age in ((84.5, 30.0), (85.0, 30.0), (86.0, 30.0), (86.5, 30.0))]
+        b = self._bracket()
+        bt.compare_bracket(b, self._ctx(pd.DataFrame(rows)))
+        self.assertEqual(b["side"], "sell_kalshi")           # Kalshi 30c vs Act III 3c
+        self.assertEqual(b["status"], "cme_leg_unquoted")     # the only quotes are 30 minutes old
+        self.assertIsNotNone(b["chain_digital_stale"])
+        self.assertIsNone(b["pnl_per_contract"])
+        self.assertTrue(b["would_clear_est"])                 # 27c gap against ~1c band + ~11c estimated friction
+        for r in rows:
+            r["age_min"] = 1.0
+        b2 = self._bracket()
+        bt.compare_bracket(b2, self._ctx(pd.DataFrame(rows)))
+        self.assertEqual(b2["status"], "traded")
+        self.assertAlmostEqual(b2["pnl_kalshi"], 0.30 - 1.0 - bt.kalshi_fee(0.30))   # sold at 30c, bracket settled yes
+        self.assertTrue(b2["settled_yes"])
+
+    def test_gated_date_keeps_the_gap_but_never_trades(self):
+        b = self._bracket()
+        ctx = self._ctx(pd.DataFrame([{"strike": k, "right": "P", "bid_px_00": 0.5, "ask_px_00": 0.52, "age_min": 1.0} for k in (84.5, 85.0, 86.0, 86.5)]))
+        ctx["date_ok"] = False
+        bt.compare_bracket(b, ctx)
+        self.assertEqual(b["status"], "date_gated")
+        self.assertAlmostEqual(b["g"], 0.27)
+
+
 class TestKalshiBar(unittest.TestCase):
     def test_snapshot_bar_then_stale_limit(self):
         t_end = 1_700_000_000 - (1_700_000_000 % 60) + 60   # a whole minute

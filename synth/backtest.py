@@ -57,6 +57,8 @@ BBL = {"CL": 1000, "MCO": 100}
 SIZE_APPLICABLE = 500           # Kalshi contracts per standard-CL structure on a weekly date
 SIZE_DEPTH_CLEARED = 50         # the size the depth scan cleared (Micro) - not available on weekly dates
 LEG_SHIFT_MAX = 2               # at most two 0.25 steps outward when a replicating strike is unquoted
+LEG_MAX_AGE_MIN = 5.0           # a TBBO leg quote older than this at the snapshot is not an executable price (amendment 5)
+CONTRACT_TOL = 0.011            # Kalshi settlement vs NYMEX settlement of the matched contract: equal to the cent, else check the other months
 SAMPLER_RHAT, SAMPLER_ESS = 1.05, 100
 LOGIT_CLIP = 1e-3
 STAGE18_MID_MIN, STAGE18_MID_MAX = 0.01, 0.99
@@ -373,6 +375,164 @@ def stage18_pooled(blocks: List[Tuple[np.ndarray, np.ndarray, np.ndarray]]) -> O
     return out
 
 
+def compare_bracket(b: Dict[str, Any], ctx: Dict[str, Any]) -> None:
+    """Stages 17-19 and the P&L for one bracket whose posterior draws and Kalshi bar are already on it. Pure in its inputs,
+    so a stored record can be re-processed (python3 -m synth.backtest --reprocess) without re-running the sampler."""
+    k = b.get("kalshi")
+    F0, D, raw_q, S_T = ctx["F0"], ctx["D"], ctx["raw_q"], ctx["S_T"]
+    r = b
+    if k is None or k["bid"] is None or k["ask"] is None:
+        b["status"] = "no_two_sided_kalshi_quote"
+        b["pq_draws"] = None   # keep the pickle small where no comparison exists
+        return
+    bid, ask = k["bid"], k["ask"]
+    b["kalshi_mid"] = 0.5 * (bid + ask)
+    b["kalshi_spread"] = ask - bid
+    b["g_mid"] = b["kalshi_mid"] - b["pq_mean"]
+    # the side is fixed by the mid gap before the executable gap is computed
+    if b["g_mid"] > 0:
+        b["side"], P = "sell_kalshi", bid          # Kalshi rich: sell the bracket at the bid, buy the structure
+    else:
+        b["side"], P = "buy_kalshi", ask           # Kalshi cheap: buy at the ask, sell the structure
+    b["P_exec"] = P
+    b["g"] = P - b["pq_mean"]
+    # hedge legs
+    fresh = raw_q[raw_q["age_min"] <= LEG_MAX_AGE_MIN] if raw_q is not None else None
+    st, spec, shifts = find_structure(fresh, r["lo"], r["hi"], F0, D) if fresh is not None and len(fresh) else (None, structure_spec(r["lo"], r["hi"]), (0, 0))
+    st_stale, _, _ = find_structure(raw_q, r["lo"], r["hi"], F0, D) if raw_q is not None and len(raw_q) else (None, None, None)
+    b["chain_digital_stale"] = None if st_stale is None else st_stale["digital_mid"]
+    b["legs_stale_max_age_min"] = None if st_stale is None else st_stale["max_age_min"]
+    ks = spec["strikes"]
+    b["legs"] = None if st is None else [{kk: vv for kk, vv in l.items()} for l in st["legs"]]
+    b["leg_strikes"], b["leg_shifts"], b["n_legs"] = ks, shifts, len(ks)
+    b["structure"] = None if st is None else {kk: vv for kk, vv in st.items() if kk != "legs"}
+    b["chain_digital_mid"] = None if st is None else st["digital_mid"]
+    fr = friction(P, st["sum_hs"] if st is not None else float("nan"))
+    b["friction"] = fr
+    # the estimate from the synchronised chain's own half-spreads, for the signal record only
+    hs_est = estimate_leg_hs(ctx["chain_K"], ctx["chain_hs"], ks)
+    b["friction_est"] = None if hs_est is None else friction(P, hs_est)
+    b["excess_est"] = None if hs_est is None else abs(P - b["pq_mean"]) - b["band90"] - b["friction_est"]["total"]
+    # Stage 19
+    status = None
+    if not ctx["date_ok"]:
+        status = "date_gated"
+    elif P < PRICE_MIN or P > PRICE_MAX or P <= 0.0 or P >= 1.0:
+        status = "price_out_of_range"
+    elif b["band90"] > BAND_MAX:
+        status = "band_too_wide"
+    elif b["interior_minimum"]:
+        status = "interior_minimum"
+    elif st is None:
+        status = "cme_leg_unquoted"
+    elif abs(b["g"]) <= b["band90"] + fr["total"]:
+        status = "below_threshold"
+    else:
+        status = "traded"
+    b["status"] = status
+    b["excess"] = abs(b["g"]) - b["band90"] - (fr["total"] if st is not None else float("nan"))
+    # signal record: a bracket whose legs were not all quoted, but whose gap would clear band + estimated friction
+    b["would_clear_est"] = bool(status == "cme_leg_unquoted" and b["excess_est"] is not None and b["excess_est"] > 0)
+    # settlement and P&L (computed for every bracket with a structure, so the untraded signals carry a record too)
+    res = (r["result"] or "").lower()
+    settled_yes = True if res == "yes" else False if res == "no" else None
+    if settled_yes is None and ctx["ice_settle"] is not None:
+        settled_yes = bool(r["lo"] < ctx["ice_settle"] <= r["hi"])
+        b["result_source"] = "expiration_value"
+    else:
+        b["result_source"] = "result"
+        if ctx["ice_settle"] is not None and settled_yes is not None and settled_yes != bool(r["lo"] < ctx["ice_settle"] <= r["hi"]):
+            b["result_mismatch"] = True
+    b["settled_yes"] = settled_yes
+    if st is not None and S_T is not None and settled_yes is not None:
+        s_k = +1 if b["side"] == "buy_kalshi" else -1
+        pi_T = float(condor_payoff(S_T, spec))
+        pi_exec = st["sell"] if s_k > 0 else st["buy"]        # long Kalshi -> short structure at the sell side
+        pnl_k = s_k * ((1.0 if settled_yes else 0.0) - P) - fr["kalshi_fee"]
+        pnl_c = -s_k * (pi_T - pi_exec) / SPREAD_WIDTH - fr["cme_fees"]
+        b["pnl_per_contract"] = pnl_k + pnl_c
+        b["pnl_kalshi"], b["pnl_cme"] = pnl_k, pnl_c
+        b["locked_gap"] = s_k * (pi_exec / SPREAD_WIDTH - P) - fr["kalshi_fee"] - fr["cme_fees"]
+        mism = pi_T / SPREAD_WIDTH - (1.0 if settled_yes else 0.0)   # structure minus Kalshi payoff, lives in the ramps
+        b["ramp_realised"] = -s_k * mism
+        b["in_ramp"] = bool(abs(mism) > 1e-9)
+        # posterior view of the ramp before the fact
+        s_grid = ctx["grid_s"]
+        pay = condor_payoff(s_grid, spec) / SPREAD_WIDTH
+        ind = ((s_grid > r["lo"]) & (s_grid <= r["hi"])).astype(float)
+        mm = pay - ind
+        w = np.zeros(s_grid.size)
+        h = np.diff(s_grid)
+        w[:-1] += 0.5 * h
+        w[1:] += 0.5 * h
+        p_mean = ctx["f_mean"] * w     # posterior-mean density -> cell masses
+        p_mean = p_mean / p_mean.sum()
+        b["ramp_prob"] = float(p_mean[np.abs(mm) > 1e-9].sum())
+        b["ramp_expected_loss"] = float(np.sum(p_mean * np.maximum(-s_k * mm, 0.0)))
+    else:
+        b["pnl_per_contract"] = None
+
+
+def contract_check(d: Dict[str, Any], under: Optional[str], settles: Dict[Tuple[str, str], float], ice_by_date: Dict[str, float]) -> Dict[str, Any]:
+    """Gate 0b verified ex post (protocol amendment 4): Kalshi's realised settlement value (the event's own, else the same-day KXWTI
+    event's) must equal the NYMEX settlement of the option's underlying to the cent. If it instead equals another month's, the
+    contract assignment (usually the calendar fallback) was wrong and the date is a Gate 0b failure, whatever the gaps look like."""
+    ice = d.get("ice_settle")
+    if ice is None:
+        ice = ice_by_date.get(d["settle_date"])
+    out = {"ice_ref": ice, "underlying": under, "mismatch": False, "basis_anomaly": False, "reason": None}
+    s_under = settles.get((d["settle_date"], under)) if under else None
+    out["nymex_under"] = s_under
+    if ice is None or s_under is None:
+        out["reason"] = "unverifiable: no settlement value on either side"
+        return out
+    if abs(ice - s_under) <= CONTRACT_TOL:
+        return out
+    others = sorted((sym, v) for (dt, sym), v in settles.items() if dt == d["settle_date"] and sym != under and abs(v - ice) <= 0.006)
+    if others:
+        out["mismatch"] = True
+        out["reason"] = "Kalshi settled %.2f = NYMEX %s; the option underlying %s settled %.2f (source of the match: %s)" % (ice, others[0][0], under, s_under, d.get("contract_source"))
+    else:
+        out["basis_anomaly"] = True
+        out["reason"] = "Kalshi settled %.2f, NYMEX %s %.2f, no other month matches: unexplained basis %+.2f" % (ice, under, s_under, ice - s_under)
+    return out
+
+
+def reprocess_record(rec: Dict[str, Any], settles: Dict[Tuple[str, str], float], ice_by_date: Dict[str, float]) -> Dict[str, Any]:
+    """Re-apply the comparison stage to a stored record (new leg rule, contract check, thresholds); the extraction is untouched."""
+    import pandas as pd
+    from . import realchain
+    x = rec.get("extraction")
+    if not x or not x.get("gate0") or rec["outcome"] in ("g0a_no_same_day_expiry", "g0c_too_few_strikes", "g0d_no_intraday_bars", "extraction_error", "no_kalshi_event"):
+        return rec
+    d = {"settle_date": rec["settle_date"], "ice_settle": rec["ice_settle"], "contract_source": rec.get("contract_source"), "root": rec["root"]}
+    rec["contract_check"] = contract_check(d, x.get("underlying"), settles, ice_by_date)
+    if x.get("contract_month_match") is False:
+        rec["outcome"] = "g0b_contract_mismatch"
+        return rec
+    p = realchain.DATA_CME / "options_tbbo_by_expiry" / ("root=%s" % rec["root"]) / ("expiry=%s" % rec["settle_date"]) / "part.parquet"
+    tb = pd.read_parquet(p, columns=["ts_event", "instrument_id", "bid_px_00", "ask_px_00", "strike", "right"])
+    snap_ts = pd.Timestamp(rec["snap_time_et"]).tz_localize(realchain.ET)
+    raw_q = realchain.snapshot(tb, snap_ts.tz_convert("UTC"), WINDOW_MIN)
+    S_T = settles.get((rec["settle_date"], x.get("underlying")))
+    rec["nymex_settle"] = S_T
+    ctx = {"F0": x["F0"], "D": x["D_used"], "raw_q": raw_q, "S_T": S_T, "ice_settle": rec["ice_settle"], "grid_s": np.asarray(x["act3_grid_s"], float),
+           "f_mean": np.asarray(x["act3_grid_f_mean"], float), "chain_K": x["K"], "chain_hs": x["hs"],
+           "date_ok": bool(rec.get("sampler_ok") and not rec.get("split_half_fired") and not rec["contract_check"]["mismatch"])}
+    for b in rec["brackets"]:
+        if b.get("kalshi") is None or b.get("pq_draws") is None:
+            continue
+        compare_bracket(b, ctx)
+    any_price = any(b.get("kalshi_mid") is not None for b in rec["brackets"])
+    if not any_price:
+        rec["outcome"] = "no_kalshi_candles"
+    elif rec["contract_check"]["mismatch"]:
+        rec["outcome"] = "g0b_contract_mismatch"
+    else:
+        rec["outcome"] = ("g4_split_half_fired" if rec.get("split_half_fired") else "sampler_fail" if not rec.get("sampler_ok") else "cleared")
+    return rec
+
+
 # --------------------------------------------------------------------------
 # one (date, snapshot)
 # --------------------------------------------------------------------------
@@ -465,8 +625,11 @@ def run_job(job: Dict[str, Any]) -> Dict[str, Any]:
         raw_q = realchain.snapshot(tb, snap_utc, WINDOW_MIN)
         S_T = job["settles"].get((d["settle_date"], x["underlying"]))        # NYMEX settlement of the option's underlying
         rec["nymex_settle"] = S_T
-        any_price = False
         loo_flags = np.array(x["loo"]["flagged_strikes"], float) if x["loo"]["flagged_strikes"] else np.array([])
+        rec["contract_check"] = contract_check(d, x["underlying"], job["settles"], job.get("ice_by_date") or {})
+        ctx = {"F0": F0, "D": D, "raw_q": raw_q, "S_T": S_T, "ice_settle": d["ice_settle"], "grid_s": np.asarray(x["act3_grid_s"], float),
+               "f_mean": np.asarray(x["act3_grid_f_mean"], float), "chain_K": x["K"], "chain_hs": x["hs"],
+               "date_ok": bool(sampler_ok and not split_fired and not rec["contract_check"]["mismatch"])}
         for j, r in enumerate(rows):
             b: Dict[str, Any] = dict(r)
             b.update({"idx": j, "mid_dollar": (0.5 * (r["lo"] + r["hi"])) if np.isfinite(r["lo"]) and np.isfinite(r["hi"]) else None,
@@ -479,95 +642,14 @@ def run_job(job: Dict[str, Any]) -> Dict[str, Any]:
             b["loo_near_strikes"] = near
             k = kalshi_at(candles, r["ticker"], snap_utc)
             b["kalshi"] = k
-            if k is None or k["bid"] is None or k["ask"] is None:
-                b["status"] = "no_two_sided_kalshi_quote"
-                b["pq_draws"] = None   # keep the pickle small where no comparison exists
-                rec["brackets"].append(b)
-                continue
-            any_price = True
-            bid, ask = k["bid"], k["ask"]
-            b["kalshi_mid"] = 0.5 * (bid + ask)
-            b["kalshi_spread"] = ask - bid
-            b["g_mid"] = b["kalshi_mid"] - b["pq_mean"]
-            # the side is fixed by the mid gap before the executable gap is computed
-            if b["g_mid"] > 0:
-                b["side"], P = "sell_kalshi", bid          # Kalshi rich: sell the bracket at the bid, buy the structure
-            else:
-                b["side"], P = "buy_kalshi", ask           # Kalshi cheap: buy at the ask, sell the structure
-            b["P_exec"] = P
-            b["g"] = P - b["pq_mean"]
-            # hedge legs
-            st, spec, shifts = find_structure(raw_q, r["lo"], r["hi"], F0, D)
-            ks = spec["strikes"]
-            b["legs"] = None if st is None else [{kk: vv for kk, vv in l.items()} for l in st["legs"]]
-            b["leg_strikes"], b["leg_shifts"], b["n_legs"] = ks, shifts, len(ks)
-            b["structure"] = None if st is None else {kk: vv for kk, vv in st.items() if kk != "legs"}
-            b["chain_digital_mid"] = None if st is None else st["digital_mid"]
-            fr = friction(P, st["sum_hs"] if st is not None else float("nan"))
-            b["friction"] = fr
-            # the estimate from the synchronised chain's own half-spreads, for the signal record only
-            hs_est = estimate_leg_hs(x["K"], x["hs"], ks)
-            b["friction_est"] = None if hs_est is None else friction(P, hs_est)
-            b["excess_est"] = None if hs_est is None else abs(P - b["pq_mean"]) - b["band90"] - b["friction_est"]["total"]
-            # Stage 19
-            status = None
-            if not (sampler_ok and not split_fired):
-                status = "date_gated"
-            elif P < PRICE_MIN or P > PRICE_MAX or P <= 0.0 or P >= 1.0:
-                status = "price_out_of_range"
-            elif b["band90"] > BAND_MAX:
-                status = "band_too_wide"
-            elif b["interior_minimum"]:
-                status = "interior_minimum"
-            elif st is None:
-                status = "cme_leg_unquoted"
-            elif abs(b["g"]) <= b["band90"] + fr["total"]:
-                status = "below_threshold"
-            else:
-                status = "traded"
-            b["status"] = status
-            b["excess"] = abs(b["g"]) - b["band90"] - (fr["total"] if st is not None else float("nan"))
-            # signal record: a bracket whose legs were not all quoted, but whose gap would clear band + estimated friction
-            b["would_clear_est"] = bool(status == "cme_leg_unquoted" and b["excess_est"] is not None and b["excess_est"] > 0)
-            # settlement and P&L (computed for every bracket with a structure, so the untraded signals carry a record too)
-            res = (r["result"] or "").lower()
-            settled_yes = True if res == "yes" else False if res == "no" else None
-            if settled_yes is None and d["ice_settle"] is not None:
-                settled_yes = bool(r["lo"] < d["ice_settle"] <= r["hi"])
-                b["result_source"] = "expiration_value"
-            else:
-                b["result_source"] = "result"
-                if d["ice_settle"] is not None and settled_yes is not None and settled_yes != bool(r["lo"] < d["ice_settle"] <= r["hi"]):
-                    b["result_mismatch"] = True
-            b["settled_yes"] = settled_yes
-            if st is not None and S_T is not None and settled_yes is not None:
-                s_k = +1 if b["side"] == "buy_kalshi" else -1
-                pi_T = float(condor_payoff(S_T, spec))
-                pi_exec = st["sell"] if s_k > 0 else st["buy"]        # long Kalshi -> short structure at the sell side
-                pnl_k = s_k * ((1.0 if settled_yes else 0.0) - P) - fr["kalshi_fee"]
-                pnl_c = -s_k * (pi_T - pi_exec) / SPREAD_WIDTH - fr["cme_fees"]
-                b["pnl_per_contract"] = pnl_k + pnl_c
-                b["pnl_kalshi"], b["pnl_cme"] = pnl_k, pnl_c
-                b["locked_gap"] = s_k * (pi_exec / SPREAD_WIDTH - P) - fr["kalshi_fee"] - fr["cme_fees"]
-                mism = pi_T / SPREAD_WIDTH - (1.0 if settled_yes else 0.0)   # structure minus Kalshi payoff, lives in the ramps
-                b["ramp_realised"] = -s_k * mism
-                b["in_ramp"] = bool(abs(mism) > 1e-9)
-                # posterior view of the ramp before the fact
-                s_grid = model.s
-                pay = condor_payoff(s_grid, spec) / SPREAD_WIDTH
-                ind = ((s_grid > r["lo"]) & (s_grid <= r["hi"])).astype(float)
-                mm = pay - ind
-                p_mean = np.asarray(x["act3_grid_f_mean"], float) * model.w     # posterior-mean density -> cell masses
-                p_mean = p_mean / p_mean.sum()
-                b["ramp_prob"] = float(p_mean[np.abs(mm) > 1e-9].sum())
-                b["ramp_expected_loss"] = float(np.sum(p_mean * np.maximum(-s_k * mm, 0.0)))
-            else:
-                b["pnl_per_contract"] = None
+            compare_bracket(b, ctx)
             rec["brackets"].append(b)
+        any_price = any(b.get("kalshi_mid") is not None for b in rec["brackets"])
         if not any_price:
             rec["outcome"] = "no_kalshi_candles"
             return rec
-        rec["outcome"] = ("g4_split_half_fired" if split_fired else "sampler_fail" if not sampler_ok else "cleared")
+        rec["outcome"] = ("g0b_contract_mismatch" if rec["contract_check"]["mismatch"] else
+                          "g4_split_half_fired" if split_fired else "sampler_fail" if not sampler_ok else "cleared")
         # Stage 18 per date (mid-based, two-sided quotes with mid in [1c, 99c])
         ok = [b for b in rec["brackets"] if b.get("kalshi_mid") is not None and STAGE18_MID_MIN <= b["kalshi_mid"] <= STAGE18_MID_MAX
               and b.get("mid_dollar") is not None]
@@ -614,11 +696,12 @@ def run(series: str, snaps: List[str], workers: int, only: Optional[List[str]] =
     done = {_key(r) for r in have if r.get("error") is None}
     inp = realchain.load_inputs(series=series, clears_only=False)
     markets = load_markets(series)
+    ice_by_date = ice_values()
     log("series %s: %d Kalshi events with a settlement since 2026-01-01; %d with a CME expiry on disk; markets table %d rows"
         % (series, len(inp["dates"]), sum(d["root"] is not None for d in inp["dates"]), len(markets)))
     log("FIRST KALSHI PRICE READ happens in the jobs below (protocol §8); protocol commit precedes this log line")
     jobs = [{"date": d, "snap": s, "series": series, "underlying": inp["underlying"], "settles": inp["settles"], "intraday": inp["intraday"],
-             "markets": markets}
+             "markets": markets, "ice_by_date": ice_by_date}
             for d in inp["dates"] for s in snaps if (only is None or d["settle_date"] in only) and (d["settle_date"], s) not in done]
     log("jobs to run: %d (done %d)" % (len(jobs), len(done)))
     results = [r for r in have if _key(r) in done]
@@ -636,6 +719,34 @@ def run(series: str, snaps: List[str], workers: int, only: Optional[List[str]] =
     _dump(results, path)
     write_logs(series, results)
     return results
+
+
+def ice_values() -> Dict[str, float]:
+    """Kalshi's realised ICE settlement by date, from every WTI event (the weekly's own value is missing on some events;
+    the same-day daily event carries the same number)."""
+    sys.path.insert(0, str(ROOT))
+    import db_common as dc
+    ev = dc.kalshi_settlements(series=("KXWTIW", "KXWTI"))
+    out: Dict[str, float] = {}
+    for r in ev.itertuples():
+        if r.expiration_value == r.expiration_value and str(r.settle_date) not in out:
+            out[str(r.settle_date)] = float(r.expiration_value)
+    return out
+
+
+def reprocess(series: str) -> List[Dict[str, Any]]:
+    from . import realchain
+    path = runs_path(series)
+    rs = pickle.load(open(path, "rb"))
+    inp = realchain.load_inputs(series=series, clears_only=False)
+    ice_by_date = ice_values()
+    log("reprocess %s: %d records (leg age <= %.0f min, contract check)" % (series, len(rs), LEG_MAX_AGE_MIN))
+    out = [reprocess_record(r, inp["settles"], ice_by_date) for r in rs]
+    _dump(out, path)
+    write_logs(series, out)
+    n_mm = sum(1 for r in out if r["outcome"] == "g0b_contract_mismatch")
+    log("reprocess %s done: %d contract mismatches, %d traded brackets" % (series, n_mm, sum(1 for r in out for b in r["brackets"] if b.get("status") == "traded")))
+    return out
 
 
 def write_logs(series: str, results: List[Dict[str, Any]]) -> None:
@@ -674,8 +785,11 @@ def main(argv: Optional[List[str]] = None) -> int:
     ap.add_argument("--only", default=None, help="comma-separated settle dates")
     ap.add_argument("--workers", type=int, default=7)
     ap.add_argument("--report", action="store_true")
+    ap.add_argument("--reprocess", action="store_true", help="re-apply the comparison stage to the stored extractions")
     a = ap.parse_args(argv)
-    if not a.report:
+    if a.reprocess:
+        reprocess(a.series)
+    elif not a.report:
         run(a.series, [s.strip() for s in a.snap.split(",")], a.workers, [x.strip() for x in a.only.split(",")] if a.only else None)
     from . import report_backtest
     report_backtest.main([])

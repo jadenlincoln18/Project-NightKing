@@ -226,15 +226,20 @@ def artifact_checks(rs: List[Dict[str, Any]]) -> Dict[str, Any]:
         out["pairs"] = len(pairs)
         out["sign_agreement_snapshots"] = float(np.mean(np.sign(a[:, 0]) == np.sign(a[:, 1])))
         out["corr_snapshots"] = float(np.corrcoef(a[:, 0], a[:, 1])[0, 1]) if len(pairs) > 3 else None
-    # chain's own digital vs the extractor vs Kalshi
-    bs = [b for r in cleared(rs, lead) for b in two_sided(r) if b.get("chain_digital_mid") is not None]
-    if bs:
-        cd = np.array([b["chain_digital_mid"] for b in bs])
-        pq = np.array([b["pq_mean"] for b in bs])
-        km = np.array([b["kalshi_mid"] for b in bs])
-        out["chain_digital"] = {"n": len(bs), "mean_abs_chain_minus_pq_cents": float(100 * np.mean(np.abs(cd - pq))),
-                                "mean_kalshi_minus_chain_cents": float(100 * np.mean(km - cd)), "mean_kalshi_minus_pq_cents": float(100 * np.mean(km - pq)),
-                                "frac_same_sign": float(np.mean(np.sign(km - cd) == np.sign(km - pq)))}
+    # chain's own digital vs the extractor vs Kalshi: fresh legs (<= 5 min) and the stale 60-minute version
+    for key, field in (("chain_digital", "chain_digital_mid"), ("chain_digital_stale", "chain_digital_stale")):
+        bs = [b for r in cleared(rs, lead) for b in two_sided(r) if b.get(field) is not None]
+        if bs:
+            cd = np.array([b[field] for b in bs])
+            pq = np.array([b["pq_mean"] for b in bs])
+            km = np.array([b["kalshi_mid"] for b in bs])
+            out[key] = {"n": len(bs), "mean_abs_chain_minus_pq_cents": float(100 * np.mean(np.abs(cd - pq))), "median_abs_chain_minus_pq_cents": float(100 * np.median(np.abs(cd - pq))),
+                        "mean_kalshi_minus_chain_cents": float(100 * np.mean(km - cd)), "mean_kalshi_minus_pq_cents": float(100 * np.mean(km - pq)),
+                        "frac_same_sign": float(np.mean(np.sign(km - cd) == np.sign(km - pq)))}
+    # contract checks
+    out["contract_mismatch"] = [(r["settle_date"], r["snap"], r["contract_check"]["reason"]) for r in rs if (r.get("contract_check") or {}).get("mismatch")]
+    out["basis_anomaly"] = [(r["settle_date"], r["snap"], r["contract_check"]["reason"]) for r in rs if (r.get("contract_check") or {}).get("basis_anomaly")]
+    out["contract_unverifiable"] = sorted({r["settle_date"] for r in rs if "unverifiable" in str((r.get("contract_check") or {}).get("reason"))})
     out["path_sources"] = {s: dict(zip(*np.unique([r["path_source"] or "none" for r in per_date(rs, s)], return_counts=True))) for s in bt.SNAPS}
     return out
 
@@ -447,9 +452,20 @@ def render(series_list: List[str]) -> str:
                  % (A["pairs"], _pct(A["sign_agreement_snapshots"]), _f(A.get("corr_snapshots")), json.dumps({k: {kk: int(vv) for kk, vv in v.items()} for k, v in A["path_sources"].items()})))
     cd = A.get("chain_digital")
     if cd:
-        L.append("- **Extractor-independence.** The chain's own outer-condor digital (mid, four legs, parity-converted) against Act III on %d brackets: mean |chain − Act III| %.1f¢; "
+        L.append("- **Extractor-independence.** The chain's own replicating-structure digital (mid, legs ≤ 5 min old, parity-converted) against Act III on %d brackets: mean |chain − Act III| %.1f¢ (median %.1f¢); "
                  "Kalshi − chain digital %+.1f¢ vs Kalshi − Act III %+.1f¢; the two disagreements have the same sign on %s of brackets." % (
-                     cd["n"], cd["mean_abs_chain_minus_pq_cents"], cd["mean_kalshi_minus_chain_cents"], cd["mean_kalshi_minus_pq_cents"], _pct(cd["frac_same_sign"])))
+                     cd["n"], cd["mean_abs_chain_minus_pq_cents"], cd["median_abs_chain_minus_pq_cents"], cd["mean_kalshi_minus_chain_cents"], cd["mean_kalshi_minus_pq_cents"], _pct(cd["frac_same_sign"])))
+    cs = A.get("chain_digital_stale")
+    if cs:
+        L.append("- **Stale legs are not prices.** The same digital from the last TBBO quote within 60 minutes (the first pass's definition) on %d brackets: mean |chain − Act III| %.1f¢ (median %.1f¢). "
+                 "A quote attached to a trade half an hour old carries half an hour of underlying movement; it is why amendment 5 exists." % (cs["n"], cs["mean_abs_chain_minus_pq_cents"], cs["median_abs_chain_minus_pq_cents"]))
+    if A.get("contract_mismatch"):
+        L.append("- **Contract assignment (Gate 0b, ex post).** %d date-snapshots removed because Kalshi settled on a different delivery month than the options: %s." % (
+            len(A["contract_mismatch"]), "; ".join("%s %s — %s" % t for t in A["contract_mismatch"])))
+    if A.get("basis_anomaly"):
+        L.append("- **Basis anomalies kept and flagged:** %s." % "; ".join("%s %s — %s" % t for t in A["basis_anomaly"]))
+    if A.get("contract_unverifiable"):
+        L.append("- Dates whose contract match could not be verified against a settlement value: %s." % ", ".join(A["contract_unverifiable"]))
     L.append("- **One-snapshot systematic error.** Stage 18 by snapshot is in §1's pooled table; B1 requires both snapshots to agree.\n")
     for s in series_list[1:]:
         rs2 = load(s)

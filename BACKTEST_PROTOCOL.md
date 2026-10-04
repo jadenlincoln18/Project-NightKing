@@ -217,6 +217,30 @@ The smoke run also showed the measured legs at 4–5¢/bbl half-spread near the 
 per Kalshi dollar; that number is reported as measured, and the next-pass list inherits the question of whether any
 CME replication of a $1 bracket can be cheaper than the gaps it is meant to capture.
 
+**Amendment 4 (after the first full KXWTIW pass, before any verdict was written; applied by re-processing the stored
+extractions, not by re-running them).** Gate 0b is verified *ex post*: Kalshi's realised settlement value (the event's
+own `expiration_value`, else the same-day KXWTI event's, which is the same ICE number) must equal the NYMEX
+settlement of the option's underlying to the cent. If it instead equals another delivery month's settlement, the
+contract assignment was wrong — this happens when Kalshi's rules name no contract and the calendar fallback is used
+near the 16th — and the date is `g0b_contract_mismatch`, whatever its gaps looked like. The first pass's only filtered
+trade (2026-04-17 T-1d, a −24.5¢ "gap" on "$90.99 or below") was exactly this: the options were on CLM6 at $91.18, Kalshi
+was pricing CLK6 at ~$94.7 and settled on CLK6 (83.85). It is the fedarb artifact — a mis-centred density producing a
+large, smooth, confident disagreement — and it is removed by a rule about the data, not about the result. A settlement
+that matches no month is flagged `basis_anomaly` and kept.
+
+**Amendment 5 (same pass).** The TBBO's "last two-sided quote in the window" is not an executable price: the first pass
+showed leg quotes 20–60 minutes old whose implied digital differed from Act III by 28¢ on average, because the TBBO
+only carries a BBO at the instant of a trade and the underlying moves tens of cents in half an hour. A leg counts as
+quoted for a *trade* only if its last TBBO quote is **≤ 5 minutes** old at the snapshot; the 60-minute version is kept
+as `chain_digital_stale` for the artifact check and nothing else. This is a foundational limitation to report: the
+stored CME data (TBBO, chosen over `bbo-1m` to save ~$1,835) cannot supply executable prices for a four-leg structure
+at a given instant, so the hedge side of this backtest is a feasibility statement, not a P&L.
+
+**Amendment 6 (KXWTI arm, scope).** The daily market has no Kalshi candle at T-1d on any of the first four dates run
+(it is not open a business day before its own settlement), and its jobs ran at ~100 s each with 264 of them queued.
+The secondary arm is therefore run at **T-4h only**; its T-1d jobs are **not attempted** and the denominator says so.
+The KXWTIW study is unaffected.
+
 No depth threshold: the stored data (1-minute candles with per-minute volume and open interest) cannot establish
 resting depth, so feasibility at size is reported as **unknown from stored data** with the bar's volume and the
 market's open interest as context, never assumed. Brackets failing 2–6 are logged with the failing condition, so the
