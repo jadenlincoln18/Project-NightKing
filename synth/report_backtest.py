@@ -21,6 +21,7 @@ from . import backtest as bt
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 PLOTS = HERE / "plots_backtest"
+OUT_FILE = "FINDINGS_BACKTEST_V2.md"   # FINDINGS_BACKTEST.md (V1) is the record of the first pass; re-renders go here (amendment 7)
 
 MONEY_BANDS = [("deep tail", 0.0, 0.05), ("moderate tail", 0.05, 0.20), ("body", 0.20, 0.80), ("favourite", 0.80, 1.01)]
 
@@ -389,6 +390,36 @@ def render_series(rs: List[Dict[str, Any]], series: str, lead_section: bool) -> 
                      _c(ps["pnl_per_contract_mean"]), _f(ps["pnl_at_500"], "%.0f"), _f(ps["pnl_at_50"], "%.0f"), _pct(ps["frac_dates_positive"]),
                      _c(ps["pnl_without_best3_per_contract"]), _pct(ps["frac_in_ramp"]), _pct(ps["ramp_prob_mean"]), ps["n_loo_near_edge"],
                      (" (their P&L %s¢)" % _c(ps["pnl_loo_near_edge"])) if ps["pnl_loo_near_edge"] is not None else ""))
+    # probability space, per bracket (Task C of HANDOFF_legcount_and_friction.md)
+    L.append("### In probability space — %s, the brackets where the venues disagree most" % series)
+    L.append("The comparison is between two implied probabilities of the same event. Per bracket: Kalshi's executable implied probability on the side "
+             "the trade would hit; the density's posterior mean with its 90%% band; their disagreement in probability points; the hedge; the friction in the "
+             "same units; the net. Price is a consequence: a Kalshi contract at p pays $1 with probability p, and the replicating structure pays "
+             "$%.2f/bbl inside the bracket, so one standard contract (%d bbl) hedges %d Kalshi contracts and a leg's half-spread of h $/bbl is "
+             "h/%.2f probability points. A bracket is D(a) − D(b), four legs; a threshold 'Above $X' is D(a), two legs; the ramps sit outside the "
+             "bracket so inside it the two legs cancel exactly (BACKTEST_PROTOCOL §4). Friction here is the measured one where the legs were quoted "
+             "within 5 minutes, else the chain-estimated one (marked ~).\n" % (bt.SPREAD_WIDTH, bt.BBL["CL"], int(bt.SPREAD_WIDTH * bt.BBL["CL"]), bt.SPREAD_WIDTH))
+    L.append("| date | snap | market | Kalshi p (side) | density p [90% band] | disagreement (pts) | hedge | friction (pts): Kalshi fee + CME spread + CME fees | net (pts) | positive? |")
+    L.append("|---|---|---|---|---|---:|---|---|---:|---|")
+    cand = []
+    for snap in bt.SNAPS:
+        for r in tradeable_dates(rs, snap):
+            for b in two_sided(r):
+                fr = b.get("friction") if b.get("structure") is not None else b.get("friction_est")
+                if fr is None:
+                    continue
+                cand.append((abs(b["g"]) - b["band90"] - fr["total"], snap, r["settle_date"], b, fr, b.get("structure") is not None))
+    cand.sort(key=lambda t: -t[0])
+    for net, snap, date, b, fr, measured in cand[:15]:
+        hedge = "%s %d legs %s" % ("sell" if b["side"] == "buy_kalshi" else "buy", b["n_legs"], ",".join("%.2f" % k for k in b["leg_strikes"]))
+        L.append("| %s | %s | %s | %.3f (%s) | %.3f [%.3f, %.3f] | %+.1f | %s | %s%.1f = %.1f + %.1f + %.1f | %+.1f | %s |" % (
+            date, snap, b["sub_title"], b["P_exec"], "ask, buy" if b["side"] == "buy_kalshi" else "bid, sell", b["pq_mean"], b["pq_q05"], b["pq_q95"],
+            100 * b["g"], hedge, "" if measured else "~", 100 * fr["total"], 100 * fr["kalshi_fee"], 100 * fr["cme_spread"], 100 * fr["cme_fees"],
+            100 * (abs(b["g"]) - fr["total"]), "yes" if abs(b["g"]) > b["band90"] + fr["total"] else "no (band %.1f)" % (100 * b["band90"])))
+    if cand:
+        pos = sum(1 for t in cand if t[0] > 0)
+        L.append("\n%d brackets with a priced or estimated hedge; the net after the band is positive on %d. Top 15 by net shown; the full list is in `brackets_%s.csv` "
+                 "(`excess`, `excess_est`).\n" % (len(cand), pos, series))
     # signals below threshold, logged anyway
     L.append("### The signal record — %s" % series)
     L.append("Brackets on cleared dates that did not become trades, by reason, with what the gap did against the band alone and against the "
@@ -432,7 +463,11 @@ def render_series(rs: List[Dict[str, Any]], series: str, lead_section: bool) -> 
 
 def render(series_list: List[str]) -> str:
     L: List[str] = []
-    L.append("# FINDINGS_BACKTEST — extracted densities against Kalshi bracket prices\n")
+    L.append("# %s — extracted densities against Kalshi bracket prices\n" % OUT_FILE.replace(".md", ""))
+    if OUT_FILE != "FINDINGS_BACKTEST.md":
+        L.append("> Re-rendered after `FINDINGS_LEGCOUNT.md` (protocol amendment 7: the CME fee term charged four legs on two-leg threshold "
+                 "structures; corrected and re-processed). `FINDINGS_BACKTEST.md` is the unchanged record of the first pass; the differences are "
+                 "tabulated in `FINDINGS_LEGCOUNT.md`.\n")
     L.append("Protocol: `BACKTEST_PROTOCOL.md`, committed %s (`%s`). Extractor frozen at `synth.realchain` arm `%s` (48 knots, Gaussian prior, real intraday "
              "path, 1¢ tick floor). Every number below is computed from `synth/results_backtest/runs_<series>.pkl`; the denominator and bracket logs are the "
              "CSVs next to it. Executable prices only: Kalshi bid/ask closes of the stored 1-minute candle at the snapshot minute, CME TBBO last quotes in the window.\n"
@@ -509,7 +544,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     for s in series:
         plots(load(s), s)
     text = render(series)
-    out = ROOT / "FINDINGS_BACKTEST.md"
+    out = ROOT / OUT_FILE
     tmp = out.with_suffix(".tmp")
     tmp.write_text(text)
     tmp.replace(out)

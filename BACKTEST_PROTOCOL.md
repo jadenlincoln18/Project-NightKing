@@ -236,6 +236,17 @@ as `chain_digital_stale` for the artifact check and nothing else. This is a foun
 stored CME data (TBBO, chosen over `bbo-1m` to save ~$1,835) cannot supply executable prices for a four-leg structure
 at a given instant, so the hedge side of this backtest is a feasibility statement, not a P&L.
 
+**Amendment 7 (leg-count audit, `NightKing/HANDOFF_legcount_and_friction.md`, before the re-processing).** The
+replication was built per market type from the first run: four legs for a "between" bracket, two for a one-sided
+"Above $X" / "$X or below" market (`structure_spec`), and the spread term summed the half-spreads of the legs actually
+used — so KXWTI's thresholds were charged two legs of spread. The **fee term**, however, was computed for four legs on
+every structure (`4 × $2.37 × 1.5 / 500 = 2.84¢`). On a two-leg structure that is 1.42¢ too much. It is corrected to
+`n_legs × $2.37 × 1.5 / 500` and the stored records are re-processed; the before/after is in `FINDINGS_LEGCOUNT.md`.
+No threshold, gate or extractor setting changes. The §4 sentence "legs quoted at 4–5¢/bbl half-spread" was also wrong
+as a generalisation: it described the one trade of the first pass (deep in-the-money puts on a crash day); the
+half-spreads the friction arithmetic actually used are the chain's, median 1–2¢/bbl, and `FINDINGS_LEGCOUNT.md` §B
+reports their distribution by moneyness.
+
 **Amendment 6 (KXWTI arm, scope).** The daily market has no Kalshi candle at T-1d on any of the first four dates run
 (it is not open a business day before its own settlement), and its jobs ran at ~100 s each with 264 of them queued.
 The secondary arm is therefore run at **T-4h only**; its T-1d jobs are **not attempted** and the denominator says so.

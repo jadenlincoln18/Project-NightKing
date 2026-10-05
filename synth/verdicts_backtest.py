@@ -18,7 +18,8 @@ READING_FILE = HERE / "results_backtest" / "reading_text.md"
 
 
 def main() -> int:
-    p = ROOT / "FINDINGS_BACKTEST.md"
+    from . import report_backtest
+    p = ROOT / report_backtest.OUT_FILE
     s = p.read_text()
     if not VERDICT_FILE.exists() or not READING_FILE.exists():
         print("no verdict/reading text on disk yet (%s, %s)" % (VERDICT_FILE, READING_FILE))

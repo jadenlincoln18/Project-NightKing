@@ -266,15 +266,17 @@ def kalshi_fee(P: float) -> float:
     return KALSHI_FEE_COEF * P * (1.0 - P)
 
 
-def cme_fees_per_contract(contracts_per_structure: int = SIZE_APPLICABLE) -> float:
-    return 4 * CME_FEE_PER_LEG * (1.0 + CME_EXIT_FRACTION) / contracts_per_structure
+def cme_fees_per_contract(contracts_per_structure: int = SIZE_APPLICABLE, n_legs: int = 4) -> float:
+    """Exchange, NFA and commission per leg, entry plus the expected exit fraction, per Kalshi contract hedged. A bracket is
+    four legs, a threshold ('Above $X') two (protocol amendment 7: the first pass charged four on every structure)."""
+    return n_legs * CME_FEE_PER_LEG * (1.0 + CME_EXIT_FRACTION) / contracts_per_structure
 
 
-def friction(P: float, sum_hs: float, contracts_per_structure: int = SIZE_APPLICABLE) -> Dict[str, float]:
+def friction(P: float, sum_hs: float, contracts_per_structure: int = SIZE_APPLICABLE, n_legs: int = 4) -> Dict[str, float]:
     f_k = kalshi_fee(P)
     f_spread = sum_hs / SPREAD_WIDTH
-    f_cme = cme_fees_per_contract(contracts_per_structure)
-    return {"kalshi_fee": f_k, "cme_spread": f_spread, "cme_fees": f_cme, "total": f_k + f_spread + f_cme}
+    f_cme = cme_fees_per_contract(contracts_per_structure, n_legs)
+    return {"kalshi_fee": f_k, "cme_spread": f_spread, "cme_fees": f_cme, "total": f_k + f_spread + f_cme, "n_legs": n_legs}
 
 
 # --------------------------------------------------------------------------
@@ -407,11 +409,11 @@ def compare_bracket(b: Dict[str, Any], ctx: Dict[str, Any]) -> None:
     b["leg_strikes"], b["leg_shifts"], b["n_legs"] = ks, shifts, len(ks)
     b["structure"] = None if st is None else {kk: vv for kk, vv in st.items() if kk != "legs"}
     b["chain_digital_mid"] = None if st is None else st["digital_mid"]
-    fr = friction(P, st["sum_hs"] if st is not None else float("nan"))
+    fr = friction(P, st["sum_hs"] if st is not None else float("nan"), n_legs=len(ks))
     b["friction"] = fr
     # the estimate from the synchronised chain's own half-spreads, for the signal record only
     hs_est = estimate_leg_hs(ctx["chain_K"], ctx["chain_hs"], ks)
-    b["friction_est"] = None if hs_est is None else friction(P, hs_est)
+    b["friction_est"] = None if hs_est is None else friction(P, hs_est, n_legs=len(ks))
     b["excess_est"] = None if hs_est is None else abs(P - b["pq_mean"]) - b["band90"] - b["friction_est"]["total"]
     # Stage 19
     status = None

@@ -115,6 +115,24 @@ class TestFriction(unittest.TestCase):
         self.assertAlmostEqual(fr["cme_fees"], 4 * 2.37 * 1.5 / 500)
         self.assertAlmostEqual(fr["total"], 0.0063 + 0.08 + 0.02844)
         self.assertAlmostEqual(bt.kalshi_fee(0.5), 0.0175)
+        # a threshold market is two legs: half the fee term, and the spread term is whatever the two legs cost
+        fr2 = bt.friction(0.10, 0.02, n_legs=2)
+        self.assertAlmostEqual(fr2["cme_fees"], 2 * 2.37 * 1.5 / 500)
+        self.assertAlmostEqual(fr2["cme_spread"], 0.04)
+        self.assertEqual(fr2["n_legs"], 2)
+
+    def test_threshold_structure_is_charged_two_legs_of_fees(self):
+        rows = [{"strike": k, "right": "C", "bid_px_00": 0.50, "ask_px_00": 0.52, "age_min": 1.0} for k in (95.5, 96.0)]
+        b = {"ticker": "T", "sub_title": "Above $95.99", "lo": 95.995, "hi": np.inf, "result": "no", "mid_dollar": 95.995, "pq_mean": 0.20,
+             "pq_q05": 0.18, "pq_q95": 0.22, "band90": 0.04, "pq_draws": np.full(10, 0.2, np.float32), "interior_minimum": False,
+             "loo_near_edge": False, "kalshi": {"bid": 0.24, "ask": 0.25, "age_min": 0.0}}
+        s = np.linspace(80, 110, 601)
+        ctx = {"F0": 92.0, "D": 1.0, "raw_q": pd.DataFrame(rows), "S_T": 91.0, "ice_settle": 91.0, "grid_s": s, "f_mean": np.exp(-0.5 * ((s - 92) / 3) ** 2),
+               "chain_K": np.array([95.0, 96.0]), "chain_hs": np.array([0.01, 0.01]), "date_ok": True}
+        bt.compare_bracket(b, ctx)
+        self.assertEqual(b["n_legs"], 2)
+        self.assertAlmostEqual(b["friction"]["cme_fees"], 2 * 2.37 * 1.5 / 500)
+        self.assertAlmostEqual(b["friction_est"]["cme_fees"], 2 * 2.37 * 1.5 / 500)
 
 
 class TestTrough(unittest.TestCase):

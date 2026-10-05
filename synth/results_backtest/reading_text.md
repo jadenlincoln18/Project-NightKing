@@ -21,11 +21,13 @@ money.
 **Friction is the finding.** The writeup's working figure of ~5¢ per contract round trip is not reachable with a
 four-leg option replication on a $0.50 strike grid. Measured where legs were quoted, and estimated from the
 synchronised chain's own half-spreads everywhere else, the stack is 7–30¢ per Kalshi dollar (median 12¢ at T-1d, 10¢
-at T-4h), of which the CME spread term alone is 7–9¢: a 4–5¢/bbl half-spread on each leg is 8–10% of a $0.50
-digital. Kalshi's own fee (0.6–1.8¢) and the CME fees at 500 contracts per structure (2.8¢) are secondary. Against
-this the |gap| exceeds band + friction on 0 of 296 brackets, and 0 of 201 brackets with unquoted legs would clear
-with the estimated friction either. No threshold choice inside the protocol changes that; the next pass inherits
-whether any replication of a $1 bracket can be built for less than the gaps.
+at T-4h) for a bracket and 6–8¢ for a two-leg threshold, of which the CME spread term is the bulk: each leg's
+half-spread divided by the $0.50 width, with the chain's half-spreads at 1–2¢/bbl near the money and 2.5–4¢ on the
+$0.50–2 options that sit at a near-the-money bracket's edges (`FINDINGS_LEGCOUNT.md` §B measures the distribution).
+Kalshi's own fee (0.6–1.8¢) and the CME fees (2.8¢ for four legs, 1.4¢ for two, at 500 contracts per structure) are
+secondary. Against this the |gap| exceeds band + friction on 0 of 296 brackets, and 0 of 201 brackets with unquoted
+legs would clear with the estimated friction either. No threshold choice inside the protocol changes that; the next
+pass inherits whether any replication of a $1 bracket can be built for less than the gaps.
 
 **The hedge is not priceable from this data, and the artifacts were real.** Only two brackets at T-1d and one at T-4h
 had every leg quoted within five minutes of the snapshot; the TBBO carries a BBO only at trade instants, and legs 20–60
