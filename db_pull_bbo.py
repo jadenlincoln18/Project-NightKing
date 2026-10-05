@@ -44,6 +44,7 @@ def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--execute", action="store_true")
     ap.add_argument("--limit", type=int, default=None)
+    ap.add_argument("--scoped", action="store_true", help="strikes within $8 of the forward only (default: the whole parent chain, as approved)")
     a = ap.parse_args(argv)
     dc.setup_logging(str(ROOT / "data_cme" / "db.log"))
     cli = dc.DBClient(ROOT / "data_cme", max_cost=CAP, execute=a.execute)
@@ -53,16 +54,16 @@ def main(argv=None):
     total = 0.0
     done = 0
     for date, snap, root, t0, t1, F0 in ws:
-        syms = symbols_for(root, date, F0)
+        syms, stype = (symbols_for(root, date, F0), "raw_symbol") if a.scoped else ([root + ".OPT"], "parent")
         s, e = t0.strftime("%Y-%m-%dT%H:%M:%S"), t1.strftime("%Y-%m-%dT%H:%M:%S")
         rel = "%s/date=%s/snap=%s/part.parquet" % (OUT_REL, date, snap)
         if (ROOT / "data_cme" / "parquet" / rel).exists():
             done += 1
             continue
-        cost = with_backoff(lambda: cli.quote("bbo-1m", syms, "raw_symbol", s, e))
+        cost = with_backoff(lambda: cli.quote("bbo-1m", syms, stype, s, e))
         total += cost if cost == cost else 0.0
         if a.execute:
-            df = with_backoff(lambda: cli.pull("bbo1m_%s_%s" % (date, snap), "bbo-1m", syms, "raw_symbol", s, e, parquet_rel=rel))
+            df = with_backoff(lambda: cli.pull("bbo1m_%s_%s" % (date, snap), "bbo-1m", syms, stype, s, e, parquet_rel=rel))
             if df is None or (isinstance(df, float)):
                 print("  %s %s: pull failed or dry" % (date, snap), flush=True)
                 continue
@@ -70,10 +71,11 @@ def main(argv=None):
             p = ROOT / "data_cme" / "parquet" / rel
             d = pd.read_parquet(p)
             if "strike" not in d.columns and "symbol" in d.columns:
-                sr = d["symbol"].map(lambda x: parse_symbol(str(x)))
-                d["strike"] = sr.map(lambda t: t[0])
-                d["right"] = sr.map(lambda t: t[1])
-                dc.write_parquet(d, p)
+                pr = d["symbol"].map(lambda x: dc.parse_option_symbol(str(x)) or {})
+                d["strike"] = pr.map(lambda t: t.get("strike"))
+                d["right"] = pr.map(lambda t: t.get("right"))
+                d["contract"] = pr.map(lambda t: t.get("contract"))
+                d.to_parquet(p, index=False, compression="snappy")
             done += 1
         print("%s %s %s: %3d symbols $%.2f%s" % (date, snap, root, len(syms), cost, "" if a.execute else "  (dry)"), flush=True)
     print("TOTAL quoted this run: $%.2f over %d windows; on disk: %d" % (total, len(ws), done))

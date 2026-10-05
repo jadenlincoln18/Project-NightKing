@@ -5,16 +5,19 @@
 
 **Summary.** (A) The daily series was replicated with **two legs from the first run** — the spread term summed the two
 legs actually used — but the **fee term was charged for four legs on every structure**, 1.42¢ too much on a threshold.
-Corrected and re-processed: every friction number on a two-leg structure falls by 1.4¢, no bracket changes status, no
-bracket clears, the verdict stands. (B) The "4–5¢/bbl half-spread" sentence in the first findings was a
-mis-generalisation from one trade; the half-spreads the arithmetic actually used are the chain's, and measured on
-6,450 TBBO quotes in the snapshot windows they are **median 1.5–2¢/bbl near the money, 0.5¢ below $0.10 of premium
-and 4¢ above $1 of premium** — the spread scales with the option's price, and the legs of a near-the-money $1
-bracket are $1–2 options at T-1d. A scoped `bbo-1m` pull to replace the trade-sampled number is quoted below and
-waits for approval. (C) The roll rule in the docs ("the 16th") was wrong and so is the rules page's "2 business days
-before the last trading day" as a predictor; the settlements show the switch one to four business days before the
-NYMEX last trading day, and the backtest's ex-post check caught every misassignment. (D) KXWTI is an ICE-settled
-threshold ladder and was in the study; KXGOLD is the only other exchange-settled ladder in the store.
+Corrected and re-processed: no bracket changes status, no bracket clears. (B) The first findings' "4–5¢/bbl
+half-spread" sentence was a mis-generalisation from one trade, and the chain's trade-sampled half-spreads it was
+contrasted with (1.5–2¢ median) turn out to be the book at its tightest: on the live `bbo-1m` book, approved and
+bought for the 58 snapshot windows, the half-spread is **4.0¢ at the money, 2.5–3¢ two to eight dollars out, 1.5¢
+only below $0.05 of premium** — the 4–5¢ figure holds near the money, and every leg of every bracket was live when the
+TBBO said 44% of them were unquoted. Friction per bracket from each leg's own quote is **21–25¢ for a four-leg bracket
+and 15¢ for a two-leg threshold**, against gaps of a cent; nothing clears, the nearest miss is 1.6 points. (C) The roll
+rule in the docs ("the 16th") was wrong and so is the rules page's "2 business days before the last trading day" as a
+predictor; the settlements show the switch one to four business days before the NYMEX last trading day, and the
+backtest's ex-post check caught every misassignment. (D) KXWTI is an ICE-settled threshold ladder and was in the
+study; KXGOLD is the only other exchange-settled ladder in the store. **Both checks come back clean in the brief's
+sense — the daily arm was tested as a two-leg strategy and the spreads really are 4¢ near the money — and the null
+stands, with the hedge now priced on executable quotes.**
 
 ---
 
@@ -80,50 +83,110 @@ that to "legs quoted at 4–5¢/bbl". The friction medians in the tables were ne
 chain's own half-spreads (median 1.0–1.3¢/bbl per leg, the "implied" column above).
 
 **Measured on the TBBO** — every quote attached to a trade in the 60 minutes before each KXWTIW snapshot on the expiry
-the backtest priced, OTM side, 6,450 quotes over 58 windows (`synth/friction_measure.py`):
+the backtest priced, OTM side, 6,450 quotes over 58 windows (`synth/friction_measure.py`): median 1.5–2.0¢/bbl by
+distance from the forward, 0.5¢ below $0.10 of premium, 4¢ at $1–2. That is the trade-sampled number, and it is the
+one that was wrong in the useful direction: **a trade happens when someone crosses a tight market, so the TBBO shows
+the book at its tightest.**
+
+**Measured on the live book** — `bbo-1m` for the whole parent chain in the 60 minutes before each of the 58 snapshots
+(approved, $4.23, 181,675 two-sided samples of the backtest's expiry; one sample per instrument per minute, with
+`ts_recv` the sample time and `ts_event` the last book update). At the snapshot minute, 3,038 instruments, OTM side,
+half-spread in ¢/bbl:
 
 By distance from the forward, $:
 
-| band | n | p25 | median | p75 | mean | ≤ 1¢ | ≤ 2¢ |
-|---|---:|---:|---:|---:|---:|---:|---:|
-| <0.5 | 968 | 1.00 | 2.00 | 3.50 | 2.92 | 29% | 58% |
-| 0.5–1 | 970 | 1.00 | 1.50 | 3.00 | 2.97 | 39% | 65% |
-| 1–2 | 1,266 | 1.00 | 1.50 | 3.00 | 2.55 | 45% | 66% |
-| 2–4 | 1,434 | 0.50 | 1.50 | 3.00 | 2.60 | 48% | 65% |
-| 4–8 | 1,260 | 0.50 | 1.50 | 3.00 | 2.23 | 40% | 62% |
+| band | n | windows | p25 | median | p75 | mean | ≤ 1¢ | ≤ 2¢ |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| <0.5 | 225 | 58 | 2.50 | **4.00** | 5.00 | 4.60 | 0% | 16% |
+| 0.5–1 | 227 | 58 | 2.00 | 3.00 | 5.50 | 4.47 | 5% | 29% |
+| 1–2 | 441 | 58 | 1.50 | 3.00 | 6.00 | 4.32 | 11% | 41% |
+| 2–3 | 381 | 55 | 1.50 | 2.50 | 6.00 | 4.10 | 18% | 47% |
+| 3–4 | 315 | 49 | 1.50 | 2.50 | 6.00 | 4.23 | 17% | 44% |
+| 4–6 | 500 | 43 | 1.50 | 2.50 | 5.00 | 3.78 | 20% | 48% |
+| 6–8 | 322 | 36 | 1.50 | 3.00 | 5.50 | 3.67 | 23% | 43% |
+| 8–12 | 373 | 26 | 1.50 | 2.50 | 5.50 | 3.81 | 14% | 39% |
+| >12 | 254 | 19 | 2.00 | 4.00 | 6.00 | 4.33 | 9% | 30% |
 
-By the option's own price, $/bbl:
+By distance in vol-scales, $|K-F_0| / (F_0\,\sigma_{\text{ATM}}\sqrt{T})$:
 
-| premium | n | p25 | median | p75 | mean | ≤ 1¢ | ≤ 2¢ |
-|---|---:|---:|---:|---:|---:|---:|---:|
-| < 0.10 | 1,694 | 0.50 | 0.50 | 1.00 | 0.98 | 78% | 92% |
-| 0.10–0.25 | 1,538 | 1.00 | 1.50 | 2.00 | 1.76 | 50% | 78% |
-| 0.25–0.50 | 1,373 | 1.00 | 2.00 | 3.00 | 2.57 | 31% | 63% |
-| 0.50–1 | 1,124 | 1.50 | 2.50 | 4.00 | 3.44 | 15% | 40% |
-| 1–2 | 621 | 2.50 | 4.00 | 6.00 | 5.46 | 7% | 17% |
-| > 2 | 100 | 3.00 | 4.75 | 7.00 | 11.93 | 3% | 11% |
+| band | n | windows | p25 | median | p75 | mean | ≤ 1¢ | ≤ 2¢ |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| <0.25 | 259 | 58 | 3.50 | **4.50** | 7.25 | 5.97 | 0% | 7% |
+| 0.25–0.5 | 266 | 57 | 3.00 | **5.00** | 9.50 | 6.37 | 0% | 12% |
+| 0.5–1 | 523 | 58 | 2.50 | 4.00 | 8.00 | 5.33 | 2% | 22% |
+| 1–1.5 | 520 | 58 | 2.00 | 3.00 | 6.50 | 4.40 | 5% | 36% |
+| 1.5–2 | 503 | 58 | 1.50 | 2.50 | 5.00 | 3.35 | 16% | 49% |
+| 2–3 | 649 | 57 | 1.00 | 2.00 | 4.00 | 2.72 | 28% | 59% |
+| 3–4 | 225 | 42 | 1.00 | 1.50 | 3.50 | 2.33 | 38% | 67% |
+| >4 | 93 | 22 | 1.00 | 1.50 | 1.50 | 1.59 | 47% | 82% |
 
-(half-spreads in ¢/bbl; the leg region 0.5–4 from the forward: median 1.5¢, p75 3.0¢, mean 2.7¢, n 3,670)
+By the option's own premium, $/bbl:
 
-**Reading.** The "1–2 ticks" the brief expects is what a sub-$0.25 option shows. The spread scales with premium, and
-at T-1d the options at a near-the-money bracket's edges are $0.50–2 options, where the median half-spread is
-2.5–4¢/bbl. That is why the four-leg stack near the money comes out at 20–32 points and the two-leg stack at 10–16,
-while deep-tail thresholds — cheap options, 0.5¢ half-spread — cost 2 points of spread. The trade-sampled number is
-if anything biased *tight*: a quote is recorded when someone crosses it.
+| premium | n | windows | p25 | median | p75 | mean | ≤ 1¢ | ≤ 2¢ |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| < 0.05 | 732 | 58 | 1.00 | 1.50 | 2.00 | 1.55 | 46% | 84% |
+| 0.05–0.10 | 564 | 58 | 1.50 | 2.00 | 4.50 | 2.96 | 15% | 51% |
+| 0.10–0.25 | 674 | 58 | 2.00 | 3.00 | 5.50 | 4.05 | 2% | 34% |
+| 0.25–0.50 | 469 | 56 | 2.50 | 4.00 | 7.50 | 5.08 | 0% | 15% |
+| 0.50–1 | 386 | 39 | 4.00 | 6.00 | 9.00 | 6.56 | 0% | 3% |
+| 1–2 | 190 | 17 | 5.63 | 8.50 | 12.00 | 8.94 | 0% | 0% |
+| > 2 | 23 | 3 | 13.50 | 14.00 | 14.50 | 12.67 | 0% | 0% |
 
-**What a proper measurement costs.** `db_preflight_bbo.py` quoted `bbo-1m` for the strikes within $8 of the forward
-on the backtest's expiry, for the 60 minutes before each of the 58 KXWTIW snapshots (118–128 instruments per window):
-**$0.61 in total for the 58 scoped windows, or $4.23 for the whole parent chain in the same 58 hours**
-(`db_preflight_bbo.json`, quoted 2026-10-04 with `metadata.get_cost`, no record bought). The pull is written (`db_pull_bbo.py`, dry-run by default, cap $50,
-manifest and resume via `db_common.DBClient`) and `synth/friction_measure.py` reads its output into the same tables
-next to the TBBO ones. **It has not been executed; it waits for approval.** If approved it also answers the
-executable-legs question (amendment 5) with one quote per instrument per minute, and the backtest's `structure_quotes`
-can be pointed at it for a re-processing.
+(The 60-minute distributions, every minute's sample, are within 0.5¢ of these in every bin; `friction_measure.json`.)
 
-**Operator option, free.** On the tastytrade chain for the CL weekly expiring on the next Kalshi Friday, at ~14:30 ET
-on the Thursday: for each strike from $4 below to $4 above the front future in $0.50 steps, record bid, ask and size on
-the OTM side (puts below, calls above), plus the future's bid/ask. Twenty minutes, one page. Repeated on three
-Thursdays it would settle whether the live book is tighter than the trade-sampled one.
+**Reading.** On the live book the "4–5¢" figure holds **near the money** — 4.0¢ median within $0.50 of the forward,
+4.5–5.0¢ within half a vol-scale — and the book is 2.5–3¢ wide two to eight dollars out, 4¢ beyond twelve. The "1–2
+ticks" the brief expected is true only of options under $0.10 of premium. The TBBO's 1.5–2¢ was the book at its
+tightest moments; the live book is about twice as wide at every distance. Spread scales with premium (1.5¢ under $0.05,
+6¢ at $0.50–1, 8.5¢ at $1–2), which is why the legs of a near-the-money bracket at T-1d — $0.50–2 options — are the
+expensive ones, and why the operator's choice of the whole chain over the ±$8 scoping mattered: the far legs the tail
+brackets need are not tighter than the near ones.
+
+**Leg availability — what the TBBO was discarding.** Every replicating leg of every bracket of every window (3,984
+legs), by the leg's distance from the forward:
+
+| band | legs | two-sided on TBBO ≤ 5 min | TBBO ≤ 60 min | **bbo-1m at the minute** | bbo-1m half-spread median |
+|---|---:|---:|---:|---:|---:|
+| <0.5 | 174 | 55% | 97% | 100% | 3.00¢ |
+| 0.5–1 | 174 | 42% | 90% | 100% | 2.50¢ |
+| 1–2 | 348 | 27% | 88% | 100% | 2.50¢ |
+| 2–3 | 348 | 16% | 73% | 100% | 2.00¢ |
+| 3–4 | 324 | 9% | 56% | 99% | 2.50¢ |
+| 4–6 | 601 | 8% | 35% | 96% | 2.50¢ |
+| 6–8 | 505 | 2% | 19% | 90% | 3.00¢ |
+| 8–12 | 762 | 2% | 17% | 78% | 3.00¢ |
+| >12 | 748 | 0% | 6% | 69% | 4.50¢ |
+
+All 304 brackets the TBBO version had marked `cme_leg_unquoted` had every leg live and two-sided on the book at the
+snapshot minute; so did all 694 brackets with a two-sided Kalshi quote (only 4 of those had every leg on the TBBO
+within 5 minutes, 161 within 60). **The TBBO was silently discarding 44% of the comparable sample on data, not on
+markets** — amendment 5's "the hedge is not priceable" was a statement about the TBBO, not about the options.
+
+**Friction per bracket from each leg's own quote** (amendment 8; `--reprocess --legs bbo1m`, 311 of 351 two-sided
+brackets at T-1d and 340 of 343 at T-4h now carry a measured structure; the one remaining `cme_leg_unquoted` is a leg
+beyond the listed strikes):
+
+| snapshot | Act III band | n | friction median (p25–p75) | of which spread | per-leg half-spread median | legs | \|gap\| median | shortfall to band + friction, median |
+|---|---|---:|---|---:|---:|---:|---:|---:|
+| T-1d | deep tail (< 5¢) | 164 | 20.8¢ (14.0–49.1) | 18.0¢ | 2.38¢/bbl | 3.8 | 0.4¢ | 20.9¢ |
+| | moderate tail (5–20¢) | 120 | 24.8¢ (18.7–35.8) | 21.0¢ | 2.63¢ | 4.0 | 0.9¢ | 26.5¢ |
+| | body (20–80¢) | 22 | 19.9¢ (16.4–23.6) | 16.0¢ | 2.12¢ | 3.2 | 1.7¢ | 21.8¢ |
+| | favourite (> 80¢) | 5 | 36.1¢ | 34.0¢ | 8.50¢ | 2.0 | 0.7¢ | 37.1¢ |
+| T-4h | deep tail | 231 | 24.8¢ (22.5–40.4) | 22.0¢ | 2.88¢ | 3.8 | 0.1¢ | 25.2¢ |
+| | moderate tail | 64 | 30.7¢ (20.6–49.3) | 27.0¢ | 3.63¢ | 3.9 | 1.5¢ | 32.4¢ |
+| | body | 38 | 21.8¢ (19.0–29.2) | 17.5¢ | 2.19¢ | 3.9 | 2.9¢ | 27.1¢ |
+| | favourite | 7 | 11.8¢ (6.7–18.5) | 10.0¢ | 2.50¢ | 2.0 | 1.3¢ | 12.9¢ |
+
+By leg count: four-leg brackets median 23.1¢ at T-1d and 25.8¢ at T-4h; two-leg thresholds and tails 15.5¢ and 15.6¢.
+The closest any bracket comes to clearing band + friction is 1.6¢ short (T-4h, four legs) and 2.7¢ short (T-4h, two
+legs); the medians are 25¢ and 14¢ short. The two "closest calls" of the TBBO pass (§A) move away: 2026-03-20
+"$92.99 or below" has its two puts quoted 6.5¢ and 7¢ wide on the book, friction 29.3 points against a 13.9-point
+disagreement.
+
+**Operator option, free (still useful as a cross-check of the book at a different hour).** On the tastytrade chain for
+the CL weekly expiring on the next Kalshi Friday, at ~14:30 ET on the Thursday: for each strike from $4 below to $4
+above the front future in $0.50 steps, record bid, ask and size on the OTM side, plus the future's bid/ask. Three
+Thursdays would say whether the book at the close is like the book at 14:30 the day before.
 
 ---
 
@@ -178,10 +241,13 @@ Pyth-settled daily commodity series with KXWTI. KXWTI is neither, and it was nev
 ## E. Verdict on the two checks
 
 - **Leg count:** handled correctly for the spread, overcharged 1.42¢ on fees; corrected; nothing changes status.
-- **Friction:** the 4–5¢ sentence was wrong; the arithmetic used ~1–1.3¢/bbl per leg; the measured TBBO distribution
-  is 1.5–2¢ median near the money and rises with premium to 4¢ on $1–2 options; the trade-sampled basis is replaced by
-  6,450 quotes with the bias direction stated, and a $-scale `bbo-1m` pull is quoted and ready.
+- **Friction:** the 4–5¢ sentence was wrong as written and right in substance: on the live book the half-spread is
+  4.0¢ at the money and 2.5–3¢ on the tail legs, roughly double the trade-sampled TBBO figure, and it scales with
+  premium. The two-bracket basis is replaced by 3,038 live quotes at the snapshot minute (181,675 in the windows) and
+  every bracket now carries a hedge priced from its own legs: 21–25¢ per Kalshi dollar for a bracket, 15¢ for a
+  threshold. Amendment 5's "not priceable from the stored data" was true of the TBBO and is now moot.
 
-**The null stands**, with the daily arm properly tested as a two-leg strategy, until a `bbo-1m` measurement says the
-live book is materially tighter than the trade-sampled one. The two closest calls (§A) are the brackets that would
-move first if it is.
+**The null stands.** `FINDINGS_BACKTEST_V2.md` is the re-render on the corrected fees and the live-book legs; the
+mechanical verdict is unchanged (STRUCTURE, NOT AN EDGE), B2 and B3 fail with zero brackets clearing, and the
+structure (b ≈ 0.69) is the same tick-sized longshot premium. What changed is the quality of the hedge side: it is now
+a measurement, not an estimate, and it is larger than the estimate.

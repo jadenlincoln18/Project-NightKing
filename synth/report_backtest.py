@@ -499,8 +499,11 @@ def render(series_list: List[str]) -> str:
         L.append("- **Extractor-independence.** The chain's own replicating-structure digital (mid, legs ≤ 5 min old, parity-converted) against Act III on %d brackets: mean |chain − Act III| %.1f¢ (median %.1f¢); "
                  "Kalshi − chain digital %+.1f¢ vs Kalshi − Act III %+.1f¢; the two disagreements have the same sign on %s of brackets." % (
                      cd["n"], cd["mean_abs_chain_minus_pq_cents"], cd["median_abs_chain_minus_pq_cents"], cd["mean_kalshi_minus_chain_cents"], cd["mean_kalshi_minus_pq_cents"], _pct(cd["frac_same_sign"])))
+    srcs = {r.get("legs_source", "tbbo") for r in rs if r.get("brackets")}
+    L.append("- **Leg quotes.** Replicating legs priced from: %s. With bbo-1m the quote is the sampled book at the snapshot minute (≤ 2 min old) for every instrument of the expiry; "
+             "the TBBO gives a quote only at a trade." % ", ".join("%s on %d date-snapshots" % (s, sum(1 for r in rs if r.get("legs_source", "tbbo") == s and r.get("brackets"))) for s in sorted(srcs)))
     cs = A.get("chain_digital_stale")
-    if cs:
+    if cs and srcs == {"tbbo"}:
         L.append("- **Stale legs are not prices.** The same digital from the last TBBO quote within 60 minutes (the first pass's definition) on %d brackets: mean |chain − Act III| %.1f¢ (median %.1f¢). "
                  "A quote attached to a trade half an hour old carries half an hour of underlying movement; it is why amendment 5 exists." % (cs["n"], cs["mean_abs_chain_minus_pq_cents"], cs["median_abs_chain_minus_pq_cents"]))
     if A.get("contract_mismatch"):

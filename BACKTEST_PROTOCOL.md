@@ -247,6 +247,16 @@ as a generalisation: it described the one trade of the first pass (deep in-the-m
 half-spreads the friction arithmetic actually used are the chain's, median 1–2¢/bbl, and `FINDINGS_LEGCOUNT.md` §B
 reports their distribution by moneyness.
 
+**Amendment 8 (bbo-1m legs; approved 2026-10-04, $4.23 for the whole parent chain in the 60 minutes before each of
+the 58 KXWTIW snapshots).** Where the window is on disk, the replicating legs are priced from the bbo-1m sample of each
+instrument of the backtest's expiry at the snapshot minute (≤ 2 minutes old, two-sided) instead of the TBBO's last
+trade-attached quote. That is the executable price the protocol asked for in §2 and could not get from the TBBO
+(amendment 5). The operator chose the whole chain over the ±$8 scoping so the measured spreads include the far legs of
+tail brackets rather than only the best-quoted strikes. Everything downstream — the friction formula, the thresholds,
+the gates — is unchanged; the comparison stage is re-applied (`--reprocess --legs bbo1m`) and `FINDINGS_LEGCOUNT.md`
+reports the half-spread by moneyness, the friction per bracket from each leg's own quote, and how many of the
+brackets the TBBO had marked `cme_leg_unquoted` had live two-sided markets.
+
 **Amendment 6 (KXWTI arm, scope).** The daily market has no Kalshi candle at T-1d on any of the first four dates run
 (it is not open a business day before its own settlement), and its jobs ran at ~100 s each with 264 of them queued.
 The secondary arm is therefore run at **T-4h only**; its T-1d jobs are **not attempted** and the denominator says so.

@@ -524,8 +524,25 @@ def contract_check(d: Dict[str, Any], under: Optional[str], settles: Dict[Tuple[
     return out
 
 
-def reprocess_record(rec: Dict[str, Any], settles: Dict[Tuple[str, str], float], ice_by_date: Dict[str, float]) -> Dict[str, Any]:
-    """Re-apply the comparison stage to a stored record (new leg rule, contract check, thresholds); the extraction is untouched."""
+def legs_from_bbo1m(rec: Dict[str, Any]):
+    """The option quotes at the snapshot minute from the bbo-1m pull (amendment 8): one sample per instrument of the
+    backtest's expiry, <= 2 minutes old, two-sided, in the raw_q layout. None if the window is not on disk."""
+    from . import friction_measure as fm
+    x = rec["extraction"]
+    w = {"date": rec["settle_date"], "snap": rec["snap"], "root": rec["root"], "snap_time_et": rec["snap_time_et"], "F0": rec["F0"],
+         "vs": max(x["atm_sigma"], 0.05) * np.sqrt(max(x["T_years"], 1e-6)) * rec["F0"]}
+    q = fm.bbo1m_snapshot(w)
+    if q is None:
+        return None
+    q = q.rename(columns={"symbol": "instrument_id"})[["instrument_id", "strike", "right", "bid_px_00", "ask_px_00", "age_min"]].copy()
+    q["mid"] = 0.5 * (q["bid_px_00"] + q["ask_px_00"])
+    q["hs"] = 0.5 * (q["ask_px_00"] - q["bid_px_00"])
+    return q.reset_index(drop=True)
+
+
+def reprocess_record(rec: Dict[str, Any], settles: Dict[Tuple[str, str], float], ice_by_date: Dict[str, float], legs: str = "tbbo") -> Dict[str, Any]:
+    """Re-apply the comparison stage to a stored record (new leg rule, contract check, thresholds); the extraction is untouched.
+    legs='bbo1m' prices the replicating legs from the bbo-1m sample at the snapshot minute where that window is on disk."""
     import pandas as pd
     from . import realchain
     x = rec.get("extraction")
@@ -540,6 +557,13 @@ def reprocess_record(rec: Dict[str, Any], settles: Dict[Tuple[str, str], float],
     tb = pd.read_parquet(p, columns=["ts_event", "instrument_id", "bid_px_00", "ask_px_00", "strike", "right"])
     snap_ts = pd.Timestamp(rec["snap_time_et"]).tz_localize(realchain.ET)
     raw_q = realchain.snapshot(tb, snap_ts.tz_convert("UTC"), WINDOW_MIN)
+    rec["legs_source"] = "tbbo"
+    if legs == "bbo1m":
+        q = legs_from_bbo1m(rec)
+        if q is not None:
+            raw_q = q
+            rec["legs_source"] = "bbo1m"
+            rec["n_bbo1m_two_sided"] = int(len(q))
     S_T = settles.get((rec["settle_date"], x.get("underlying")))
     rec["nymex_settle"] = S_T
     ctx = {"F0": x["F0"], "D": x["D_used"], "raw_q": raw_q, "S_T": S_T, "ice_settle": rec["ice_settle"], "grid_s": np.asarray(x["act3_grid_s"], float),
@@ -762,18 +786,19 @@ def ice_values() -> Dict[str, float]:
     return out
 
 
-def reprocess(series: str) -> List[Dict[str, Any]]:
+def reprocess(series: str, legs: str = "tbbo") -> List[Dict[str, Any]]:
     from . import realchain
     path = runs_path(series)
     rs = pickle.load(open(path, "rb"))
     inp = realchain.load_inputs(series=series, clears_only=False)
     ice_by_date = ice_values()
-    log("reprocess %s: %d records (leg age <= %.0f min, contract check)" % (series, len(rs), LEG_MAX_AGE_MIN))
-    out = [reprocess_record(r, inp["settles"], ice_by_date) for r in rs]
+    log("reprocess %s: %d records (legs from %s; TBBO leg age <= %.0f min; contract check)" % (series, len(rs), legs, LEG_MAX_AGE_MIN))
+    out = [reprocess_record(r, inp["settles"], ice_by_date, legs=legs) for r in rs]
     _dump(out, path)
     write_logs(series, out)
     n_mm = sum(1 for r in out if r["outcome"] == "g0b_contract_mismatch")
-    log("reprocess %s done: %d contract mismatches, %d traded brackets" % (series, n_mm, sum(1 for r in out for b in r["brackets"] if b.get("status") == "traded")))
+    log("reprocess %s done: %d contract mismatches, %d traded brackets, legs from bbo-1m on %d records" % (
+        series, n_mm, sum(1 for r in out for b in r["brackets"] if b.get("status") == "traded"), sum(1 for r in out if r.get("legs_source") == "bbo1m")))
     return out
 
 
@@ -814,9 +839,10 @@ def main(argv: Optional[List[str]] = None) -> int:
     ap.add_argument("--workers", type=int, default=7)
     ap.add_argument("--report", action="store_true")
     ap.add_argument("--reprocess", action="store_true", help="re-apply the comparison stage to the stored extractions")
+    ap.add_argument("--legs", default="tbbo", choices=["tbbo", "bbo1m"], help="where the replicating legs' quotes come from on --reprocess")
     a = ap.parse_args(argv)
     if a.reprocess:
-        reprocess(a.series)
+        reprocess(a.series, legs=a.legs)
     elif not a.report:
         run(a.series, [s.strip() for s in a.snap.split(",")], a.workers, [x.strip() for x in a.only.split(",")] if a.only else None)
     from . import report_backtest

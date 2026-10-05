@@ -2,7 +2,7 @@
 
 > Re-rendered after `FINDINGS_LEGCOUNT.md` (protocol amendment 7: the CME fee term charged four legs on two-leg threshold structures; corrected and re-processed). `FINDINGS_BACKTEST.md` is the unchanged record of the first pass; the differences are tabulated in `FINDINGS_LEGCOUNT.md`.
 
-Protocol: `BACKTEST_PROTOCOL.md`, committed 2026-10-03T21:11:29-05:00 (`675d6df`). Extractor frozen at `synth.realchain` arm `real_m48_f1` (48 knots, Gaussian prior, real intraday path, 1¢ tick floor). Every number below is computed from `synth/results_backtest/runs_<series>.pkl`; the denominator and bracket logs are the CSVs next to it. Executable prices only: Kalshi bid/ask closes of the stored 1-minute candle at the snapshot minute, CME TBBO last quotes in the window.
+Protocol: `BACKTEST_PROTOCOL.md`, committed 2026-10-04T19:50:17-05:00 (`80a4b69`). Extractor frozen at `synth.realchain` arm `real_m48_f1` (48 knots, Gaussian prior, real intraday path, 1¢ tick floor). Every number below is computed from `synth/results_backtest/runs_<series>.pkl`; the denominator and bracket logs are the CSVs next to it. Executable prices only: Kalshi bid/ask closes of the stored 1-minute candle at the snapshot minute, CME TBBO last quotes in the window.
 
 **Verdict: STRUCTURE, NOT AN EDGE — the two venues agree to within a cent, and the hedge cannot be priced from the stored data.**
 On the 24 KXWTIW dates that clear every gate at T-1d (22 at T-4h), Kalshi's executable bracket prices sit on top of the
@@ -10,11 +10,10 @@ extracted density: mean gap +0.2¢, mean |gap| 1.1¢, median 0.5¢, 23% of brack
 none outside band plus friction. Stage 18 finds the favourite–longshot signature at both snapshots (b = 0.69 [0.68, 0.71]
 at T-1d and 0.68 [0.66, 0.70] at T-4h, and individually on 14 of 24 dates), so B1 holds — but in cents it is Kalshi
 asking 2¢ for brackets the density prices at 0.6¢, which is the 1¢ tick plus a 1¢ spread, and the state tilt c changes
-sign between the snapshots. No bracket clears the filter (B2 and B3 fail): the measured CME friction of the replicating
-structure is 7–30¢ per Kalshi dollar (median 12¢ for a four-leg bracket, 6–8¢ for a two-leg threshold; the chain's
-half-spreads are 1–2¢/bbl near the money and rise with the option's premium to 4¢ on $1–2 options — `FINDINGS_LEGCOUNT.md`
-§B) against gaps of a cent, and only two brackets in the whole sample had every leg quoted within five minutes of the
-snapshot. The first
+sign between the snapshots. No bracket clears the filter (B2 and B3 fail): with every leg priced from the live book at
+the snapshot minute (`bbo-1m`, amendment 8), the friction of the replicating structure is 21–25¢ per Kalshi dollar for
+a four-leg bracket and 15¢ for a two-leg threshold — half-spreads of 4¢/bbl at the money and 2.5–3¢ on the tail legs
+(`FINDINGS_LEGCOUNT.md` §B) — against gaps of a cent; the nearest miss is 1.6 points. The first
 pass's single "trade" was a contract-assignment artifact (Kalshi settling on CLK6, the options on CLM6) and is removed by
 a rule about the data, not the result. The honest summary is a null on the edge and a positive on the extractor: an
 independent venue agrees with it to within a cent on 535 bracket comparisons across 24 weeks.
@@ -51,33 +50,33 @@ Bracket statuses (every bracket of every date that reached the comparison):
 | status | T-1d | T-4h |
 |---|---|---|
 | traded | 0 | 0 |
-| below_threshold | 2 | 1 |
+| below_threshold | 202 | 104 |
 | no_two_sided_kalshi_quote | 185 | 201 |
 | date_gated | 76 | 117 |
 | price_out_of_range | 93 | 133 |
 | band_too_wide | 0 | 0 |
 | interior_minimum | 0 | 2 |
-| cme_leg_unquoted | 201 | 103 |
+| cme_leg_unquoted | 1 | 0 |
 
 ### Gap by moneyness — KXWTIW T-1d (lead)
 Brackets with a two-sided Kalshi quote on dates that reached the comparison (gated dates included, marked in the per-date table). Gap = executable Kalshi price on the side the trade would hit − Act III posterior mean, in cents of probability; band = 90% posterior width; friction per BACKTEST_PROTOCOL §4 with measured CME half-spreads.
 
 | band (Act III prob) | n | mean Kalshi | mean Act III | mean gap | median gap | sd | gap > 0 | mean band | mean friction | \|gap\| > band | \|gap\| > band + friction | Kalshi spread |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| deep tail | 204 | 2.1 | 1.5 | +0.2 | -0.0 | 0.9 | 43% | 0.7 | — | 25% | 0% | 1.3 |
-| moderate tail | 120 | 11.4 | 10.9 | +0.2 | -0.0 | 2.1 | 48% | 2.4 | — | 19% | 0% | 2.3 |
-| body | 22 | 32.8 | 33.8 | -0.6 | -0.2 | 5.0 | 45% | 4.7 | 13.0 | 23% | 0% | 3.4 |
-| favourite | 5 | 88.2 | 88.0 | -1.0 | -0.7 | 0.7 | 0% | 2.4 | — | 0% | 0% | 3.2 |
+| deep tail | 204 | 2.1 | 1.5 | +0.2 | -0.0 | 0.9 | 43% | 0.7 | 33.8 | 25% | 0% | 1.3 |
+| moderate tail | 120 | 11.4 | 10.9 | +0.2 | -0.0 | 2.1 | 48% | 2.4 | 32.7 | 19% | 0% | 2.3 |
+| body | 22 | 32.8 | 33.8 | -0.6 | -0.2 | 5.0 | 45% | 4.7 | 22.5 | 23% | 0% | 3.4 |
+| favourite | 5 | 88.2 | 88.0 | -1.0 | -0.7 | 0.7 | 0% | 2.4 | 28.8 | 0% | 0% | 3.2 |
 
 ### Gap by moneyness — KXWTIW T-4h
 Brackets with a two-sided Kalshi quote on dates that reached the comparison (gated dates included, marked in the per-date table). Gap = executable Kalshi price on the side the trade would hit − Act III posterior mean, in cents of probability; band = 90% posterior width; friction per BACKTEST_PROTOCOL §4 with measured CME half-spreads.
 
 | band (Act III prob) | n | mean Kalshi | mean Act III | mean gap | median gap | sd | gap > 0 | mean band | mean friction | \|gap\| > band | \|gap\| > band + friction | Kalshi spread |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| deep tail | 234 | 1.4 | 0.7 | +0.1 | +0.0 | 0.7 | 23% | 0.6 | — | 9% | 0% | 1.6 |
-| moderate tail | 64 | 12.1 | 12.0 | -0.1 | -0.2 | 3.1 | 45% | 4.2 | — | 14% | 0% | 2.7 |
-| body | 38 | 34.2 | 33.5 | +0.5 | +0.3 | 6.9 | 55% | 7.6 | 15.3 | 18% | 3% | 3.7 |
-| favourite | 7 | 94.5 | 96.8 | -1.6 | -1.3 | 2.0 | 29% | 1.5 | — | 43% | 0% | 1.6 |
+| deep tail | 234 | 1.4 | 0.7 | +0.1 | +0.0 | 0.7 | 23% | 0.6 | 30.4 | 9% | 0% | 1.6 |
+| moderate tail | 64 | 12.1 | 12.0 | -0.1 | -0.2 | 3.1 | 45% | 4.2 | 37.2 | 14% | 0% | 2.7 |
+| body | 38 | 34.2 | 33.5 | +0.5 | +0.3 | 6.9 | 55% | 7.6 | 25.4 | 18% | 0% | 3.7 |
+| favourite | 7 | 94.5 | 96.8 | -1.6 | -1.3 | 2.0 | 29% | 1.5 | 12.7 | 43% | 0% | 1.6 |
 
 ### Per date — KXWTIW
 | date | snap | outcome | n two-sided | mean gap | mean tail gap (pq<20¢) | mean \|gap\| | mean band | traded | interior-min removed | χ²/strike | E[F]−F₀ (¢) | path | Stage 18 b [5,50,95] | c |
@@ -160,38 +159,37 @@ The comparison is between two implied probabilities of the same event. Per brack
 
 | date | snap | market | Kalshi p (side) | density p [90% band] | disagreement (pts) | hedge | friction (pts): Kalshi fee + CME spread + CME fees | net (pts) | positive? |
 |---|---|---|---|---|---:|---|---|---:|---|
-| 2026-03-20 | T-1d | $92.99 or below | 0.150 (ask, buy) | 0.289 [0.280, 0.297] | -13.9 | sell 2 legs 93.00,93.50 | ~12.3 = 0.9 + 10.0 + 1.4 | +1.5 | no (band 1.7) |
-| 2026-01-30 | T-4h | $64.0 or above | 0.890 (ask, buy) | 0.940 [0.926, 0.952] | -5.0 | sell 2 legs 63.50,64.00 | ~4.1 = 0.7 + 2.0 + 1.4 | +0.9 | no (band 2.6) |
-| 2026-02-06 | T-1d | $68.0 or above | 0.060 (bid, sell) | 0.023 [0.018, 0.029] | +3.7 | buy 2 legs 67.50,68.00 | ~4.3 = 0.4 + 2.5 + 1.4 | -0.7 | no (band 1.2) |
-| 2026-07-17 | T-4h | Above $77.99 | 0.960 (ask, buy) | 0.990 [0.983, 0.995] | -3.0 | sell 2 legs 77.50,78.00 | ~3.7 = 0.3 + 2.0 + 1.4 | -0.7 | no (band 1.2) |
-| 2026-03-27 | T-1d | $105 or above | 0.060 (bid, sell) | 0.020 [0.016, 0.023] | +4.0 | buy 2 legs 104.50,105.00 | ~5.8 = 0.4 + 4.0 + 1.4 | -1.8 | no (band 0.7) |
-| 2026-07-10 | T-1d | Above $75.99 | 0.070 (bid, sell) | 0.047 [0.039, 0.054] | +2.3 | buy 2 legs 75.50,76.00 | ~3.9 = 0.5 + 2.0 + 1.4 | -1.6 | no (band 1.5) |
-| 2026-07-24 | T-4h | Above $94.99 | 0.020 (bid, sell) | 0.006 [0.004, 0.009] | +1.4 | buy 2 legs 94.50,95.00 | ~4.1 = 0.1 + 2.5 + 1.4 | -2.7 | no (band 0.5) |
-| 2026-06-12 | T-4h | Above $97.99 | 0.000 (bid, sell) | 0.000 [0.000, 0.002] | -0.0 | buy 2 legs 97.50,98.00 | ~3.4 = 0.0 + 2.0 + 1.4 | -3.4 | no (band 0.2) |
+| 2026-01-30 | T-4h | $64.0 or above | 0.890 (ask, buy) | 0.940 [0.926, 0.952] | -5.0 | sell 2 legs 63.50,64.00 | 5.1 = 0.7 + 3.0 + 1.4 | -0.1 | no (band 2.6) |
 | 2026-06-05 | T-1d | Below $81.00 | 0.000 (bid, sell) | 0.001 [0.000, 0.002] | -0.1 | buy 2 legs 81.00,81.50 | ~3.4 = 0.0 + 2.0 + 1.4 | -3.4 | no (band 0.2) |
-| 2026-06-26 | T-1d | Above $83.99 | 0.000 (bid, sell) | 0.001 [0.000, 0.003] | -0.1 | buy 2 legs 83.50,84.00 | ~3.4 = 0.0 + 2.0 + 1.4 | -3.3 | no (band 0.3) |
-| 2026-01-23 | T-1d | $64.0 or above | 0.010 (bid, sell) | 0.005 [0.001, 0.008] | +0.5 | buy 2 legs 63.50,64.00 | ~3.5 = 0.1 + 2.0 + 1.4 | -3.0 | no (band 0.7) |
-| 2026-02-20 | T-4h | $71.0 or above | 0.000 (bid, sell) | 0.001 [0.000, 0.004] | -0.1 | buy 2 legs 70.50,71.00 | ~3.4 = 0.0 + 2.0 + 1.4 | -3.3 | no (band 0.4) |
-| 2026-07-10 | T-4h | Above $75.99 | 0.000 (bid, sell) | 0.004 [0.000, 0.007] | -0.4 | buy 2 legs 75.50,76.00 | ~3.6 = 0.0 + 2.2 + 1.4 | -3.3 | no (band 0.7) |
-| 2026-09-04 | T-1d | Above $95.99 | 0.030 (bid, sell) | 0.028 [0.023, 0.033] | +0.2 | buy 2 legs 95.50,96.00 | ~3.6 = 0.2 + 2.0 + 1.4 | -3.4 | no (band 1.0) |
-| 2026-07-24 | T-1d | Above $94.99 | 0.240 (bid, sell) | 0.182 [0.173, 0.191] | +5.8 | buy 2 legs 94.50,95.00 | ~8.7 = 1.3 + 6.0 + 1.4 | -2.9 | no (band 1.8) |
+| 2026-07-17 | T-4h | Above $77.99 | 0.960 (ask, buy) | 0.990 [0.983, 0.995] | -3.0 | sell 2 legs 77.50,78.00 | 7.7 = 0.3 + 6.0 + 1.4 | -4.7 | no (band 1.2) |
+| 2026-02-06 | T-1d | $68.0 or above | 0.060 (bid, sell) | 0.023 [0.018, 0.029] | +3.7 | buy 2 legs 67.50,68.00 | 8.8 = 0.4 + 7.0 + 1.4 | -5.2 | no (band 1.2) |
+| 2026-06-26 | T-4h | Below $71.00 | 0.950 (ask, buy) | 0.963 [0.953, 0.972] | -1.3 | sell 2 legs 71.00,71.50 | 5.8 = 0.3 + 4.0 + 1.4 | -4.5 | no (band 1.9) |
+| 2026-03-27 | T-1d | $105 or above | 0.060 (bid, sell) | 0.020 [0.016, 0.023] | +4.0 | buy 2 legs 104.50,105.00 | 9.8 = 0.4 + 8.0 + 1.4 | -5.8 | no (band 0.7) |
+| 2026-07-24 | T-1d | $77.00 to $77.99 | 0.000 (bid, sell) | 0.000 [0.000, 0.001] | -0.0 | buy 4 legs 76.50,77.00,78.00,78.50 | ~6.8 = 0.0 + 4.0 + 2.8 | -6.8 | no (band 0.1) |
+| 2026-06-05 | T-1d | $84.00 to $84.99 | 0.000 (bid, sell) | 0.002 [0.001, 0.003] | -0.2 | buy 4 legs 83.50,84.00,85.00,85.50 | ~6.8 = 0.0 + 4.0 + 2.8 | -6.6 | no (band 0.2) |
+| 2026-06-26 | T-1d | $81.00 to $81.99 | 0.000 (bid, sell) | 0.001 [0.000, 0.002] | -0.1 | buy 4 legs 80.50,81.00,82.00,82.50 | ~6.8 = 0.0 + 4.0 + 2.8 | -6.7 | no (band 0.1) |
+| 2026-06-26 | T-1d | $82.00 to $82.99 | 0.000 (bid, sell) | 0.001 [0.000, 0.001] | -0.1 | buy 4 legs 81.50,82.00,83.00,83.50 | ~6.8 = 0.0 + 4.0 + 2.8 | -6.8 | no (band 0.1) |
+| 2026-06-05 | T-1d | $81.00 to $81.99 | 0.000 (bid, sell) | 0.000 [0.000, 0.001] | -0.0 | buy 4 legs 80.50,81.00,82.00,82.50 | ~6.8 = 0.0 + 4.0 + 2.8 | -6.8 | no (band 0.1) |
+| 2026-06-26 | T-1d | $80.00 to $80.99 | 0.000 (bid, sell) | 0.002 [0.001, 0.003] | -0.2 | buy 4 legs 79.50,80.00,81.00,81.50 | ~6.8 = 0.0 + 4.0 + 2.8 | -6.7 | no (band 0.2) |
+| 2026-06-05 | T-1d | $82.00 to $82.99 | 0.000 (bid, sell) | 0.001 [0.000, 0.001] | -0.1 | buy 4 legs 81.50,82.00,83.00,83.50 | ~6.8 = 0.0 + 4.0 + 2.8 | -6.8 | no (band 0.1) |
+| 2026-06-05 | T-1d | $83.00 to $83.99 | 0.000 (bid, sell) | 0.001 [0.000, 0.002] | -0.1 | buy 4 legs 82.50,83.00,84.00,84.50 | ~6.8 = 0.0 + 4.0 + 2.8 | -6.7 | no (band 0.2) |
+| 2026-01-23 | T-1d | $55 to 55.99 | 0.000 (bid, sell) | 0.004 [0.001, 0.008] | -0.4 | buy 4 legs 54.50,55.00,56.00,56.50 | ~6.8 = 0.0 + 4.0 + 2.8 | -6.4 | no (band 0.7) |
 
-412 brackets with a priced or estimated hedge; the net after the band is positive on 0. Top 15 by net shown; the full list is in `brackets_KXWTIW.csv` (`excess`, `excess_est`).
+509 brackets with a priced or estimated hedge; the net after the band is positive on 0. Top 15 by net shown; the full list is in `brackets_KXWTIW.csv` (`excess`, `excess_est`).
 
 ### The signal record — KXWTIW
 Brackets on cleared dates that did not become trades, by reason, with what the gap did against the band alone and against the band plus friction. Where the legs were not all quoted in the window the friction is the chain-estimated one (protocol amendment 3) and the bracket is a *signal*, not a trade.
 
-- T-1d, legs quoted, below threshold: 2 brackets; |gap| > band alone on 0%; shortfall to band + friction median 15.8¢ (p90 19.3¢); gap > 0 on 100%.
-- T-1d, legs not all quoted in the window: 201 brackets; |gap| > band alone on 26%; estimated friction median 13.5¢ (p10 7.6¢, p90 34.3¢); **0 would clear band + estimated friction** on 0 dates (—).
-- T-4h, legs quoted, below threshold: 1 brackets; |gap| > band alone on 100%; shortfall to band + friction median 17.0¢ (p90 17.0¢); gap > 0 on 100%.
-- T-4h, legs not all quoted in the window: 103 brackets; |gap| > band alone on 14%; estimated friction median 11.4¢ (p10 7.5¢, p90 22.9¢); **0 would clear band + estimated friction** on 0 dates (—).
+- T-1d, legs quoted, below threshold: 202 brackets; |gap| > band alone on 26%; shortfall to band + friction median 25.1¢ (p90 60.7¢); gap > 0 on 54%.
+- T-1d, legs not all quoted in the window: 1 brackets; |gap| > band alone on 100%; estimated friction median nan¢ (p10 nan¢, p90 nan¢); **0 would clear band + estimated friction** on 0 dates (—).
+- T-4h, legs quoted, below threshold: 104 brackets; |gap| > band alone on 14%; shortfall to band + friction median 26.2¢ (p90 43.3¢); gap > 0 on 55%.
 
 ## 2. Artifact checks (protocol §7)
 
 - **Residual forward error.** Median |E[F] − F₀| at T-1d: 3.4¢; correlation of the per-date mean gap with it: -0.08.
 - **Asynchronicity / snapshot dependence.** 271 brackets quoted at both snapshots: gap sign agrees on 49%, correlation 0.14. Path sources by snapshot: {"T-1d": {"real": 28, "reconstruction": 1}, "T-4h": {"real": 28, "reconstruction": 1}}.
-- **Extractor-independence.** The chain's own replicating-structure digital (mid, legs ≤ 5 min old, parity-converted) against Act III on 2 brackets: mean |chain − Act III| 17.7¢ (median 17.7¢); Kalshi − chain digital +1.5¢ vs Kalshi − Act III +0.3¢; the two disagreements have the same sign on 100% of brackets.
-- **Stale legs are not prices.** The same digital from the last TBBO quote within 60 minutes (the first pass's definition) on 97 brackets: mean |chain − Act III| 35.3¢ (median 17.5¢). A quote attached to a trade half an hour old carries half an hour of underlying movement; it is why amendment 5 exists.
+- **Extractor-independence.** The chain's own replicating-structure digital (mid, legs ≤ 5 min old, parity-converted) against Act III on 311 brackets: mean |chain − Act III| 4.7¢ (median 3.1¢); Kalshi − chain digital -3.2¢ vs Kalshi − Act III +0.5¢; the two disagreements have the same sign on 58% of brackets.
+- **Leg quotes.** Replicating legs priced from: bbo1m on 58 date-snapshots, tbbo on 4 date-snapshots. With bbo-1m the quote is the sampled book at the snapshot minute (≤ 2 min old) for every instrument of the expiry; the TBBO gives a quote only at a trade.
 - **Contract assignment (Gate 0b, ex post).** 6 date-snapshots removed because Kalshi settled on a different delivery month than the options: 2026-01-16 T-1d — Kalshi settled 59.44 = NYMEX CLG6; the option underlying CLH6 settled 59.34 (source of the match: calendar); 2026-01-16 T-4h — Kalshi settled 59.44 = NYMEX CLG6; the option underlying CLH6 settled 59.34 (source of the match: calendar); 2026-04-17 T-1d — Kalshi settled 83.85 = NYMEX CLK6; the option underlying CLM6 settled 82.59 (source of the match: calendar); 2026-04-17 T-4h — Kalshi settled 83.85 = NYMEX CLK6; the option underlying CLM6 settled 82.59 (source of the match: calendar); 2026-05-15 T-1d — Kalshi settled 105.42 = NYMEX CLM6; the option underlying CLN6 settled 101.02 (source of the match: calendar); 2026-05-15 T-4h — Kalshi settled 105.42 = NYMEX CLM6; the option underlying CLN6 settled 101.02 (source of the match: calendar).
 - **One-snapshot systematic error.** Stage 18 by snapshot is in §1's pooled table; B1 requires both snapshots to agree.
 
@@ -401,21 +399,24 @@ its sign, so it is not a stable risk-premium reading. B1 holds on b; the structu
 money.
 
 **Friction is the finding.** The writeup's working figure of ~5¢ per contract round trip is not reachable with a
-four-leg option replication on a $0.50 strike grid. Measured where legs were quoted, and estimated from the
-synchronised chain's own half-spreads everywhere else, the stack is 7–30¢ per Kalshi dollar (median 12¢ at T-1d, 10¢
-at T-4h) for a bracket and 6–8¢ for a two-leg threshold, of which the CME spread term is the bulk: each leg's
-half-spread divided by the $0.50 width, with the chain's half-spreads at 1–2¢/bbl near the money and 2.5–4¢ on the
-$0.50–2 options that sit at a near-the-money bracket's edges (`FINDINGS_LEGCOUNT.md` §B measures the distribution).
-Kalshi's own fee (0.6–1.8¢) and the CME fees (2.8¢ for four legs, 1.4¢ for two, at 500 contracts per structure) are
-secondary. Against this the |gap| exceeds band + friction on 0 of 296 brackets, and 0 of 201 brackets with unquoted
-legs would clear with the estimated friction either. No threshold choice inside the protocol changes that; the next
-pass inherits whether any replication of a $1 bracket can be built for less than the gaps.
+four-leg option replication on a $0.50 strike grid. With every leg priced from the live book at the snapshot minute
+(`bbo-1m`, bought for the 58 windows under amendment 8), the stack is 21–25¢ per Kalshi dollar for a bracket (median
+23¢ at T-1d, 26¢ at T-4h) and 15¢ for a two-leg threshold, of which the CME spread term is the bulk: each leg's
+half-spread divided by the $0.50 width, with the book at 4¢/bbl at the money, 2.5–3¢ two to eight dollars out, and
+only below 1.5¢ on options under $0.05 of premium (`FINDINGS_LEGCOUNT.md` §B measures the distribution by distance,
+by vol-scale and by premium). The trade-sampled TBBO had shown 1.5–2¢ — the book at its tightest moments — and the
+first pass's chain-estimated friction (median 12¢) was accordingly about half the measured one. Kalshi's own fee
+(0.6–1.8¢) and the CME fees (2.8¢ for four legs, 1.4¢ for two, at 500 contracts per structure) are secondary. Against
+this the |gap| exceeds band + friction on 0 of 311 priced brackets at T-1d and 0 of 340 at T-4h; the closest miss is
+1.6 points and the median shortfall 25. No threshold choice inside the protocol changes that; the next pass inherits
+whether any replication of a $1 bracket can be built for less than the gaps.
 
-**The hedge is not priceable from this data, and the artifacts were real.** Only two brackets at T-1d and one at T-4h
-had every leg quoted within five minutes of the snapshot; the TBBO carries a BBO only at trade instants, and legs 20–60
-minutes old implied digitals 35¢ away from Act III on average. The first pass took those stale legs as executable and
-produced one filtered trade with a −29¢ realised loss; it was removed by amendment 5 (leg freshness), and the date
-itself fell to amendment 4: Kalshi's rules named no contract, the calendar fallback said CLM6, Kalshi settled on CLK6.
+**The hedge is now priced, and the artifacts were real.** The first pass could price only two brackets at T-1d from
+the TBBO, which carries a quote only at a trade: legs 20–60 minutes old implied digitals 35¢ away from Act III, and
+44% of the comparable brackets were marked unquoted. On the live book every one of those brackets had all its legs
+two-sided at the snapshot minute. The first pass had also taken stale legs as executable and produced one filtered
+trade with a −29¢ realised loss; it was removed by amendment 5 (leg freshness), and the date itself fell to amendment
+4: Kalshi's rules named no contract, the calendar fallback said CLM6, Kalshi settled on CLK6.
 Three dates (01-16, 04-17, 05-15) carry that mismatch and are Gate 0b failures ex post. Both corrections are rules
 about the data, written before any verdict, and both would have produced fedarb's failure mode if left in: a smooth,
 confident, mis-centred disagreement. The residual-forward check is clean (median |E[F] − F₀| 3.4¢, correlation with

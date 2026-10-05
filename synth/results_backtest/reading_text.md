@@ -19,21 +19,24 @@ its sign, so it is not a stable risk-premium reading. B1 holds on b; the structu
 money.
 
 **Friction is the finding.** The writeup's working figure of ~5¢ per contract round trip is not reachable with a
-four-leg option replication on a $0.50 strike grid. Measured where legs were quoted, and estimated from the
-synchronised chain's own half-spreads everywhere else, the stack is 7–30¢ per Kalshi dollar (median 12¢ at T-1d, 10¢
-at T-4h) for a bracket and 6–8¢ for a two-leg threshold, of which the CME spread term is the bulk: each leg's
-half-spread divided by the $0.50 width, with the chain's half-spreads at 1–2¢/bbl near the money and 2.5–4¢ on the
-$0.50–2 options that sit at a near-the-money bracket's edges (`FINDINGS_LEGCOUNT.md` §B measures the distribution).
-Kalshi's own fee (0.6–1.8¢) and the CME fees (2.8¢ for four legs, 1.4¢ for two, at 500 contracts per structure) are
-secondary. Against this the |gap| exceeds band + friction on 0 of 296 brackets, and 0 of 201 brackets with unquoted
-legs would clear with the estimated friction either. No threshold choice inside the protocol changes that; the next
-pass inherits whether any replication of a $1 bracket can be built for less than the gaps.
+four-leg option replication on a $0.50 strike grid. With every leg priced from the live book at the snapshot minute
+(`bbo-1m`, bought for the 58 windows under amendment 8), the stack is 21–25¢ per Kalshi dollar for a bracket (median
+23¢ at T-1d, 26¢ at T-4h) and 15¢ for a two-leg threshold, of which the CME spread term is the bulk: each leg's
+half-spread divided by the $0.50 width, with the book at 4¢/bbl at the money, 2.5–3¢ two to eight dollars out, and
+only below 1.5¢ on options under $0.05 of premium (`FINDINGS_LEGCOUNT.md` §B measures the distribution by distance,
+by vol-scale and by premium). The trade-sampled TBBO had shown 1.5–2¢ — the book at its tightest moments — and the
+first pass's chain-estimated friction (median 12¢) was accordingly about half the measured one. Kalshi's own fee
+(0.6–1.8¢) and the CME fees (2.8¢ for four legs, 1.4¢ for two, at 500 contracts per structure) are secondary. Against
+this the |gap| exceeds band + friction on 0 of 311 priced brackets at T-1d and 0 of 340 at T-4h; the closest miss is
+1.6 points and the median shortfall 25. No threshold choice inside the protocol changes that; the next pass inherits
+whether any replication of a $1 bracket can be built for less than the gaps.
 
-**The hedge is not priceable from this data, and the artifacts were real.** Only two brackets at T-1d and one at T-4h
-had every leg quoted within five minutes of the snapshot; the TBBO carries a BBO only at trade instants, and legs 20–60
-minutes old implied digitals 35¢ away from Act III on average. The first pass took those stale legs as executable and
-produced one filtered trade with a −29¢ realised loss; it was removed by amendment 5 (leg freshness), and the date
-itself fell to amendment 4: Kalshi's rules named no contract, the calendar fallback said CLM6, Kalshi settled on CLK6.
+**The hedge is now priced, and the artifacts were real.** The first pass could price only two brackets at T-1d from
+the TBBO, which carries a quote only at a trade: legs 20–60 minutes old implied digitals 35¢ away from Act III, and
+44% of the comparable brackets were marked unquoted. On the live book every one of those brackets had all its legs
+two-sided at the snapshot minute. The first pass had also taken stale legs as executable and produced one filtered
+trade with a −29¢ realised loss; it was removed by amendment 5 (leg freshness), and the date itself fell to amendment
+4: Kalshi's rules named no contract, the calendar fallback said CLM6, Kalshi settled on CLK6.
 Three dates (01-16, 04-17, 05-15) carry that mismatch and are Gate 0b failures ex post. Both corrections are rules
 about the data, written before any verdict, and both would have produced fedarb's failure mode if left in: a smooth,
 confident, mis-centred disagreement. The residual-forward check is clean (median |E[F] − F₀| 3.4¢, correlation with
