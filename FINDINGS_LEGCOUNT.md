@@ -113,8 +113,8 @@ if anything biased *tight*: a quote is recorded when someone crosses it.
 
 **What a proper measurement costs.** `db_preflight_bbo.py` quoted `bbo-1m` for the strikes within $8 of the forward
 on the backtest's expiry, for the 60 minutes before each of the 58 KXWTIW snapshots (118–128 instruments per window):
-**about $0.01 per window scoped, $0.04–0.14 for the whole parent chain per window; totals in
-`db_preflight_bbo.json`** (PREFLIGHT_TOTAL). The pull is written (`db_pull_bbo.py`, dry-run by default, cap $50,
+**$0.61 in total for the 58 scoped windows, or $4.23 for the whole parent chain in the same 58 hours**
+(`db_preflight_bbo.json`, quoted 2026-10-04 with `metadata.get_cost`, no record bought). The pull is written (`db_pull_bbo.py`, dry-run by default, cap $50,
 manifest and resume via `db_common.DBClient`) and `synth/friction_measure.py` reads its output into the same tables
 next to the TBBO ones. **It has not been executed; it waits for approval.** If approved it also answers the
 executable-legs question (amendment 5) with one quote per instrument per minute, and the backtest's `structure_quotes`
