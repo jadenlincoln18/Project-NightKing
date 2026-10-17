@@ -1,0 +1,262 @@
+[
+ {
+  "series": "KXAAAGASD",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXAAAGASDCA",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXAAAGASDMI",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXAAAGASDNC",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXAAAGASDOH",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXAAAGASDWA",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXAAAGASED",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXAAAGASM",
+  "fee_type": "quadratic_with_maker_fees",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXAAAGASMAX",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXAAAGASMAXCA",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXAAAGASMAXFL",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXAAAGASMAXTX",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXAAAGASMIN",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXAAAGASMINCA",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXAAAGASMINFL",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXAAAGASMINTX",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXAAAGASW",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXAAAGASWNJ",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXBARRELS",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXBRENTD",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXBRENTMON",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXBRENTW",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXCOPPERD",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXCOPPERMON",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXCOPPERW",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXDIESELMON",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXDIESELW",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXDIESELYE",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXGOLD",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXGOLDD",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXGOLDDIRY",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXGOLDMON",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXGOLDW",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXNATGASD",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXNATGASMON",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXNATGASW",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXNGASMAX",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXNGASMIN",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXOILRIGS",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXRHGOLD",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXSILVERD",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXSILVERMON",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXSILVERW",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXSOLAR",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXSTEELMON",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXUSGASCPI",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXWTI",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXWTIMAX",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXWTIMAXM",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXWTIMIN",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXWTIMINM",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXWTIW",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ }
+]
