@@ -406,6 +406,25 @@ shard's bucket. Our ladders live on shard 2, "Crypto & Commodities".
   the measured 1.83c of room as the opportunity; this finding says that room may
   be the *cost of the subsidy*, visible precisely because someone is being paid to
   leave it there.
+- **`KXAAAGASM` shows what maximal disincentive looks like, and it is the shape of
+  the whole argument.** Four facts land on one series, and they are not
+  independent: it is the **only** ladder series that charges a maker fee (0.0175);
+  it is the **largest** retail LIP payer among the ladders (~$39,000/period); it
+  has the **worst** microstructure in §5 (43.06% improvable against 58.50%
+  elsewhere); and per the dated LPP snapshot `lpp/lpp_2026-10-18.json` it is
+  **absent from the Liquidity Provider Program** while its daily and weekly
+  siblings `KXAAAGASD` and `KXAAAGASW` are both on it. Read together: on the one
+  ladder where Kalshi taxes passive provision, no contracted professional took the
+  slot, and Kalshi is instead paying retail more than anywhere else to stand in.
+  Subsidy intensity tracks how unattractive provision is, not how attractive.
+- **Therefore absence from the LPP list is not evidence of an unattended book.**
+  This is the trap the coverage map must not fall into. A series can be off the
+  list because no provider would take the slot even subsidised — `KXAAAGASM` is
+  exactly that case, and it is the worst book we have measured, not the best
+  opportunity. "Uncovered" is therefore ambiguous between *nobody is being paid to
+  quote here, so the room is unclaimed* and *nobody will quote here at any price,
+  and the room is a mirage*. Volume and spread history distinguish the two; the
+  LPP list alone cannot. Any uncovered-universe claim must carry this caveat.
 - **The competitive problem is cost basis, not queue priority.** Rule 5.9's strict
   price-time FIFO means a designated provider gets no allocation advantage, so the
   queue is fair. That is not the binding constraint. A subsidised quoter can post

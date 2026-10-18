@@ -38,3 +38,8 @@ wti_arb/synth/results/*.pkl
 marketmaking/data/
 marketmaking/logs/
 marketmaking/KILL
+
+# LIP raw sweeps: ~50MB of program records each, regenerable via
+# marketmaking/coverage/fetch_lip.py. The per-series summary and the
+# pagination diagnostics in coverage_meta.json are committed instead.
+marketmaking/coverage/lip_*.json

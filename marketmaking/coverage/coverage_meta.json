@@ -1,0 +1,67 @@
+{
+  "generated_at": "2026-10-18T21:50:27.170870+00:00",
+  "snapshot_as_of_epoch": 1791256345,
+  "snapshot_as_of_utc": "2026-10-06T03:12:25+00:00",
+  "first_active_close_epoch": 1791257400,
+  "recent_window_days": 365,
+  "tight_threshold_c": 2.0,
+  "lpp_snapshot": "lpp_2026-10-18.json",
+  "lpp_snapshot_date": "2026-10-18",
+  "lpp_rows": 52,
+  "lpp_prose_rows": [
+    "Primary Daily & Weekly Commodities (BRENT, CORN, GOLD, SILVER, COPPER)",
+    "Crypto 15min markets",
+    "Crypto Hourly & Daily",
+    "Rotten Tomatoes",
+    "Hourly Weather",
+    "Hourly Commodities",
+    "Commodities 15min markets",
+    "FX 15min markets"
+  ],
+  "lip_snapshot": "lip_500.json",
+  "lip_snapshot_date": "2026-10-18",
+  "lip_n_programs": 100000,
+  "lip_n_series": 1140,
+  "lip_pagination": {
+    "pages": 500,
+    "stop_reason": "page_cap",
+    "cursor_repeated": false,
+    "distinct_cursors": 500
+  },
+  "lip_exhaustive": false,
+  "reconciliation": {
+    "events_total": 801032,
+    "ladder_events": 87457,
+    "ladder_series_from_events": 1859,
+    "ladder_series_in_output": 1859,
+    "ladder_markets": 4511998,
+    "markets_total": 5232426,
+    "active_ladder_markets": 58322,
+    "quoted_active_ladder_markets": 43858
+  },
+  "status_counts": {
+    "uncovered": 1266,
+    "covered": 565,
+    "unknown": 28
+  },
+  "tight_spread_volume_by_status": {
+    "covered": 596674490.3,
+    "uncovered": 3047824965.5,
+    "unknown": 2582004701.4
+  },
+  "validation": {
+    "measured_series": 129,
+    "measured_series_in_ladder_census": 99,
+    "comparable_series_spread": 77,
+    "comparable_series_tight": 78,
+    "spread_spearman": 0.6889151320080839,
+    "spread_pearson": 0.478758919441181,
+    "spread_median_bias_c": -2.0810040832325205,
+    "spread_median_abs_err_c": 3.4413638993076923,
+    "tight10_spearman": 0.6700333604207527,
+    "tight10_pearson": 0.5933090230523904,
+    "tight10_median_bias": 0.08907471208690704,
+    "tight10_median_abs_err": 0.16598410965573085
+  },
+  "coverage_csv_sha256": "7b1561e6caab5308ff12d14c057c9d1b6f446e9ae44bce7c3bd1b5dafc751cc5"
+}

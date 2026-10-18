@@ -49,6 +49,102 @@ A tick change silently invalidates every cent-denominated threshold in this file
 
 ---
 
+## 1A. Universe selection — what may and may not inform it
+
+### The rule
+
+**Universe selection may use coverage status, volume, spread/microstructure, and
+structural facts about where a price originates. It may NOT use fit residuals,
+improvable fraction, edge, simulated fills, or P&L — any quantity that is an
+output of the fitter or a proxy for the strategy's return.**
+
+Why the line falls there. Volume and spread are properties of the market,
+observable to anyone, and knowable before a model exists. They are not the
+outcome variable. Choosing a universe on them is choosing where to run the
+experiment. Improvable fraction and edge *are* the outcome variable; choosing on
+them is choosing the answer and calling it a universe. The first is design, the
+second is peeking, and it is how a 58.50% that means nothing gets reported as a
+finding.
+
+Enforced by ordering, not intention: the coverage build reads the LPP snapshot,
+`/incentive_programs`, and historical volume/spread. It does not import the
+fitter and cannot — the density extractor is not in its dependency path.
+
+### The covered / uncovered split
+
+| Term | Definition |
+|---|---|
+| **covered** | on `lpp/lpp_2026-10-18.json` with ≥1 named provider, **or** carrying an active retail LIP program |
+| **unknown** | plausibly matching one of the 8 prose LPP rows that name no tickers |
+| **uncovered** | neither of the above |
+
+`unknown` is never promoted to `uncovered`. Treating a covered series as
+uncovered means quoting head-to-head against a contracted, subsidised provider
+while believing the book is unattended — the expensive direction to be wrong in.
+
+### Pre-registered bars (written before the coverage table was read)
+
+The uncovered set is promoted to primary only if all three hold:
+
+1. **Breadth** — ≥8 live uncovered series, so a result can generalise.
+2. **Depth** — projected tight-spread volume ≥50% of the commodity comparison
+   group.
+3. **Concentration** — no single series >40% of the uncovered total. This is the
+   `KXAAAGASM` denominator lesson from §5 as a precondition.
+
+"The uncovered set is too thin to run" is a permitted and complete outcome.
+
+### Amendment, 2026-10-18 — a fourth criterion, added after reading the table
+
+**Disclosed as post-hoc.** Bars 1–3 were written blind. The coverage table then
+returned an uncovered set that is 92.5% sports by tight-spread volume, and sports
+**passes all three bars at 55× the comparison group.** Promoting it would have
+been wrong, so the bars were incomplete.
+
+**Criterion 4 — price origin.** A series is ineligible for the primary universe
+if a thicker external venue already quotes the same claim continuously.
+
+Admissible under the rule above because it uses no fitter output: it is a
+structural fact about the market, knowable without running anything. It is still
+post-hoc and is weighted accordingly. Its justification predates the table — it
+is the generalised lesson recorded in `_audit/NIGHTKING_AUTOPSY.md` (2026-10-04):
+*ask who sets the price on the thinner venue, and whether they are looking at the
+thicker one.* Sports ladders are quoted by a global sportsbook market with more
+capital and better data; uncovered-and-tight there is evidence of maximum
+competition, not its absence. Daily temperature has no such venue.
+
+**Criterion 4 is a hypothesis and phase 1 must test it, using no external data.**
+Decompose per-bracket repricing into a ladder-wide common-mode component and an
+idiosyncratic per-bracket residual. Report the common-mode variance share per
+series. A universe whose repricing is almost entirely common-mode offers the
+fitter nothing to work on however tight its book appears. Sports is collected
+specifically as the negative control for this cut.
+
+### Universe as fixed, 2026-10-18
+
+| | |
+|---|---|
+| **Primary** | the **51 live uncovered daily city temperature ladders** (`KXHIGH*`/`KXLOW*`) — breadth 51, depth 2.42×, concentration 31.9%, no thicker external venue |
+| **Comparison group** | the **commodity ladders** (99 census series from the collected set, 62 covered) — the subsidised-competitor control |
+| **Negative control** | **sports** — collected, never quoted; the test case for criterion 4 |
+| **Dropped** | **economics** — 158 of 282 already covered, uncovered remainder 0.5% of the set, and discrete scheduled releases leave no continuous underlying to fit |
+| **Provisional on** | the 3,000-page LIP re-sweep converging without finding retail programs on `KXHIGH*`. The 500-page sweep behind this decision was **not exhaustive** (100,000 records, 0% duplicates, still fresh at the cap), so `lip_active=false` is absence of observation, not observation of absence |
+
+Evidence and limitations: `COVERAGE.md`.
+
+### The caveat that travels with every uncovered claim
+
+**Absence from the LPP list is not evidence of an unattended book.** A series can
+be uncovered because no provider would take the slot at any subsidy.
+`KXAAAGASM` is exactly that — off the LPP list, and simultaneously the worst
+microstructure measured anywhere in §5 (43.06% improvable against 58.50%). So
+"uncovered" is ambiguous between *the room is unclaimed* and *the room is a
+mirage*. Volume, spread and price origin separate the two. The comparison group
+exists so the ambiguity is measurable rather than argued: if the uncovered set
+underperforms the subsidised-competitor set, the mirage reading wins.
+
+---
+
 ## 2. Phase 1 gate — the population test
 
 **This gate measures opportunity. It does not measure profitability.** Passing it
