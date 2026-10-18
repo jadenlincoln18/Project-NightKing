@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.nightking.mm.watchdog</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/patel/.openclaw/workspace/Project-NightKing/.venv/bin/python</string>
+    <string>/Users/patel/.openclaw/workspace/Project-NightKing/marketmaking/ops/watchdog.py</string>
+  </array>
+  <key>WorkingDirectory</key><string>/Users/patel/.openclaw/workspace/Project-NightKing</string>
+  <key>RunAtLoad</key><true/>
+  <key>StartInterval</key><integer>300</integer>
+  <key>ProcessType</key><string>Background</string>
+  <key>StandardOutPath</key><string>/Users/patel/.openclaw/workspace/Project-NightKing/marketmaking/logs/watchdog.stdout.log</string>
+  <key>StandardErrorPath</key><string>/Users/patel/.openclaw/workspace/Project-NightKing/marketmaking/logs/watchdog.stderr.log</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PYTHONUNBUFFERED</key><string>1</string>
+    <key>PYTHONPATH</key><string>/Users/patel/.openclaw/workspace/Project-NightKing</string>
+  </dict>
+</dict>
+</plist>

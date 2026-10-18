@@ -30,3 +30,11 @@ wti_arb/data_cme/raw/
 wti_arb/data_cme/parquet/
 wti_arb/data_cme/db.log
 wti_arb/synth/results/*.pkl
+
+# --- marketmaking phase 1 (added 2026-10-18) ---
+# Shadow-run data and logs. Full depth on 1,240 markets for 14 days; code only
+# in git, per the same rule that keeps ladder/data and waves_data out.
+.venv/
+marketmaking/data/
+marketmaking/logs/
+marketmaking/KILL
