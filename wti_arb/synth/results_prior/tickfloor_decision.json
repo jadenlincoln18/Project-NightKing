@@ -1,0 +1,76 @@
+{
+ "chosen": null,
+ "hs_floor": 0.0,
+ "hs_floor_mode": "max",
+ "verdicts": {
+  "f05q": {
+   "floor": 0.005,
+   "mode": "quad",
+   "checks": {
+    "crude_cov90_in_band": false,
+    "crude_cov90_vs_m48": true,
+    "stale_caught": true,
+    "convexity_caught": true,
+    "bimodal_cov_vs_m48": true,
+    "bracket_rhat": true,
+    "ran": true
+   },
+   "admissible": false,
+   "crude_cov90": 0.9628205128205128,
+   "crude_width_body": 2.658262843846005,
+   "crude_rmse_body": 0.5914527202227191
+  },
+  "f1": {
+   "floor": 0.01,
+   "mode": "max",
+   "checks": {
+    "crude_cov90_in_band": false,
+    "crude_cov90_vs_m48": true,
+    "stale_caught": true,
+    "convexity_caught": true,
+    "bimodal_cov_vs_m48": true,
+    "bracket_rhat": true,
+    "ran": true
+   },
+   "admissible": false,
+   "crude_cov90": 0.9666666666666667,
+   "crude_width_body": 2.638006960076472,
+   "crude_rmse_body": 0.5885319109522938
+  },
+  "f1q": {
+   "floor": 0.01,
+   "mode": "quad",
+   "checks": {
+    "crude_cov90_in_band": false,
+    "crude_cov90_vs_m48": true,
+    "stale_caught": true,
+    "convexity_caught": true,
+    "bimodal_cov_vs_m48": true,
+    "bracket_rhat": true,
+    "ran": true
+   },
+   "admissible": false,
+   "crude_cov90": 0.9794871794871794,
+   "crude_width_body": 2.829116424024768,
+   "crude_rmse_body": 0.5186200332394265
+  },
+  "f2": {
+   "floor": 0.02,
+   "mode": "max",
+   "checks": {
+    "crude_cov90_in_band": false,
+    "crude_cov90_vs_m48": true,
+    "stale_caught": true,
+    "convexity_caught": true,
+    "bimodal_cov_vs_m48": true,
+    "bracket_rhat": true,
+    "ran": true
+   },
+   "admissible": false,
+   "crude_cov90": 0.9769230769230769,
+   "crude_width_body": 2.9867633602045207,
+   "crude_rmse_body": 0.5377943419023814
+  }
+ },
+ "rule": "Task 1 decision rule, fixed before the runs (HANDOFF_tickfloor_and_fullsynth.md): which tick floor,\nif any, to adopt. Judged on the synthetic harness against the 48-knot no-floor baseline (`m48`) on the\nsame seeds:\n\n    a floor is admissible if   crude-skew 90% bracket coverage is within [0.88, 0.95] and not more than 3\n                               points below m48; the injected stale and crossed quotes are still caught by\n                               the residual check on >= 90% of chains; bimodal coverage is not more than 5\n                               points below m48; bracket R-hat on crude chains <= 1.03\n    among admissible floors    adopt the smallest one (0.5c quadrature < 1c max < 1c quadrature < 2c max, by\n                               the tolerance it adds to a 0.5c quote); if none is admissible, adopt no floor.\n\nWrites synth/results_prior/tickfloor_decision.json, which the driver reads to configure the real-chain\narms it runs next and the full synthetic study.\n\n    python3 -m synth.tickfloor_decide\n"
+}

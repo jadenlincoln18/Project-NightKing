@@ -1,18 +1,32 @@
+# --- caches / junk ---
 __pycache__/
 *.pyc
-data_smoke/
-*.log
-# collector output (large); FINDINGS.md, summary.csv and manifest.json snapshot are kept
-data/parquet/kalshi_candles/
-data/parquet/kalshi_markets/
-data/parquet/kalshi_events/
-data/raw/
-data/manifest.jsonl
-data/manifest.v1.json
-data/probe.json
+.DS_Store
 .env
-# databento store (large / bought data); FINDINGS_*.md and manifest.jsonl are kept
-data_cme/raw/
-data_cme/parquet/
-data_cme/db.log
-synth/results/*.pkl
+*.log
+
+# --- bulk analysis outputs: regenerated, never committed ---
+**/results/
+**/plots/
+*.pkl
+*.png
+
+# --- collector data stores: tens of GB, live outside git ---
+# Phases 1-2 collect fresh data; historical stores transfer separately.
+waves_data/
+ladder/data/
+data_smoke/
+
+# wti_arb store (large / purchased data).
+# FINDINGS_*.md, summary.csv and manifest snapshots are deliberately KEPT.
+wti_arb/data/parquet/kalshi_candles/
+wti_arb/data/parquet/kalshi_markets/
+wti_arb/data/parquet/kalshi_events/
+wti_arb/data/raw/
+wti_arb/data/manifest.jsonl
+wti_arb/data/manifest.v1.json
+wti_arb/data/probe.json
+wti_arb/data_cme/raw/
+wti_arb/data_cme/parquet/
+wti_arb/data_cme/db.log
+wti_arb/synth/results/*.pkl

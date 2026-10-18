@@ -1,0 +1,631 @@
+{
+ "nodes": [
+  {
+   "id": "g_in",
+   "type": "group",
+   "label": "INPUTS \u2014 collected, verified",
+   "x": -420,
+   "y": -80,
+   "width": 800,
+   "height": 210,
+   "color": "5"
+  },
+  {
+   "id": "kalshi",
+   "type": "text",
+   "text": "### Kalshi store\n58.9M candles\n**bid/ask separate**\n162 series, 56,167 markets",
+   "x": -400,
+   "y": -20,
+   "width": 360,
+   "height": 130,
+   "color": "5"
+  },
+  {
+   "id": "cme",
+   "type": "text",
+   "text": "### CME store\nTBBO + definition + statistics\n$16.14 total spend",
+   "x": 0,
+   "y": -20,
+   "width": 360,
+   "height": 130,
+   "color": "5"
+  },
+  {
+   "id": "g_gate",
+   "type": "group",
+   "label": "GATE 0 \u2014 applied per settlement date, before any computation",
+   "x": -420,
+   "y": 190,
+   "width": 800,
+   "height": 560,
+   "color": "6"
+  },
+  {
+   "id": "g1",
+   "type": "text",
+   "text": "### Gate 1\nSame-day CME weekly expiry?\n\n*drops 53 of 134 KXWTI\n3 of 37 KXWTIW*",
+   "x": -400,
+   "y": 240,
+   "width": 340,
+   "height": 130,
+   "color": "6"
+  },
+  {
+   "id": "g2",
+   "type": "text",
+   "text": "### Gate 2\nContract month matches\n`rules_primary`?\n\n*Kalshi rolls on the 16th*",
+   "x": -400,
+   "y": 400,
+   "width": 340,
+   "height": 130,
+   "color": "6"
+  },
+  {
+   "id": "g3",
+   "type": "text",
+   "text": "### Gate 3\n8+ strikes quoted,\n3+ per wing, final hour?\n\n*109 of 117 pass*",
+   "x": -400,
+   "y": 560,
+   "width": 340,
+   "height": 130,
+   "color": "6"
+  },
+  {
+   "id": "skip",
+   "type": "text",
+   "text": "## SKIP DATE\nlog the reason\n\n*the pattern of skips\nis itself data*",
+   "x": 20,
+   "y": 400,
+   "width": 330,
+   "height": 130,
+   "color": "1"
+  },
+  {
+   "id": "g_prep",
+   "type": "group",
+   "label": "DATA PREP \u2014 both routes require this",
+   "x": -420,
+   "y": 800,
+   "width": 800,
+   "height": 500,
+   "color": "4"
+  },
+  {
+   "id": "s6",
+   "type": "text",
+   "text": "### STAGE 6 \u2014 forward\nthe **futures** level at the snapshot instant\n(1-min CL bars / live CL quote); parity\n`C-P = e^-rT (F0-K)` is a **check**\n\n6a: quotes **synchronised** along the real\nintraday path before fitting\n(mis-centring protection kept)",
+   "x": -400,
+   "y": 850,
+   "width": 340,
+   "height": 200,
+   "color": "4"
+  },
+  {
+   "id": "s8",
+   "type": "text",
+   "text": "### STAGE 8 \u2014 OTM only\nputs below F0, calls above\n\nkills vega collapse +\nAmerican contamination",
+   "x": -400,
+   "y": 1010,
+   "width": 340,
+   "height": 130,
+   "color": "4"
+  },
+  {
+   "id": "s7",
+   "type": "text",
+   "text": "### STAGE 7 \u2014 invert to IV\nBlack-76 (no r in d1)\n\n*coordinate change,\nnot a model*",
+   "x": -400,
+   "y": 1160,
+   "width": 340,
+   "height": 130,
+   "color": "4"
+  },
+  {
+   "id": "g_act2",
+   "type": "group",
+   "label": "ACT II \u2014 smile route (VALIDATION ONLY, not on trading path)",
+   "x": -900,
+   "y": 1360,
+   "width": 440,
+   "height": 560,
+   "color": "3"
+  },
+  {
+   "id": "s9",
+   "type": "text",
+   "text": "### STAGE 9 \u2014 SVI smile\nweighted `1/(halfspread/vega)^2`\n\n*not volume*",
+   "x": -880,
+   "y": 1410,
+   "width": 400,
+   "height": 120,
+   "color": "3"
+  },
+  {
+   "id": "s10",
+   "type": "text",
+   "text": "### STAGE 10 \u2014 no-arb\nconstraints inside the optimizer\n\n*verification, not repair*",
+   "x": -880,
+   "y": 1550,
+   "width": 400,
+   "height": 120,
+   "color": "3"
+  },
+  {
+   "id": "s5",
+   "type": "text",
+   "text": "### finite-difference density\n\n**rejected as estimator**\n25x noise at $0.25 spacing\nkept only as cross-check",
+   "x": -880,
+   "y": 1690,
+   "width": 400,
+   "height": 130,
+   "color": "3"
+  },
+  {
+   "id": "g_act3",
+   "type": "group",
+   "label": "ACT III \u2014 Bayesian route (PRIMARY)",
+   "x": -420,
+   "y": 1360,
+   "width": 800,
+   "height": 860,
+   "color": "4"
+  },
+  {
+   "id": "s11",
+   "type": "text",
+   "text": "### STAGE 11 \u2014 parameterize\n`f = exp(spline)/Z`, **48 uniform knots**\n(24 could not carve a bimodal trough)\n\nillegal densities become\n**unrepresentable**",
+   "x": -400,
+   "y": 1410,
+   "width": 340,
+   "height": 130,
+   "color": "4"
+  },
+  {
+   "id": "s12",
+   "type": "text",
+   "text": "### STAGE 12 \u2014 prior\nroughness penalty, \u03c4 integrated out\n**+ hyperprior on \u03c4**\n\n*heavy tails / local scales: tested,\nno gain, worse mixing*",
+   "x": -400,
+   "y": 1570,
+   "width": 340,
+   "height": 130,
+   "color": "4"
+  },
+  {
+   "id": "s13",
+   "type": "text",
+   "text": "### STAGE 13 \u2014 likelihood\nintegrate forward, never differentiate\n\ntolerance = **max(half-spread, 1\u00a2)**\n(a 1\u00a2 market does not locate\nthe price to 0.5\u00a2)",
+   "x": -400,
+   "y": 1730,
+   "width": 340,
+   "height": 130,
+   "color": "4"
+  },
+  {
+   "id": "s14",
+   "type": "text",
+   "text": "### STAGE 14 \u2014 martingale\n`E[F_T] = F0`\n\nfree constraint, catches the\nmost dangerous artifact",
+   "x": -400,
+   "y": 1890,
+   "width": 340,
+   "height": 130,
+   "color": "4"
+  },
+  {
+   "id": "s15",
+   "type": "text",
+   "text": "### STAGE 15 \u2014 MCMC\nNUTS preferred\n\n**convergence is load-bearing**\nbad mixing = false signal",
+   "x": -400,
+   "y": 2050,
+   "width": 340,
+   "height": 130,
+   "color": "4"
+  },
+  {
+   "id": "g_diag",
+   "type": "group",
+   "label": "DIAGNOSTICS \u2014 every run",
+   "x": 420,
+   "y": 1360,
+   "width": 420,
+   "height": 860,
+   "color": "2"
+  },
+  {
+   "id": "d123",
+   "type": "text",
+   "text": "### The three checks\n\n- convexity (`C'' >= 0`)\n- integrates to 1\n- **mean = forward**\n\n*the third catches the\nsign-consistent artifact*",
+   "x": 440,
+   "y": 1500,
+   "width": 380,
+   "height": 180,
+   "color": "2"
+  },
+  {
+   "id": "d4",
+   "type": "text",
+   "text": "### Chain health\n\n- Rhat < 1.01\n- effective sample size\n- divergences\n\n*narrow bands from a\nbad chain = false edge*",
+   "x": 440,
+   "y": 1900,
+   "width": 380,
+   "height": 180,
+   "color": "2"
+  },
+  {
+   "id": "g_act4",
+   "type": "group",
+   "label": "ACT IV \u2014 decision",
+   "x": -420,
+   "y": 2280,
+   "width": 800,
+   "height": 700,
+   "color": "5"
+  },
+  {
+   "id": "s16",
+   "type": "text",
+   "text": "### STAGE 16 \u2014 ranges\nprobability per posterior sample\n\n*integral, not derivative \u2014\nnoise averages*",
+   "x": -400,
+   "y": 2330,
+   "width": 340,
+   "height": 130,
+   "color": "5"
+  },
+  {
+   "id": "s17",
+   "type": "text",
+   "text": "### STAGE 17 \u2014 compare\nintegrate over **exact**\nKalshi bracket edges",
+   "x": -400,
+   "y": 2490,
+   "width": 340,
+   "height": 110,
+   "color": "5"
+  },
+  {
+   "id": "s18",
+   "type": "text",
+   "text": "### STAGE 18 \u2014 decompose\n`logit(p_mkt) = a + b*logit(p_Q) + c*m`\n\nb<1 = longshot bias\nc != 0 = risk premium\n\n**measured (backtest): b = 0.63 [0.61, 0.65]**\nreal in logit space, one tick in cents;\nc flips sign between snapshots",
+   "x": -400,
+   "y": 2630,
+   "width": 340,
+   "height": 140,
+   "color": "5"
+  },
+  {
+   "id": "s19",
+   "type": "text",
+   "text": "### STAGE 19 \u2014 filter\n**|gap| > band + friction**\n\n**backtest: 0 of 296 brackets pass**\ngaps ~1c, friction 7\u201330c (median 12c)",
+   "x": -400,
+   "y": 2810,
+   "width": 340,
+   "height": 100,
+   "color": "5"
+  },
+  {
+   "id": "notrade",
+   "type": "text",
+   "text": "## NO TRADE\nlog the signal anyway\n\n*out-of-sample record\naccumulates either way*",
+   "x": 20,
+   "y": 2810,
+   "width": 330,
+   "height": 130,
+   "color": "1"
+  },
+  {
+   "id": "g_act5",
+   "type": "group",
+   "label": "ACT V \u2014 execution",
+   "x": -420,
+   "y": 3040,
+   "width": 800,
+   "height": 520,
+   "color": "6"
+  },
+  {
+   "id": "s20",
+   "type": "text",
+   "text": "### STAGE 20 \u2014 replicate\nouter condor C(X-.5)-C(X)-C(X+1)+C(X+1.5)\n= bracket digital, ramps outside\n\n**ramp is a design parameter**\nit sets real max loss\n\n**measured: 4 legs x 4\u20135c/bbl half-spread\non a $0.50 spread = 7\u201330c per Kalshi $;\nTBBO cannot price it at an instant**",
+   "x": -400,
+   "y": 3090,
+   "width": 340,
+   "height": 140,
+   "color": "6"
+  },
+  {
+   "id": "hr",
+   "type": "text",
+   "text": "### hedge ratio\n**OPERATOR-OWNED**\n\nreplication, not a\nsensitivity match",
+   "x": -400,
+   "y": 3250,
+   "width": 340,
+   "height": 130,
+   "color": "6"
+  },
+  {
+   "id": "sz",
+   "type": "text",
+   "text": "### sizing\n1. hold-to-settlement\n2. size the **residual**,\n   not the locked gap",
+   "x": -400,
+   "y": 3400,
+   "width": 340,
+   "height": 130,
+   "color": "6"
+  },
+  {
+   "id": "mco",
+   "type": "text",
+   "text": "## UNRESOLVED \u2014 blocks sizing\n\n**MCO (Micro) expires monthly only.**\n\nMicro makes depth work (50 clears,\n500 fails ask-side in 6 of 9).\nBut weekly Kalshi dates need a\nweekly expiry, and only standard\nCL lists one.\n\nResolve before the backtest.",
+   "x": 420,
+   "y": 3090,
+   "width": 420,
+   "height": 290,
+   "color": "1"
+  },
+  {
+   "id": "doc1",
+   "type": "file",
+   "file": "PIPELINE_CHOICES.md",
+   "x": 880,
+   "y": -20,
+   "width": 340,
+   "height": 120
+  },
+  {
+   "id": "doc2",
+   "type": "file",
+   "file": "nightking-strategy-writeup.md",
+   "x": 880,
+   "y": 130,
+   "width": 340,
+   "height": 120
+  },
+  {
+   "id": "g4",
+   "type": "text",
+   "x": 440,
+   "y": 1700,
+   "width": 380,
+   "height": 190,
+   "color": "2",
+   "text": "### Gate 4 \u2014 chain consistency\n\n- split-half Act III (odd vs even strikes),\n  max |z| over the ladder\n- leave-one-out residual names the strike\n- Act II vs Act III: reported, not gating\n\n*fires on asynchronous quotes*"
+  }
+ ],
+ "edges": [
+  {
+   "id": "e1",
+   "fromNode": "kalshi",
+   "fromSide": "bottom",
+   "toNode": "g1",
+   "toSide": "top"
+  },
+  {
+   "id": "e2",
+   "fromNode": "cme",
+   "fromSide": "bottom",
+   "toNode": "g1",
+   "toSide": "top"
+  },
+  {
+   "id": "e3",
+   "fromNode": "g1",
+   "fromSide": "bottom",
+   "toNode": "g2",
+   "toSide": "top",
+   "label": "yes"
+  },
+  {
+   "id": "e4",
+   "fromNode": "g1",
+   "fromSide": "right",
+   "toNode": "skip",
+   "toSide": "top",
+   "label": "no",
+   "color": "1"
+  },
+  {
+   "id": "e5",
+   "fromNode": "g2",
+   "fromSide": "bottom",
+   "toNode": "g3",
+   "toSide": "top",
+   "label": "yes"
+  },
+  {
+   "id": "e6",
+   "fromNode": "g2",
+   "fromSide": "right",
+   "toNode": "skip",
+   "toSide": "left",
+   "label": "no",
+   "color": "1"
+  },
+  {
+   "id": "e7",
+   "fromNode": "g3",
+   "fromSide": "bottom",
+   "toNode": "s6",
+   "toSide": "top",
+   "label": "yes"
+  },
+  {
+   "id": "e8",
+   "fromNode": "g3",
+   "fromSide": "right",
+   "toNode": "skip",
+   "toSide": "bottom",
+   "label": "no",
+   "color": "1"
+  },
+  {
+   "id": "e9",
+   "fromNode": "s6",
+   "fromSide": "bottom",
+   "toNode": "s8",
+   "toSide": "top"
+  },
+  {
+   "id": "e10",
+   "fromNode": "s8",
+   "fromSide": "bottom",
+   "toNode": "s7",
+   "toSide": "top"
+  },
+  {
+   "id": "e11",
+   "fromNode": "s7",
+   "fromSide": "bottom",
+   "toNode": "s11",
+   "toSide": "top"
+  },
+  {
+   "id": "e12",
+   "fromNode": "s7",
+   "fromSide": "left",
+   "toNode": "s9",
+   "toSide": "top",
+   "label": "validation only",
+   "color": "3"
+  },
+  {
+   "id": "e13",
+   "fromNode": "s9",
+   "fromSide": "bottom",
+   "toNode": "s10",
+   "toSide": "top"
+  },
+  {
+   "id": "e14",
+   "fromNode": "s10",
+   "fromSide": "bottom",
+   "toNode": "s5",
+   "toSide": "top"
+  },
+  {
+   "id": "e15",
+   "fromNode": "s5",
+   "fromSide": "bottom",
+   "toNode": "s16",
+   "toSide": "left",
+   "label": "cross-check",
+   "color": "3"
+  },
+  {
+   "id": "e16",
+   "fromNode": "s11",
+   "fromSide": "bottom",
+   "toNode": "s12",
+   "toSide": "top"
+  },
+  {
+   "id": "e17",
+   "fromNode": "s12",
+   "fromSide": "bottom",
+   "toNode": "s13",
+   "toSide": "top"
+  },
+  {
+   "id": "e18",
+   "fromNode": "s13",
+   "fromSide": "bottom",
+   "toNode": "s14",
+   "toSide": "top"
+  },
+  {
+   "id": "e19",
+   "fromNode": "s14",
+   "fromSide": "bottom",
+   "toNode": "s15",
+   "toSide": "top"
+  },
+  {
+   "id": "e20",
+   "fromNode": "s15",
+   "fromSide": "bottom",
+   "toNode": "s16",
+   "toSide": "top"
+  },
+  {
+   "id": "e21",
+   "fromNode": "s15",
+   "fromSide": "right",
+   "toNode": "d4",
+   "toSide": "left",
+   "color": "2"
+  },
+  {
+   "id": "e22",
+   "fromNode": "s16",
+   "fromSide": "right",
+   "toNode": "d123",
+   "toSide": "left",
+   "color": "2"
+  },
+  {
+   "id": "e23",
+   "fromNode": "s16",
+   "fromSide": "bottom",
+   "toNode": "s17",
+   "toSide": "top"
+  },
+  {
+   "id": "e24",
+   "fromNode": "s17",
+   "fromSide": "bottom",
+   "toNode": "s18",
+   "toSide": "top"
+  },
+  {
+   "id": "e25",
+   "fromNode": "s18",
+   "fromSide": "bottom",
+   "toNode": "s19",
+   "toSide": "top"
+  },
+  {
+   "id": "e26",
+   "fromNode": "s19",
+   "fromSide": "bottom",
+   "toNode": "s20",
+   "toSide": "top",
+   "label": "pass"
+  },
+  {
+   "id": "e27",
+   "fromNode": "s19",
+   "fromSide": "right",
+   "toNode": "notrade",
+   "toSide": "left",
+   "label": "fail",
+   "color": "1"
+  },
+  {
+   "id": "e28",
+   "fromNode": "s20",
+   "fromSide": "bottom",
+   "toNode": "hr",
+   "toSide": "top"
+  },
+  {
+   "id": "e29",
+   "fromNode": "hr",
+   "fromSide": "bottom",
+   "toNode": "sz",
+   "toSide": "top"
+  },
+  {
+   "id": "e30",
+   "fromNode": "s20",
+   "fromSide": "right",
+   "toNode": "mco",
+   "toSide": "left",
+   "color": "1"
+  },
+  {
+   "id": "e31",
+   "fromNode": "s16",
+   "fromSide": "right",
+   "toNode": "g4",
+   "toSide": "left",
+   "color": "2"
+  }
+ ]
+}

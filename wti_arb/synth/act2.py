@@ -23,6 +23,10 @@ from scipy.optimize import minimize
 from . import black76
 
 FINE_STEP = 0.01  # dollars; even in K so the second difference has no off-centre bias
+RHO_MAX = 0.99    # |rho| -> 1 with s -> 0 is the degenerate hockey-stick smile whose kink prices a negative butterfly
+S_MIN = 0.005
+G_TOL = 1e-9
+G_WEIGHTS = (1e2, 1e4, 1e6, 1e8)
 
 
 def svi_w(k, a, b, rho, m, s):
@@ -48,22 +52,24 @@ def fit_svi(k: np.ndarray, w_obs: np.ndarray, weights: np.ndarray, T: float, k_c
     w_obs = np.asarray(w_obs, float)
     wt = np.asarray(weights, float)
     wt = wt / wt.mean()
-    kc = k_check if k_check is not None else np.linspace(k.min() - 0.3, k.max() + 0.3, 400)
+    kc = k_check if k_check is not None else np.linspace(k.min() - 0.15, k.max() + 0.15, 400)
     scale = float(np.median(w_obs))
 
     def unpack(p):
         a = p[0] * scale
-        rho = np.tanh(p[2])
+        rho = RHO_MAX * np.tanh(p[2])
         b = (2.0 / (1.0 + abs(rho))) / (1.0 + np.exp(-p[1]))  # 0 < b < 2/(1+|rho|): Lee's bound
         m = p[3]
-        s = np.exp(p[4])
+        s = S_MIN + np.exp(p[4])
         return a, b, rho, m, s
 
-    def loss(p):
-        with np.errstate(all="ignore"):  # L-BFGS probes extreme parameters; NaN losses are simply rejected
-            return _loss(p)
+    def make_loss(g_weight):
+        def loss(p):
+            with np.errstate(all="ignore"):  # L-BFGS probes extreme parameters; NaN losses are simply rejected
+                return _loss(p, g_weight)
+        return loss
 
-    def _loss(p):
+    def _loss(p, g_weight):
         a, b, rho, m, s = unpack(p)
         if not np.all(np.isfinite([a, b, rho, m, s])):
             return 1e30
@@ -73,25 +79,37 @@ def fit_svi(k: np.ndarray, w_obs: np.ndarray, weights: np.ndarray, T: float, k_c
         wmin = a + b * s * np.sqrt(1.0 - rho * rho)
         L += 1e3 * min(wmin / scale, 0.0) ** 2
         g = svi_g(kc, a, b, rho, m, s)
-        L += 1e2 * float(np.sum(np.minimum(g, 0.0) ** 2))
+        L += g_weight * float(np.sum(np.minimum(g, 0.0) ** 2))
         return L
 
+    starts = [np.array([0.9, 0.0, 0.0, 0.0, np.log(0.1)])]
+    for i in range(n_starts - 1):
+        starts.append(np.array([0.8 + 0.4 * rng.uniform(), rng.normal(0, 1), rng.normal(0, 0.5), rng.normal(0, 0.05),
+                                np.log(0.05 + 0.1 * rng.uniform())]))
     best = None
-    for i in range(n_starts):
-        p0 = np.array([0.8 + 0.4 * rng.uniform(), rng.normal(0, 1), rng.normal(0, 0.5), rng.normal(0, 0.05),
-                       np.log(0.05 + 0.1 * rng.uniform())])
-        if i == 0:
-            p0 = np.array([0.9, 0.0, 0.0, 0.0, np.log(0.1)])
-        try:
-            res = minimize(loss, p0, method="L-BFGS-B")
-        except Exception:
+    # Stage 10 "enforce, then verify": escalate the butterfly penalty until g(k) >= 0 on the check
+    # grid (to G_TOL), restarting from the previous best; a fit that never gets there is reported
+    # as arbitrage-violating rather than silently used
+    for g_weight in G_WEIGHTS:
+        cand = None
+        for p0 in (starts if best is None else [best.x] + starts):
+            try:
+                res = minimize(make_loss(g_weight), p0, method="L-BFGS-B")
+            except Exception:
+                continue
+            if cand is None or res.fun < cand.fun:
+                cand = res
+        if cand is None:
             continue
-        if best is None or res.fun < best.fun:
-            best = res
+        best = cand
+        a, b, rho, m, s = unpack(best.x)
+        if svi_g(kc, a, b, rho, m, s).min() >= -G_TOL:
+            break
     a, b, rho, m, s = unpack(best.x)
     g = svi_g(kc, a, b, rho, m, s)
     return {"a": a, "b": b, "rho": rho, "m": m, "s": s, "loss": float(best.fun), "min_g": float(g.min()),
-            "lee_slope": float(b * (1 + abs(rho))), "converged": bool(best.success)}
+            "lee_slope": float(b * (1 + abs(rho))), "converged": bool(best.success),
+            "butterfly_free": bool(g.min() >= -G_TOL)}
 
 
 def run(K: np.ndarray, right: np.ndarray, mid: np.ndarray, hs: np.ndarray, F0: float, D: float, T: float,
@@ -118,7 +136,10 @@ def run(K: np.ndarray, right: np.ndarray, mid: np.ndarray, hs: np.ndarray, F0: f
     weights = 1.0 / np.maximum(sd_w, 1e-12) ** 2
     weights = np.minimum(weights, np.percentile(weights, 99) * 1.0)  # one super-tight quote must not own the fit
     w_obs = ivg * ivg * T
-    fit = fit_svi(k, w_obs, weights, T, rng=rng)
+    # verify g(k) wherever the density is used: the strike range and the bracket ladder, plus margin
+    k_lo = min(k.min(), np.log(max(edges[0], 0.05 * F0) / F0)) - 0.1
+    k_hi = max(k.max(), np.log(edges[-1] / F0)) + 0.1
+    fit = fit_svi(k, w_obs, weights, T, k_check=np.linspace(k_lo, k_hi, 500), rng=rng)
     out["svi"] = fit
     # Stage 10: reprice on a fine even grid in K, then second difference
     v0 = float(np.sqrt(max(svi_w(0.0, fit["a"], fit["b"], fit["rho"], fit["m"], fit["s"]), 1e-6)))
@@ -141,7 +162,14 @@ def run(K: np.ndarray, right: np.ndarray, mid: np.ndarray, hs: np.ndarray, F0: f
     if s_eval is not None:
         out["density_at"] = np.interp(s_eval, grid, f, left=0.0, right=0.0)
     # verification (Stage 10 as check): non-negativity, normalisation, Lee bound
-    out["checks"] = {"density_nonneg": bool(f.min() > -1e-6), "normalised": bool(abs(out["mass"] - 1.0) < 0.01),
-                     "min_g": fit["min_g"], "lee_slope_ok": bool(fit["lee_slope"] <= 2.0 + 1e-9)}
+    # the density used for brackets is the grid inside [edges[0]-1, edges[-1]+1]; negative values beyond
+    # that are extrapolation and reported separately
+    used = (grid >= edges[0] - 1.0) & (grid <= edges[-1] + 1.0)
+    out["min_density_used"] = float(f[used].min()) if used.any() else float(f.min())
+    out["checks"] = {"density_nonneg": bool(out["min_density_used"] > -1e-6), "density_nonneg_full_grid": bool(f.min() > -1e-6),
+                     "normalised": bool(abs(out["mass"] - 1.0) < 0.01), "min_g": fit["min_g"],
+                     "butterfly_free": fit["butterfly_free"], "lee_slope_ok": bool(fit["lee_slope"] <= 2.0 + 1e-9),
+                     "mean_minus_F0_cents": float(100.0 * (out["mean"] - F0)),
+                     "mean_equals_forward": bool(abs(out["mean"] - F0) < 0.15)}
     out["ok"] = True
     return out
