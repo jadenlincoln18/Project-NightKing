@@ -145,6 +145,113 @@ underperforms the subsidised-competitor set, the mirage reading wins.
 
 ---
 
+## 1B. Phase 0.5 — does the fit know anything? (pre-registered 2026-10-18)
+
+**This gate precedes phase 1 in logic, not in time.** Phase 1 measures whether a
+disagreement between the fit and the quote is *capturable*. Phase 0.5 asks the
+prior question: when they disagree, **is the fit right?** A quoting strategy
+built on a fit that is merely *different* from the market is a machine for
+buying adverse selection. If Test A fails, phase 1's numbers are irrelevant
+whatever they say, and the project stops.
+
+Every definition below is written **before any phase 0.5 output has been
+produced**. Both tests run on historical settled ladders from the staged stores.
+
+### The disagreement set
+
+The unit is a (bracket, minute) observation on a settled ladder where:
+
+- the bracket is **two-sided and executable** — both a bid and an ask exist.
+  Fair value is scored against the **quote midpoint of executable bid/ask**,
+  never last trade, which is stale and not transactable.
+- the fit's fair value lies **outside the fit's own credible band** relative to
+  the quote midpoint. The band is the fitter's existing interval; phase 0.5 does
+  not invent a new one.
+- **No look-ahead.** The fit at time $t$ is constructed from quotes available at
+  or before $t$. Any accidental use of $t+$ data invalidates the run.
+
+### Test A — settlement calibration (the decisive one)
+
+Score two competing probability forecasts of the realised binary outcome: the
+fit's fair value, and the bracket's own quote midpoint.
+
+- **Primary:** Brier score, the mean squared error between stated probability
+  and the 0/1 settlement outcome. Lower is better.
+- **Secondary:** log score. Reported always, including when it disagrees with
+  Brier — a disagreement between the two is itself a finding about tails.
+- **Clustering.** Brackets of one event share a single settlement outcome and
+  are therefore *not* independent observations. Bootstrap **by event**, never by
+  bracket. Bracket-level resampling would overstate significance by roughly the
+  square root of the brackets per event and is forbidden.
+
+**Pass:** the fit's Brier score is strictly lower than the quote's on the
+disagreement set, with the **95% event-clustered bootstrap interval on the
+difference excluding zero**.
+
+**On failure: stop and report.** Do not proceed to Test B, do not start phase 1
+analysis, do not re-cut the disagreement set looking for a subset that passes.
+A post-failure subgroup search is the exact move this protocol exists to
+prevent. Reporting *where* it failed is allowed; re-gating on that is not.
+
+### Test B — who converges to whom
+
+Run only if A passes. For each disagreement, track the following **5, 30 and 60
+minutes**: did the deviating bracket move back toward the fit (**laggard** — the
+quote was stale and we were early), or did the rest of the ladder move toward
+the deviating bracket (**leader** — the bracket knew something first and we
+would have been run over)?
+
+**"First to move", defined before looking.** Adopted from `waves/` (read, not
+modified; see `waves/FINDINGS_WAVES.md` §"Per-bracket normalisation"):
+
+- A **move** is a non-zero minute-to-minute change in a bracket's mid on the
+  one-minute grid, on tight two-sided brackets only.
+- An **event** is a move at or above the **95th percentile of that bracket's own
+  absolute non-zero changes**. Per-bracket normalisation, because a 1c move
+  means different things on different books. A bracket with fewer than 50
+  non-zero changes borrows its ladder's pooled distribution and is flagged; a
+  ladder with fewer than 50 changes in total is skipped. Mids move in half-cent
+  steps, so these thresholds are discrete and ties are common — "at or above the
+  p95 value" takes materially more than 5% of changes, and the band is labelled
+  by the percentile cleared, not by an assumed share.
+- The deviating bracket is **first to move** in a preceding window of **W = 15
+  minutes** if it recorded an event in that window and **no other bracket in the
+  same ladder recorded an event at a strictly earlier minute** within it. Ties
+  at the same minute resolve to **not first** — simultaneous repricing is a
+  batch update by one maker, which is precisely the case where there is nothing
+  to catch.
+
+**Underlying control.** For the two WTI series, the neighbours' later move may
+simply be oil moving. Align events against the **CL futures path at one-minute
+resolution** where the data exists (the CME intraday bars already bought cover
+WTI) and report the laggard share both raw and residual to the underlying's move
+over the same horizon. `waves/NEXT_STUDY.md` item 1 flags this as the
+direction-deciding control; a "wave" fully explained by the underlying is a
+trend, not a propagation.
+
+**Pass:** laggard share **above 50% with the 95% confidence interval excluding
+50%**, in at least the **non-leader subset** (deviations where the bracket was
+not first to move).
+
+**Interpretation, fixed in advance:**
+
+- A passes, B laggard-dominated → the thesis survives both gates; phase 1
+  proceeds on the full disagreement set.
+- A passes, **leaders dominate** → the strategy narrows to **non-leader
+  deviations only**, and "was this bracket first to move?" becomes a hard
+  pre-trade filter in the quoter. Quoting against a leader is adverse selection
+  in its purest form.
+- **A fails** → stop. Report, and do not start phase 1 analysis.
+
+### What phase 0.5 may not do
+
+It runs on **settled historical** ladders and touches no live collection. It may
+not change the universe fixed in §1A, may not alter the density extractor in
+`wti_arb/synth/`, and may not modify `ladder/` or `waves/`. Its outputs go to
+`FINDINGS_PHASE05.md`.
+
+---
+
 ## 2. Phase 1 gate — the population test
 
 **This gate measures opportunity. It does not measure profitability.** Passing it
