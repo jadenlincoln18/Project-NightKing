@@ -35,9 +35,49 @@ ALL_SERIES = sorted(x["series"] for x in _FEE_MAP)
 MAKER_FEE_SERIES = sorted(
     x["series"] for x in _FEE_MAP if x["fee_type"] == "quadratic_with_maker_fees"
 )
-# PROTOCOL §1: quote the 51 maker-free series; collect all 52.
-QUOTE_UNIVERSE = [s for s in ALL_SERIES if s not in MAKER_FEE_SERIES]
+
+# PROTOCOL §1A (2026-10-18): universe fixed from the coverage map, before any
+# shadow output existed. Three labelled groups, collected together so the
+# comparison is same-window and same-collector.
+#
+#   PRIMARY    51 uncovered daily city temperature ladders. The provider left
+#              (on the June LPP list, absent from lpp_2026-10-18.json) and the
+#              volume stayed. All 51 are fee_type "quadratic" -> maker-free.
+#   COMPARISON the commodity ladders -- the subsidised-competitor control.
+#   CONTROL    sports. Collected, NEVER quoted. It wins the uncovered table on
+#              volume but is almost certainly priced off the sportsbook market,
+#              so it is the negative control for the common-mode test in §1A.
+#              Note KXNFLSPREAD/KXNFLTOTAL charge MAKER FEES -- only the 2nd and
+#              3rd such ladders found after KXAAAGASM, and consistent with that
+#              hypothesis: an exchange can tax makers where they quote anyway.
+_GROUPS = json.loads((ROOT / "universe_groups.json").read_text())
+PRIMARY_SERIES = sorted(_GROUPS["primary_temp"])
+CONTROL_SERIES = sorted(_GROUPS["control_sports"])
+COMPARISON_SERIES = [
+    s for s in ALL_SERIES if s not in PRIMARY_SERIES and s not in CONTROL_SERIES
+]
+
 COLLECT_UNIVERSE = list(ALL_SERIES)
+
+# --- sub-cent tick exclusions (measured 2026-10-18, first live cycle) --------
+# The standing tick monitor fired on its first pass: KXSOLAR and KXWTIMAX quote
+# on a $0.001 grid (0.1c), not the 1c grid every threshold in PROTOCOL assumes.
+# This is a UNIT mismatch, not an edge judgement -- a 1c "one tick inside"
+# instruction means something ten times larger on these two, and the naive
+# baseline in phase 2 would not be comparable. They stay in COLLECT_UNIVERSE
+# (the data is still good and the grid is worth studying); they leave the
+# quoting universe until the thresholds are restated per-tick.
+# Discovered BEFORE any shadow output existed. See PROTOCOL §1A Amendment 2.
+SUBCENT_TICK_SERIES = ["KXSOLAR", "KXWTIMAX"]
+
+# Quote only maker-free series; never the sports control; never a sub-cent grid.
+QUOTE_UNIVERSE = [
+    s
+    for s in ALL_SERIES
+    if s not in MAKER_FEE_SERIES
+    and s not in CONTROL_SERIES
+    and s not in SUBCENT_TICK_SERIES
+]
 
 # --- designated-provider control groups (PROTOCOL §4) ------------------------
 # Incentivized Series list recovered in FINDINGS_PHASE0 §3. Labelled BEFORE any
@@ -66,7 +106,14 @@ LPP_KNOWN_NEGATIVE = [
 # 10 rps was clean in burst; the ladder study saw 429s near 9 rps on a sustained
 # sweep, so the sustained budget below is deliberately set at roughly 60% of the
 # observed burst ceiling. Raising it is a measurement, not a preference.
-TOUCH_PERIOD_S = 60            # full touch pass over all 52 series, every minute
+# MEASURED 2026-10-18 on the real universe, and the first number was wrong:
+# the touch sweep over 107 series costs ~55s of a 60s cycle, leaving ~5s for
+# depth. That produced 41 depth rows per cycle against 2,180 open markets -- a
+# 53-MINUTE revisit, not the 3-4 min PROTOCOL §6 promises. Depth is the only
+# thing we cannot reconstruct afterwards, so depth gets the cycle, not touch.
+# At ~7 rps a full depth pass over 2,180 markets cannot beat ~5.2 min, so the
+# cycle is set to 300s: ~55s touch, ~245s depth -> full depth pass every ~6 min.
+TOUCH_PERIOD_S = 300           # full touch pass over all series, every 5 min
 REQ_PAUSE_S = 0.14             # ~7 rps ceiling across both sweeps
 DEPTH_BATCH_PAUSE_S = 0.14
 

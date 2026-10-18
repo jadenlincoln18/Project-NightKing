@@ -165,6 +165,271 @@
   "fee_multiplier": 1
  },
  {
+  "series": "KXHIGHAUS",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXHIGHCHI",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXHIGHDEN",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXHIGHINFLATION",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXHIGHLAX",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXHIGHMIA",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXHIGHNY",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXHIGHPHIL",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXHIGHTATL",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXHIGHTBOS",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXHIGHTDAL",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXHIGHTDC",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXHIGHTEWR",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXHIGHTHOU",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXHIGHTLV",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXHIGHTMIN",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXHIGHTNOLA",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXHIGHTOKC",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXHIGHTPHX",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXHIGHTSAN",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXHIGHTSATX",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXHIGHTSDF",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXHIGHTSEA",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXHIGHTSFO",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXHIGHTTTN",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXLOW",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXLOWA",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXLOWTATL",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXLOWTAUS",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXLOWTBOS",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXLOWTCHI",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXLOWTDAL",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXLOWTDC",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXLOWTDEN",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXLOWTEWR",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXLOWTHOU",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXLOWTLAX",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXLOWTLV",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXLOWTMIA",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXLOWTMIN",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXLOWTNOLA",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXLOWTNYC",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXLOWTOKC",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXLOWTPHIL",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXLOWTPHX",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXLOWTSAN",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXLOWTSATX",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXLOWTSDF",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXLOWTSEA",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXLOWTSFO",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXLOWTTTN",
+  "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXMLBSPREAD",
+  "fee_type": "quadratic",
+  "fee_multiplier": 0.5
+ },
+ {
+  "series": "KXMLBTOTAL",
+  "fee_type": "quadratic",
+  "fee_multiplier": 0.5
+ },
+ {
   "series": "KXNATGASD",
   "fee_type": "quadratic",
   "fee_multiplier": 1
@@ -177,6 +442,16 @@
  {
   "series": "KXNATGASW",
   "fee_type": "quadratic",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXNFLSPREAD",
+  "fee_type": "quadratic_with_maker_fees",
+  "fee_multiplier": 1
+ },
+ {
+  "series": "KXNFLTOTAL",
+  "fee_type": "quadratic_with_maker_fees",
   "fee_multiplier": 1
  },
  {
