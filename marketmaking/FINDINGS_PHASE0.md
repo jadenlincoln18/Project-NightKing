@@ -22,6 +22,12 @@ Three things changed:
    were "makers pay 0.0175 → 38% of bracket-minutes survive the fee" and "makers
    pay nothing → 58%". It is the 58% branch, essentially everywhere we care about.
    `KXAAAGASM` is the sole exception — and it is the series heading §5's table.
+   **Recomputed on the maker-free series only: 58.50%, against 57.79% published**
+   (`FINDINGS_PHASE0_S5_RECOMPUTE.md`). The headline survives. `KXAAAGASM` heads
+   the table by *ladder*-minutes but is only 4.63% of the *bracket*-minutes the
+   figure is computed over, so it never dominated it. The 38% branch, however,
+   should be retired rather than recomputed: it describes every series paying a
+   fee when exactly one does.
 
 2. **Kalshi runs a subsidised, designated market maker in our target series.**
    The Liquidity Provider Program pays up to **$50,000 per week per series** to a
@@ -388,7 +394,28 @@ shard's bucket. Our ladders live on shard 2, "Crypto & Commodities".
   makers — is untouched by everything above and is phase 2's job.
 - **It does not validate the 58% figure.** That number is still measured against
   the ladder's own smoothed mids, which §5 itself calls "a weak fair value". Phase
-  0 only establishes that the fee no longer erodes it.
+  0 only establishes that the fee no longer erodes it, and the recompute only
+  establishes which population it describes — not that the room is capturable.
+- **The subsidy is evidence against the opportunity, and it belongs here, not only
+  in the competitive section.** Kalshi paying up to $50,000 per week per series for
+  passive provision is a revealed-preference statement that **passive provision in
+  these series is not naturally profitable** — an exchange does not subsidise
+  behaviour that participants would supply unpaid. That most Incentivized series
+  carry *exactly one* provider says the slot is uncontested, which is what a thin
+  or negative unsubsidised return looks like from the outside. The brief treats
+  the measured 1.83c of room as the opportunity; this finding says that room may
+  be the *cost of the subsidy*, visible precisely because someone is being paid to
+  leave it there.
+- **The competitive problem is cost basis, not queue priority.** Rule 5.9's strict
+  price-time FIFO means a designated provider gets no allocation advantage, so the
+  queue is fair. That is not the binding constraint. A subsidised quoter can post
+  inside fair value and still profit, because the subsidy covers the gap. An
+  unsubsidised quoter cannot match that price and make money — leaving two
+  outcomes, standing aside, or getting filled when the subsidised quoter widens on
+  purpose. Both are bad, and the second is adverse selection by construction: a
+  provider bound to an **uptime mandate must keep quoting through conditions where
+  an unsubsidised maker should walk away**, so the fills we win concentrate in
+  exactly those conditions.
 - **It does not establish that there is room beside the designated provider.** It
   establishes that the provider exists and is paid. Whether the measured 1.83c of
   room survives contact with a subsidised, uptime-mandated quoter is unknown and
@@ -405,7 +432,7 @@ shard's bucket. Our ladders live on shard 2, "Crypto & Commodities".
 |---|---|---|---|
 | 1 | **Does netting apply to resting orders or only filled positions?** | Decisive for quoting capital. `resting_margin_reservation` defaults to `sum` (un-netted), but that governs shard rebalancing, not clearly the engine check. | Empirical, funded account |
 | 2 | **Exact netting algorithm for N>2 legs / partial ladder coverage** | `Σnᵢ − (N−1)` follows from Kalshi's two-leg examples but is **not** a quoted rule | Empirical |
-| 3 | **`period_reward` units in `/incentive_programs`** | Decides whether LIP is a material revenue term or a rounding error | Cross-read a market page against its API record |
+| 3 | ~~**`period_reward` units**~~ **CLOSED** | Resolved: **centi-cents** ($0.0001), per the live OpenAPI `IncentiveProgram` schema. LIP is **meaningful but secondary**, and absent from `KXWTI`/`KXWTIW` entirely. See `FINDINGS_LIP.md` | Done |
 | 4 | **Does a size-decrease amendment really retain queue position?** | API docs say yes; rulebook Rule 5.4(d) reads the other way | Two API calls, funded account |
 | 5 | **Amend token cost** | Sets the requote budget | `GET /account/endpoint_costs` (auth) |
 | 6 | **Minimum resting time** | Not documented anywhere; grepped the full 550KB corpus and both specs. Best indication: none exists | Empirical |
@@ -435,6 +462,12 @@ three measurements, none of which require placing an order:
    resting posture would have scored, from `/incentive_programs` parameters plus
    the book we are already collecting. This is a fill-independent revenue term and
    it belongs in the phase-2 P&L decomposition as a fifth line, not as a footnote.
+   **Now measured (`FINDINGS_LIP.md`), and it demotes itself:** `KXWTI` and
+   `KXWTIW` carry no LIP at all; `KXWTIMAX`/`KXWTIMIN` pay $60 per market per
+   period. A 100-lot posture across ten markets accrues on the order of $60 per
+   period — real, but not a business, and not the adverse-selection-immune
+   revenue line it was hoped to be. The allocation formula is unpublished, so
+   model it as a bounded upside, never as a baseline.
 3. **Tick-grid monitor.** Assert `linear_cent` per target market per cycle, and
    alarm on change. A silent migration to a sub-cent grid invalidates the
    tick-floor work, the "one tick inside" rule and the favourite–longshot
