@@ -1,28 +1,47 @@
 # marketmaking — state
 
-**Phase: 0 complete, plus two operator-requested follow-ups. Phase 1 not started.**
+**Phase: 0 complete. Phase 0.5 gate built and staged; BLOCKED on a protocol
+ruling. Phase 1 not started.**
 
-Nothing built, nothing running, no orders ever placed. The order manager does not
-exist and will not until phase 3 is explicitly approved.
+Nothing built for trading, no orders ever placed. The order manager does not
+exist and will not until phase 3 is explicitly approved. `ORDERS_ENABLED` is
+`False`. A live collector runs under launchd; phase 0.5 never touched it.
 
 ## Next action
 
-Phase 1 (shadow mode) — full stack, order manager disabled, two weeks minimum,
-weekdays and weekends. Start it in a **fresh session**; this document is written
-to be read cold.
+**An operator ruling on `FINDINGS_PHASE05.md` §6 — three questions, in order.**
+Phase 0.5 cannot proceed without the first one, and phase 1 is gated on phase
+0.5 by §1B. Do not start phase 1 analysis until Test A has actually run.
 
-Read in this order: `BRIEF.md` → `FINDINGS_PHASE0.md` → `FINDINGS_PHASE0_S5_RECOMPUTE.md`
-→ `FINDINGS_LIP.md`.
+Read in this order: `FINDINGS_PHASE05.md` (§2 is the blocker) → `PROTOCOL.md`
+§1B → `BRIEF.md` §3–§4.
 
 ## Blocked on
 
-1. **`git push` has no credentials.** Two commits sit unpushed on
-   `claude/gracious-edison-s2s7t5` (`14ca080`, `0eb56f1`). `github_identity_status`
-   reports `credentialState: unavailable`. Operator action: connect GitHub under
-   Settings → Agents → Tools, or push manually. **The work is committed locally
-   and safe; only publication is blocked.**
+1. **§1B scores a fit that does not exist for the §1A universe.** (2026-10-20,
+   the live blocker.) §1B needs a fair value **with a credible band** per
+   bracket-minute on daily city-temperature ladders. `wti_arb/synth/act3.py` is
+   the only band-producing fitter and its likelihood is a vanilla call/put
+   payoff matrix on a log-moneyness grid around a forward — temperature has no
+   chain, no forward, no implied vol. `ladder/maker.py` reads the ladder but is
+   a point estimate with no interval. Altering either, or changing the universe,
+   is forbidden by §1B's own text. **This needs a protocol amendment, not a code
+   change.** `python -m phase05.run --band-rule …` reproduces the full diagnosis
+   and exits 2. Details and the four options: `FINDINGS_PHASE05.md` §2, §6.
 2. **Kalshi API key for trading** (operator supplies). Phases 0–2 need only
    keyless public market data. Not blocking yet.
+
+## Resolved since 2026-10-18
+
+- **`git push` works.** The credential blocker recorded here is stale; the
+  branch publishes normally to `origin`.
+- **The historical one-minute store is staged.** `phase05/stores.py::
+  check_staging()` passes. 6,323 of 12,914 target files (552 MB) under
+  `marketmaking/data/_import/waves_data/`, covering 32 of 48 temperature series
+  and all 5 commodity series. Gitignored by design.
+  **Staging is resumable:** `sh marketmaking/ops/stage_icloud_store.sh`. It
+  stopped because iCloud stopped serving (server-side, verified), not because
+  anything local failed.
 
 ## Repo layout — resolved 2026-10-18
 
@@ -44,11 +63,22 @@ remain read-only in the iCloud copy at
 Phases 1–2 collect fresh data, so this is not blocking. If the fitter needs the
 historical stores, that is a separate direct transfer — not a git problem.
 
-**iCloud gotchas, both hit during consolidation — do not re-derive:**
+**iCloud gotchas, all hit during consolidation or staging — do not re-derive:**
 - Files are *dataless*: reads fail with `Resource deadlock avoided` (EDEADLK)
   until materialised. **`brctl download <dir>` does not recurse** — it must be
   called per file:
   `find <dir> -type f | xargs -P 8 -I{} brctl download "{}"` then wait ~15s.
+- **`brctl download` silently no-ops on a RELATIVE path** (2026-10-20). It
+  returns `rc=0`, prints nothing, and the file stays `dataless`. Only an
+  **absolute** path queues the fetch. This is the second half of the gotcha
+  above and it cost two full passes over 12,914 files.
+- **Decouple request from copy.** Materialisation is async and the daemon
+  re-evicts; a request-sleep-copy loop misses everything that lands mid-sleep.
+  Copy to local disk the instant a file reads — staged bytes cannot be evicted.
+- **iCloud throttles to a stop.** After ~1 h at ~600 KB/s it stopped honouring
+  requests entirely, including single explicit absolute-path calls with all
+  local loops stopped. Server-side; wait and resume.
+- All of this is encoded in `marketmaking/ops/stage_icloud_store.sh`.
 - The iCloud `.git` is **unusable**: EDEADLK on `HEAD`, `config` and
   `packed-refs` that no amount of `brctl download` fixes, plus stale lock files
   in `.git/_stale` dated to the failed push. It was not needed — the code
