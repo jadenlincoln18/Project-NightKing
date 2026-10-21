@@ -23,7 +23,10 @@ MIN_CENTS, MAX_CENTS = 1.0, 99.0
 SPREAD_STRATA = (0.0, 5.0, 15.0, 35.0, 65.0, 85.0, 95.0, 100.0)
 TIGHT_MAX = 20.0        # spread below this is a price; at or above it is a 1/99 non-price
 
-FAMILIES = ("unimodal", "skewed", "bimodal")
+# PROTOCOL §9.9 adds a fourth family, "mix". The first three are §8.3 verbatim
+# and the generator draws in family-block order, so the U/K/B blocks of a §9 run
+# are bit-identical to what the §8.3 generator produces.
+FAMILIES = ("unimodal", "skewed", "bimodal", "mix")
 
 
 @dataclass
@@ -77,6 +80,24 @@ def draw_truth(family: str, rng: np.random.Generator):
             return np.where(pick, rng.normal(m1, sd, n), rng.normal(m2, sd, n))
 
         return cdf, sampler, {"m1": m1, "m2": m2, "sd": sd, "w": w, "delta": delta}
+    if family == "mix":
+        # PROTOCOL §9.9: the shouldered / fat-tailed / not-quite-bimodal middle
+        # ground. Unequal component widths, separation down to zero.
+        centre, delta = rng.uniform(-2, 2), rng.uniform(0.0, 5.0)
+        sd1 = rng.uniform(1.2, 3.0)
+        sd2 = sd1 * rng.uniform(1.5, 3.0)
+        w = rng.uniform(0.3, 0.7)
+        m1, m2 = centre - delta / 2.0, centre + delta / 2.0
+
+        def cdf(x):
+            return w * norm.cdf(x, m1, sd1) + (1 - w) * norm.cdf(x, m2, sd2)
+
+        def sampler(n):
+            pick = rng.random(n) < w
+            return np.where(pick, rng.normal(m1, sd1, n), rng.normal(m2, sd2, n))
+
+        return cdf, sampler, {"m1": m1, "m2": m2, "sd1": sd1, "sd2": sd2,
+                              "w": w, "delta": delta}
     raise ValueError("unknown family %r" % family)
 
 
