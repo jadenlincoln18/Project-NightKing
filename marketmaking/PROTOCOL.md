@@ -211,6 +211,54 @@ presented as an alternative verdict.
 > quoting threshold, and the asymmetry of the fitted band is exactly what
 > phase 0.5 is testing the fit's knowledge of.
 
+### Gate 0 — synthetic check of the fit on temperature-shaped ladders (added 2026-10-20, before it was run)
+
+**Mandatory, and it runs BEFORE Test A.** Added by the protocol's author after
+phase 0.5 reported that the §1A universe averages **6.00 brackets per event**.
+
+**Why it exists.** The thesis is that the fit beats a single bracket's quote by
+**pooling ~25 noisy observations of one distribution** (`BRIEF.md` §2). At six
+brackets there is far less to pool, and a 48-knot spline against six prices is
+mostly the smoothness prior interpolating between them. There is also a design
+mismatch: the extractor infers a density from **how option prices curve across
+strikes**, whereas Kalshi brackets are **already probabilities**. Bridging that
+needs an adapter, and an adapter is new, unvalidated code. If the fit cannot
+beat a noisy quote when the truth is *known and handed to us*, it cannot beat
+one on real data, and Test A's result would be uninterpretable.
+
+**Construction.**
+
+- **Adapter lives in `marketmaking/`.** `wti_arb/synth/` is not modified. It
+  reuses the existing WTI synthetic pattern in the repo.
+- **Known truths**, temperature-shaped, at **~6 brackets per ladder**. The truth
+  families are fixed here: **unimodal**, **skewed**, and **bimodal
+  (two-peaked)**. Well-behaved unimodal truths alone would flatter the fit;
+  a spline through six points is exactly where a second peak gets smoothed away.
+- **Quote noise matched to the observed spreads** on the real temperature
+  ladders. The measured spread distribution is reported with the result. Spread
+  is microstructure, not an outcome variable, and §1A already permits its use.
+- **Scored identically to Test A**: the same Brier score, the same band rule
+  (the PRIMARY ruling above, asymmetric `q_05`/`q_95`), and the same
+  disagreement definition. Fit against **noisy midpoint**, both against the
+  **known truth**.
+
+**Pass bar, fixed before the run:**
+
+> **The fit's Brier score is strictly lower than the noisy quote's on the
+> disagreement set.**
+
+That is the whole bar. Reported alongside but **explicitly not gating**: the
+event-clustered 95% bootstrap CI on the difference, the secondary executable
+set, and the per-truth-family breakdown. **The per-family breakdown may not be
+used to re-gate** — a pass on the unimodal family alone is a fail.
+
+**On failure: STOP. Do not run Test A. Report.** A failure here means Test A
+cannot pass on real data, and the response is to reconsider the universe toward
+ladders with more brackets. **That is the protocol author's decision, not the
+runner's**, and it is made with this result in hand.
+
+---
+
 ### Test A — settlement calibration (the decisive one)
 
 Score two competing probability forecasts of the realised binary outcome: the
