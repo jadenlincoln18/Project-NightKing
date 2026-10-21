@@ -265,3 +265,30 @@ collecting nothing current. Checked by ticker content in the live touch store:
 2,433 distinct tickers, 605 temperature tickers, of which **288 carry today's
 date tag `26OCT20`** and **zero** carry `26OCT19` or `26OCT18`. The universe is
 rolling over daily as intended.
+
+## Parked idea: NWS probabilistic forecast as a second, independent fair value (2026-10-20)
+
+**Not now. After phase 0.5 resolves.** Recorded because it names a real gap in
+the current thesis rather than an enhancement to it.
+
+**The gap:** the self-fit smooths Kalshi's own quotes. Smoothing can remove
+noise; it cannot add information. Every input is a price set by the same
+participants, so the fit can only ever say "this bracket disagrees with its six
+neighbours" — never "this ladder disagrees with the weather."
+
+**The idea:** the National Weather Service publishes free probabilistic
+forecasts giving percentiles for daily high temperatures. That is to temperature
+what the CME options chain was to WTI — a second fair value carrying information
+the market's own prices do not contain, from a source with no position.
+
+**Why it matters either way phase 0.5 goes:**
+- If the self-fit PASSES Test A, the forecast is the natural next layer.
+- If the self-fit FAILS, the forecast may be the edge on its own — and a failure
+  of the self-fit would NOT kill that, because it tests a different claim.
+
+**Caveat to check before building:** the NightKing autopsy lesson applies
+directly. Ask first *who sets the price on the thinner venue, and are they
+looking at the same forecast?* If Kalshi's temperature makers already quote
+straight off NWS/NBM guidance, this is fedarb again with extra steps. That
+question is answerable cheaply from the data already staged, and must be
+answered before any forecast adapter is written.
