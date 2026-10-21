@@ -168,3 +168,104 @@ credible band** per bracket"). It is phase-1 work that has not been built.
 
 **Per the run's constraints, §1B is left exactly as committed.** The protocol is
 not wrong about what it wants to measure; it is ahead of the stack.
+
+---
+
+## 3. The band rule — a ruling is still needed, and it is now the *second* question
+
+§1B's disagreement bullet has two implementable readings. The 2026-10-18 run
+refused to pick one and that refusal stands, but this run can narrow it.
+
+| Reading | Rule | |
+|---|---|---|
+| **A** `mid_outside_fit_band` | `mid < fit_lo` or `mid > fit_hi` | band stays where the fitter put it |
+| **B** `fit_outside_mid_band` | `\|fit_mean − mid\| > (fit_hi − fit_lo)/2` | band's half-width measured from the quote |
+
+**Taken literally, §1B's sentence is vacuous** — `fit_mean` lies inside
+`[fit_lo, fit_hi]` by construction — so "relative to the quote midpoint" must do
+the work, and it can do it either way.
+
+**New evidence for reading B, from the same pre-registered document.** §2 gives
+the operational form of the identical concept:
+
+```
+fair value        F   from the density fit
+credible band     w   half-width of the fit's credible interval for that bracket
+edge              e = |F - Q|
+qualifies when    e > w + f        (f = 0 on the 51 maker-free series)
+```
+
+`e > w` **is** reading B with `Q := mid`. §1B opens by saying phase 0.5 "precedes
+phase 1 **in logic, not in time**" and asks the prior question about *the same*
+disagreements, and §1B's own change to §2 is explicit and local — it replaces
+§2's `Q` (the executable quote you would have to beat) with the **midpoint**,
+and says so in the preceding bullet. Under this reading "the band is the
+fitter's existing interval; phase 0.5 does not invent a new one" means *use
+§2's `w`, do not make up a new uncertainty measure* — not *do not translate it*.
+
+**That is an argument, not a ruling, and this run did not act on it.** It is
+recorded because it is new information: the 2026-10-18 note considered §1B in
+isolation and leaned toward A; §2 points the other way.
+
+**It is also, for now, moot.** The band rule selects observations using
+`fit_lo`/`fit_hi`, and §2 above blocks the production of those columns entirely.
+**Nothing can be cut by a band that does not exist.** A ruling on the band is
+worth making only after the ruling on §2, and should be made in the same pass.
+
+`disagree.BandRule` still has **no default** and `run.py` still requires
+`--band-rule`. That has not been relaxed.
+
+### The pre-specification that would make the band question safe
+
+If and when the fit exists, the honest way to close this without the choice
+flattering the result: **compute both readings, take the verdict from the
+§2-consistent one (B), and report A as a declared sensitivity.** If the two
+readings agree, the ambiguity is moot and no ruling is needed. **If they
+disagree, the choice is outcome-determinative and must go back to the protocol's
+author rather than be settled by whoever is running the code.** Writing that
+rule down *before* the numbers exist is what keeps it from being a choice.
+
+---
+
+## 4. Measured — what the gate will have to work with
+
+From the staged store (`ladder.store`, read-only), across the **32 of 48**
+temperature series staged when iCloud stopped serving:
+
+| Cut | N |
+|---|---:|
+| Series | 32 |
+| Markets | 37,062 |
+| Events | 6,177 |
+| **Settled markets** (binary `yes`/`no` result) | **36,616** |
+| Brackets per event | **exactly 6.00** (mean) |
+| Ladder kind | `range` — 301 of 301 on `KXLOWTAUS`, zero `cumul` |
+
+**Clustering penalty, re-measured: √6.00 = 2.45.** A bracket-level bootstrap
+would overstate significance by ~2.45× on this universe. §1B's ban on it is
+quantified, not rhetorical.
+
+**Panel density.** `phase05/panel.py` on five `KXLOWTAUS` events: 62,150
+(bracket, minute) rows, of which **26,835 are two-sided and executable** — about
+**5,400 two-sided bracket-minutes per event**. Extrapolated across ~6,200
+settled events that is on the order of **3×10⁷ two-sided bracket-minutes** in
+the staged subset alone.
+
+So the gate is not short of data. The settled population is in the thousands of
+events, far past §1B's "a result on 40 events is not a result" bar. **Power is
+not the constraint; the fit is.**
+
+### A feasibility consequence §1B does not address
+
+§1B fixes the unit as **every** (bracket, minute) on **every** settled ladder.
+Act III is NUTS over a 24-coefficient B-spline basis with a 400-point grid —
+seconds per fit. At ~5×10⁶ ladder-minutes in the staged subset, a per-minute
+Act III fit is **not computationally reachable**, by many orders of magnitude,
+even with the `laplace` fallback. `ladder/maker.py` samples **every 10 minutes**
+for exactly this reason, and `FINDINGS_LADDER_DYNAMICS.md` reports 1.6M
+ladder-minutes at that cadence.
+
+**§1B specifies no subsampling cadence**, so whoever runs it picks one — and the
+cadence interacts with Test B's 5/30/60-minute horizons. This is a third item
+for the same ruling. It is flagged now, before any number exists, rather than
+discovered as a convenient degree of freedom later.
