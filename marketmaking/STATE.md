@@ -35,13 +35,42 @@ Read in this order: `FINDINGS_PHASE05.md` (§2 is the blocker) → `PROTOCOL.md`
 
 - **`git push` works.** The credential blocker recorded here is stale; the
   branch publishes normally to `origin`.
-- **The historical one-minute store is staged.** `phase05/stores.py::
-  check_staging()` passes. 6,323 of 12,914 target files (552 MB) under
-  `marketmaking/data/_import/waves_data/`, covering 32 of 48 temperature series
-  and all 5 commodity series. Gitignored by design.
-  **Staging is resumable:** `sh marketmaking/ops/stage_icloud_store.sh`. It
-  stopped because iCloud stopped serving (server-side, verified), not because
-  anything local failed.
+- **The historical one-minute store is staged — COMPLETE IN SCOPE.**
+  `phase05/stores.py::check_staging()` passes.
+
+  **This is the single authoritative staging number. Two earlier figures
+  (552 MB / 32 of 48 series, and 1.18 GB / 53 series) were snapshots of a run
+  still in progress and are superseded. Do not cite them.**
+
+  Measured directly 2026-10-20 22:20 CDT, source vs destination, per series:
+
+  | quantity | value |
+  |---|---|
+  | series staged | **53 of 53 in scope** (0 short of source) |
+  | temperature series | **48** (`KXHIGH*` / `KXLOW*`) |
+  | commodity series | **5** (KXWTI, KXWTIW, KXBRENTD, KXGOLDD, KXNATGASD) |
+  | events staged | **12,860 of 12,860 in scope** (0 short) |
+  | parquet files | **12,914** (12,860 candles + 54 markets tables) |
+  | true byte total | **1.15 GB** |
+  | `.icloud` dataless placeholders remaining | **0** |
+  | zero-byte parquet | **0** |
+
+  **"In scope" is the point.** `ops/stage_icloud_store.sh` deliberately targets
+  the PROTOCOL §1A primary universe plus the commodity comparison group — 53
+  series — and **not** all **422** series present in the iCloud store. So 369
+  unstaged series is the intended design, not a shortfall. Completeness must be
+  judged per-series against source, which is how the numbers above were taken.
+
+  Gitignored by design. Staging is idempotent and resumable:
+  `sh marketmaking/ops/stage_icloud_store.sh`. The earlier stall was iCloud
+  refusing to serve (server-side, verified), never a local failure.
+
+  Measurement caveat worth keeping: `du` reports ~1.2 GB physical against a
+  1.15 GB byte total, and a naive `find | xargs du` undercounts badly because
+  `xargs` batches and only the last batch's total is read. Sum file sizes with
+  `-exec stat -f%z {} +` instead. The candle tree is partitioned
+  `period=1/series=X/event=Y`, so counting series at depth 1 returns `1`
+  (`period=1`), not 53 — count at the `series=` level.
 
 ## Repo layout — resolved 2026-10-18
 
