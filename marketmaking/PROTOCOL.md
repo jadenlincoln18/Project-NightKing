@@ -814,3 +814,342 @@ No trading code, no order placement, no authenticated Kalshi call,
 read for **geometry and spread only** — §1A explicitly permits microstructure —
 and **no settlement outcome is read by anything that scores**: everything scored
 in Gate 0 is synthetic, with a truth this protocol fixed above.
+
+---
+
+## 9. Amendment, 2026-10-20 (second, later the same day) — the parametric fitter: the operator's design ruling, the honest timeline, and two further bars
+
+### 9.0 The timeline, stated first because it is the thing most easily misread
+
+**This section is NOT written in ignorance of results.** What follows is the
+exact state of knowledge at the moment it was written.
+
+1. **The operator's design ruling came first.** Before a single Gate 0 number
+   existed, the operator ruled that the Gate 0 fitter must be **parametric** —
+   a three-parameter skew-normal — precisely for the reason §8.1 states in its
+   own words: *a 24-coefficient spline through 6 prices may be mostly its own
+   smoothness prior*. The ruling was a design decision about identifiability,
+   not a reaction to a score. **It never reached the run that wrote §8's code.**
+2. **The §8 run built the other thing anyway.** It ported the WTI extractor's
+   cubic B-spline log-density and, as §8.5 and `FINDINGS_GATE0.md` §2.1 record,
+   **deliberately kept m = 24**, on the stated grounds that tuning it down after
+   the fact was forbidden. That reasoning was sound given what that run knew;
+   it was simply not the model the operator had already specified.
+3. **A spline SMOKE result WAS observed before this section was written.** It
+   must be stated in full, not summarised:
+
+   > 18 ladders, 108 bracket observations (`reports/gate0_smoke/report_smoke.json`).
+   > PRIMARY disagreement set **n = 15**, **Brier(fit) = 0.1119** vs
+   > **Brier(quote) = 0.1026**, difference **−0.0093** *against* the fit;
+   > ladder-clustered 95% bootstrap CI on `Brier(quote) − Brier(fit)` =
+   > **[−0.0376, +0.0104]**, spanning zero. Per family on the primary set the
+   > fit won on unimodal (+0.0082) and lost on skewed (−0.0112) and bimodal
+   > (−0.0249). Band90 contained the true bracket probability on **63.0%** of
+   > observations — far below its nominal 90%. Sampler diagnostics: **0 of 18**
+   > ladders converged, mean **99 divergences**, 17.5 s per ladder.
+   > The verdict field reads `PASS: false`, `underpowered: true`.
+
+   **The full gate was never run.** No parametric number of any kind existed —
+   no skew-normal fit had been performed, no coverage rate, no goodness-of-fit
+   rate, nothing.
+
+4. **So, plainly: a model that was never the specified model was seen to lose a
+   15-observation smoke test, and then the specified model was built.** That is
+   the honest description. The protection against this being a result-driven
+   model search is not a claim of blindness — it is that **the pass bar is
+   reproduced verbatim and is made strictly harder, never easier**, and that the
+   losing arm is kept and run rather than discarded (§9.8).
+
+### 9.1 What this section changes, and what it must not
+
+**Unchanged, and reproduced verbatim from §8.7:**
+
+> ### **PASS ⟺ Brier(fit) < Brier(quote) on the PRIMARY disagreement set.**
+> Strict inequality. Both Brier scores against the realised 0/1 settlement, on
+> the identical set of (bracket, ladder) observations. **No other condition can
+> produce a pass, and no other set may be substituted for the disagreement set.**
+
+**§1B is not edited by this section.** §8 is not edited by this section; §8.2
+(geometry), §8.4 (noise), §8.6 (scoring and the disagreement sets) and §8.8
+(fences) carry over unchanged and are **not re-measured and not relaxed**.
+
+**Changes, each of which is an addition or a tightening and none of which is a
+loosening:**
+
+| # | change | direction |
+|---|---|---|
+| a | the fitter is parametric (§9.2), replacing the m = 24 spline as the gated arm | design ruling, pre-dates all results |
+| b | bar 1 additionally requires its ladder-clustered 95% CI to **exclude zero** | **stricter** |
+| c | **BAR 2** added — band calibration (§9.12) | stricter: a new way to fail |
+| d | **BAR 3** added — goodness-of-fit sensitivity on bimodal truths (§9.12) | stricter: a new way to fail |
+| e | a fourth truth family **M (mix)** is added (§9.9) | stricter: an extra misspecified family in the pooled set |
+| f | the m = 24 spline is retained and run as a declared comparison arm (§9.8) | neutral: the losing arm is kept, not deleted |
+
+**All three bars must pass. Any one of them failing is a FAIL of Gate 0.**
+
+### 9.2 The model, as the operator specified it
+
+> **T ~ SkewNormal(ξ, ω, α)** — location ξ (°F), scale ω > 0, shape α.
+
+Three parameters against six prices, in place of twenty-four. The point of the
+choice is identifiability: a daily temperature distribution is a located,
+scaled, possibly one-sided-tailed hump, and three numbers describe that. A
+truth that is **not** of this form — two-peaked, say — the model *cannot*
+represent, and §9.7 exists to detect exactly that and say so out loud rather
+than quietly produce a confident wrong answer.
+
+Code lives in `marketmaking/fitter/` (the package `fit/` is renamed to
+`fitter/` by `git mv`, preserving history, per the operator's naming). The
+indicator-integral payoff construction (`fitter.density.bracket_operator`) and
+the measured noise model (`fitter.synth`) are **reused, not reimplemented**.
+`wti_arb/synth/`, `ladder/` and `waves/` remain untouched and unimported.
+
+### 9.3 Priors — weakly informative, fixed here, not only in code
+
+Stated on the unconstrained parameterisation actually used for inference,
+`z = (ξ, log ω, α)`:
+
+| parameter | prior | why it is weak |
+|---|---|---|
+| **ξ** | `N(0, 10²)` °F | the ladder's interior span is 8 °F (§8.2) and §8.3's truths place location in ±4 °F; a 10 °F prior sd is ~2.5× the whole range of locations the truth can take, so the data, not the prior, locates the hump |
+| **log ω** | `N(log 3, 0.75²)` | median scale 3 °F; the central 90% of the prior is ω ∈ [0.87, 10.3] °F, spanning from "sharper than one bracket" to "flatter than the whole ladder" |
+| **α** | `N(0, 5²)` | §8.3's skewed truths use α = ±6, which sits at 1.2 prior sd; α is weakly identified for \|α\| ≳ 8 (the skew-normal converges to a half-normal), so a proper prior here is a numerical necessity, and a 5-sd prior shrinks almost nothing in the identified range |
+
+These are the priors. They are **not retuned after any result**; any change to
+them is a new dated amendment.
+
+### 9.4 Bracket probabilities, and the open wings explicitly
+
+A real ladder is `≤29 | 30–31 | 32–33 | 34–35 | 36–37 | ≥38` (§8.2): four
+closed 2 °F interior brackets and **two unbounded wings**. With interior edges
+`e₁ < … < e₅` and `F` the skew-normal CDF:
+
+```
+lower wing   p₁   = F(e₁) − F(−∞) = F(e₁)          (unbounded below — no truncation)
+interior     p_k  = F(e_k) − F(e_{k−1})            k = 2 … 5
+upper wing   p₆   = F(+∞) − F(e₅) = 1 − F(e₅)      (unbounded above — no truncation)
+cumulative   p_k  = 1 − F(threshold_k)             (supported; zero such events measured)
+```
+
+The wings are handled **analytically, by the CDF limits**, not by integrating to
+a finite pad. This is a real advantage of the parametric form over the §8.5
+spline, which must place its grid on `[min(e) − 20, max(e) + 20]` °F and
+therefore truncates both wings at a pad chosen by hand. `Σ p_k = 1` exactly, by
+construction, for any (ξ, ω, α).
+
+**Cross-check, not a substitute:** `p` is additionally computed through the
+existing indicator-integral operator `G` on the linear °F grid and asserted
+equal to the analytic form to `< 1e-6`. The analytic form is what enters the
+likelihood.
+
+### 9.5 Likelihood, and the noise scale s_k stated as a rule
+
+> **m_k ~ Normal(p_k(ξ, ω, α), s_k²)**, independently across brackets, where
+> `m_k` is the **two-sided executable quote midpoint** `(bid_k + ask_k)/200`.
+
+**One-sided brackets are EXCLUDED, never imputed.** A bracket without both a bid
+and an ask contributes no likelihood term and is not scored. The count of
+included brackets `K` per ladder is carried through to §9.7.
+
+**The rule for `s_k`**, from the §8.4 measurements and nothing else:
+
+> **s_k = σ_q · max(1, h_k / h̄)**, with `h_k = (ask_k − bid_k)/200` the quoted
+> half-spread, **σ_q = 0.0182** the measured idiosyncratic per-bracket quote
+> noise (§8.4a), and **h̄ = 0.02** the measured median tight half-spread
+> (§8.4b; median tight spread 4c on 33,421 of 45,338 bracket-minutes).
+
+Read it in words: *a book at the typical touch carries exactly the measured
+noise; a book wider than typical carries proportionally more; a book tighter
+than typical is not credited with knowing the fair value better than the
+measured ladder incoherence says anyone does.* The floor is the point — σ_q was
+measured from an entirely different feature of the data (cross-sectional
+incoherence) than the spread, and a 1c book does not repeal it.
+
+This rule supersedes §8.5's `sd = half-spread, floor 0.005` **for both arms**,
+so that the §9.8 contrast differs in the density model and in nothing else. The
+§8.5-verbatim spline numbers already observed are the smoke result quoted in
+§9.0 and remain on the record.
+
+### 9.6 Inference, and the validation that licenses it
+
+Primary: **Laplace approximation** at the MAP in `z = (ξ, log ω, α)`, with the
+posterior propagated to bracket probabilities by 20,000 draws of `z` pushed
+through §9.4. The map `z → p` is non-linear, so the resulting per-bracket
+posteriors are **asymmetric as drawn** — which is what §9.10's band rule
+requires. MAP is found by multi-start L-BFGS-B from `α ∈ {−6, 0, +6}` to defeat
+the known flat ridge of the skew-normal likelihood at `α = 0`.
+
+**Validation, criterion fixed before it is run.** The Laplace posterior is
+compared against a dense **3-D quadrature reference** — a grid in `z` centred
+at the MAP, ±6 Laplace sd per axis, 61 points per axis (226,981 nodes), with
+the posterior evaluated exactly at every node and bracket quantiles taken as
+weighted quantiles. Quadrature, not MCMC, because at three parameters it is
+deterministic and has no convergence question of its own. On a declared
+validation subsample — the **first 15 ladders of each family, 60 ladders, 360
+bracket observations** — Laplace is licensed as the primary iff
+
+> mean \|Δ posterior mean\| **< 0.005** and mean \|Δ band endpoint\| **< 0.010**,
+> with the maxima reported alongside, and boundary mass of the quadrature grid
+> **< 1e−4** of total.
+
+If it misses either tolerance, **the primary run uses the quadrature posterior
+instead** and that fact is reported. Either way the validation table is
+published.
+
+### 9.7 Goodness of fit — the UNTRUSTWORTHY mark, threshold fixed numerically
+
+At the posterior mean `p̂`, over the `K` included brackets of a ladder:
+
+```
+X² = Σ_k ( (m_k − p̂_k) / s_k )²
+```
+
+Under a correctly specified model with the §9.5 noise scale, `X²` is
+approximately `χ²` on `K − 3` degrees of freedom (six observations, three
+fitted parameters).
+
+> **The fit is marked UNTRUSTWORTHY iff `X² > χ²_{0.99}(K − 3)`.**
+> At the measured `K = 6` this threshold is **11.3449**, fixed here, numerically,
+> before any `X²` has been computed. A ladder with `K < 5` has ≤ 1 degree of
+> freedom, the check cannot discriminate, and the ladder is marked
+> **UNTRUSTWORTHY by insufficiency**.
+
+The 99th percentile, not the 95th, deliberately: a false fire costs a real
+observation out of the gated set, so the check must be reluctant, and a fire
+must mean something.
+
+**Untrustworthy fits are EXCLUDED from the PRIMARY disagreement set and
+COUNTED. The count is a reported number, never a silent drop.** Because an
+exclusion rule could in principle flatter the gated arm by discarding its hard
+cases, the following is required and not optional:
+
+> **The same bar-1 comparison is computed and reported on the UNION of trusted
+> and untrustworthy disagreement observations.** If bar 1 passes on the primary
+> set but fails on the union, that is **stated in the verdict in those words**.
+
+### 9.8 The spline is kept as a declared comparison arm
+
+The m = 24 spline of §8.5 is **not deleted and not quietly retired**. It is run
+on the identical ladders, with the identical §9.5 noise scale, and reported
+side by side. This is the only direct measurement of the question underneath
+Gate 0: **is six brackets the binding constraint, or was it the model's
+flexibility?** If the 3-parameter fit wins where the 24-coefficient fit loses,
+the constraint was flexibility. If both lose by similar margins, six brackets
+is genuinely not enough information and the answer is a universe change, as
+§8.7's failure clause already anticipates.
+
+The spline arm is **non-gating**. It cannot rescue a parametric failure and it
+cannot cause one. Cost: it samples by NUTS at ~17.5 s per ladder, so it is run
+on a **declared paired subset — the first 100 ladders of each family, 400
+ladders** — paired by generation index, so its ladders are bit-identical to the
+parametric arm's on that subset.
+
+### 9.9 Truth families and run size — sized so the gate is not underpowered
+
+§8.3's three families are carried over **verbatim and unchanged** (U unimodal,
+K skewed, B bimodal, with §8.3's parameter ranges). A fourth is **added**:
+
+| family | truth | parameters |
+|---|---|---|
+| **M — mix** | `w·N(μ₁,σ₁) + (1−w)·N(μ₂,σ₂)` | centre `~ U(−2, 2)` °F, separation `Δ ~ U(0, 5)` °F, `σ₁ ~ U(1.2, 3.0)`, `σ₂ = σ₁·U(1.5, 3.0)`, `w ~ U(0.3, 0.7)`; `μ₁,₂ = centre ∓ Δ/2` |
+
+M is the shouldered, fat-tailed, not-quite-bimodal middle ground: shapes that
+are neither a clean hump nor two clean peaks. It is **misspecified for the
+skew-normal and for nothing's benefit** — it adds a hard family to the pooled
+gated set, which can only make bar 1 harder to pass.
+
+**Run size: 300 ladders per family × 4 families = 1,200 ladders = 7,200 bracket
+observations**, generated by `np.random.default_rng(20261020)` in family-block
+order U, K, B, M. At n = 300 the U/K/B blocks are bit-identical to what §8.3's
+generator produces, because the blocks are drawn in order.
+
+§8.7 labels a primary disagreement set below **n = 100** underpowered. 7,200
+observations clear that at any disagreement rate above 1.4%; the observed
+spline smoke rate was 13.9%. **The achieved n is reported, and the run is not
+re-sized after seeing it** — 1,200 ladders is fixed here.
+
+### 9.10 The band rule — operator ruling, final
+
+> **Reading A decides.** A (bracket, ladder) observation is in the **PRIMARY
+> disagreement set** iff both sides are quoted **and** the two-sided quote
+> midpoint lies outside the fit's asymmetric 90% interval: **`m < q₀₅` or
+> `m > q₉₅`**, using the **actual posterior quantiles**, never a symmetric
+> half-width about the mean.
+>
+> **Reading B is reported and NEVER decides.** The executable reading
+> (`ask < q₀₅` or `bid > q₉₅`) is reported alongside as a secondary and is
+> incapable of producing or overturning a verdict.
+>
+> **There is no escalation clause.** No condition promotes Reading B, or any
+> other set, to the gating set.
+
+This restates §1B's ruling and §8.6 without alteration; it is written here
+because the operator asked for it to be recorded as final.
+
+### 9.11 Cadence — operator ruling, recorded
+
+> **Test A and Phase 1 are evaluated on a 5-minute clock-aligned grid**
+> (`:00, :05, …`), matching the collector's sweep. This settles the open item
+> at `FINDINGS_PHASE05.md` §6 item 3. Gate 0 itself has no time axis — its unit
+> is one (bracket, ladder) snapshot — so this ruling constrains later work and
+> changes nothing scored here.
+
+### 9.12 The three bars. All three must pass.
+
+> #### **BAR 1 — skill, where the fit and the quote disagree**
+> **`Brier(fit) < Brier(quote)`, strict, on the PRIMARY disagreement set
+> (§9.10), against realised 0/1 settlement, on the identical observations.**
+> *Additionally*, the **ladder-clustered 95% bootstrap CI on
+> `Brier(quote) − Brier(fit)` must exclude zero** (2,000 resamples, clustered by
+> ladder because six brackets share one outcome). Reproduced verbatim from
+> §8.7 and tightened by the CI requirement; nothing else may substitute.
+
+> #### **BAR 2 — the bands mean what they say**
+> **The 90% band contains the true bracket probability on between 85% and 95%
+> of observations.** **This fails in BOTH directions**: below 85% the fit is
+> overconfident and its disagreement set is manufactured; above 95% the bands
+> are padding, the fit never disagrees with anything, and the 90% label is a
+> lie. Measured on **trusted** fits (§9.7), pooled over all families and all
+> brackets. The same coverage **including** untrustworthy fits is reported, and
+> per-family coverage is reported; neither re-gates.
+
+> #### **BAR 3 — the model knows when it is wrong**
+> **On family-B (bimodal) truths, the §9.7 goodness-of-fit check fires on at
+> least 60% of ladders.** The rate is fixed here, before any `X²` has been
+> computed, and it is 60% for a stated reason: family B draws separation
+> `Δ ~ U(5, 9)` °F against a bracket resolution of 2 °F and component widths
+> `σ ~ U(1.2, 2.2)`, and the corner of that box with small Δ and large σ is
+> **genuinely not two-peaked at this resolution** — a 3-parameter hump is then
+> an adequate description and an honest check *should* stay silent. Demanding a
+> rate near 100% would be demanding the detection of structure the six prices
+> do not contain. A strict majority with margin — 60% — is the bar that tests
+> sensitivity without rewarding a trigger-happy check. The false-fire rate on
+> families U and K (where the model is correctly specified, and a ~1% rate is
+> expected from the χ²₀.₉₉ threshold) is **reported alongside** as the
+> specificity counterpart.
+
+**Reported, and incapable of producing a pass:** per-family breakdowns, the
+secondary executable set (§9.10 Reading B), log scores, Brier against the known
+true probability, the all-observations comparison, the §8.4 overround
+sensitivity, the union-set bar-1 comparison required by §9.7, and the entire
+§9.8 spline arm.
+
+### 9.13 Verdict and stop conditions
+
+**On failure of any bar: STOP.** Do not run Test A, do not re-cut, do not
+retune the fitter and re-score, do not drop family M, do not move the GoF
+threshold. The response to a failure is the operator's decision about the
+universe — specifically whether to move toward ladders with more than six
+brackets — made with these numbers in hand.
+
+**On success: ALSO STOP.** §8.7's stop-on-success clause stands. Passing Gate 0
+does not license Test A.
+
+### 9.14 Fences, unchanged from §8.8
+
+No trading code, no order placement, no authenticated Kalshi call,
+`ORDERS_ENABLED` stays `False`. `ops/watchdog.py`, `mm/collect.py` and
+`STATE.md` belong to another session and are not touched. Staging is complete
+and is not touched. Real market data is read for geometry and spread only; no
+settlement outcome is read by anything that scores. Everything scored in Gate 0
+is synthetic against a truth this protocol fixed in advance.
