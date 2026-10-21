@@ -30,7 +30,7 @@ ROW_COLUMNS = ("ladder", "family", "bracket", "truth_p", "outcome", "bid", "ask"
 
 def _fit_one(args):
     """Worker: fit one ladder. Returns (index, dict of arrays, diagnostics)."""
-    i, bid, ask, sampler, n_samples, n_warmup = args
+    i, bid, ask, sampler, n_samples, n_warmup, target_accept = args
     warnings.filterwarnings("ignore")
     np.seterr(all="ignore")  # BLAS sets stale FP flags on matmul; results checked finite
     bid, ask = np.asarray(bid, float), np.asarray(ask, float)
@@ -38,19 +38,31 @@ def _fit_one(args):
     hs = np.maximum((ask - bid) / 200.0, density.HS_FLOOR)
     rng = np.random.default_rng(SEED + 1000 + i)
     r = density.fit_ladder(synth.EDGES, mid, hs, rng, sampler=sampler,
-                           n_samples=n_samples, n_warmup=n_warmup)
+                           n_samples=n_samples, n_warmup=n_warmup,
+                           target_accept=target_accept)
     return i, r
 
 
-def fit_all(ladders, sampler="nuts", n_samples=500, n_warmup=500, workers=None):
+def fit_all(ladders, sampler="nuts", n_samples=500, n_warmup=500, workers=None,
+            target_accept=0.8, indices=None):
+    """Fit every ladder. `indices` carries each ladder's ORIGINAL generation index.
+
+    The per-ladder sampler seed is `SEED + 1000 + original_index`, so a run on a
+    subset of the ladders reproduces the full run's fits **exactly** on that
+    subset. That is what makes the robustness runs paired rather than merely
+    comparable.
+    """
     from concurrent.futures import ProcessPoolExecutor
     workers = workers or max(1, (os.cpu_count() or 4) - 2)
-    jobs = [(i, l.bid, l.ask, sampler, n_samples, n_warmup) for i, l in enumerate(ladders)]
+    indices = list(range(len(ladders))) if indices is None else list(indices)
+    jobs = [(idx, l.bid, l.ask, sampler, n_samples, n_warmup, target_accept)
+            for idx, l in zip(indices, ladders)]
+    pos = {idx: j for j, idx in enumerate(indices)}
     out = [None] * len(ladders)
     done = 0
     with ProcessPoolExecutor(max_workers=workers) as ex:
         for i, r in ex.map(_fit_one, jobs, chunksize=1):
-            out[i] = r
+            out[pos[i]] = r
             done += 1
             if done % 50 == 0:
                 print("    fitted %d/%d" % (done, len(ladders)), flush=True)
@@ -164,6 +176,14 @@ def main(argv=None):
     ap.add_argument("--sampler", default="nuts")
     ap.add_argument("--n-samples", type=int, default=500)
     ap.add_argument("--n-warmup", type=int, default=500)
+    ap.add_argument("--target-accept", type=float, default=0.8,
+                    help="NUTS dual-averaging target; 0.8 is the extractor's default "
+                         "and the pre-registered primary. Raising it is a sampler "
+                         "setting, not a model change: the target distribution is "
+                         "identical. Reported separately, never as the primary.")
+    ap.add_argument("--limit-per-family", type=int, default=None,
+                    help="fit only the first K ladders of each family, keeping their "
+                         "ORIGINAL indices so the fits are paired with the full run")
     ap.add_argument("--workers", type=int, default=None)
     ap.add_argument("--spread-sample", default="reports/gate0/spread_sample.parquet")
     a = ap.parse_args(argv)
@@ -178,10 +198,22 @@ def main(argv=None):
     ladders = synth.generate(a.n_per_family, pool, rng, overround=a.overround)
     print("generated %d ladders (%d per family), overround=%.4f"
           % (len(ladders), a.n_per_family, a.overround), flush=True)
+    indices = list(range(len(ladders)))
+    if a.limit_per_family:
+        seen, keep = {}, []
+        for i, l in enumerate(ladders):
+            seen[l.family] = seen.get(l.family, 0) + 1
+            if seen[l.family] <= a.limit_per_family:
+                keep.append(i)
+        ladders = [ladders[i] for i in keep]
+        indices = keep
+        print("    fitting a paired subset: %d ladders" % len(ladders), flush=True)
 
     fits = fit_all(ladders, sampler=a.sampler, n_samples=a.n_samples,
-                   n_warmup=a.n_warmup, workers=a.workers)
+                   n_warmup=a.n_warmup, workers=a.workers,
+                   target_accept=a.target_accept, indices=indices)
     df = rows(ladders, fits)
+    df["ladder"] = np.repeat(indices, synth.N_BRACKETS)
     diag = {
         "converged_frac": float(np.mean([f["converged"] for f in fits])),
         "rhat_max": float(np.max([f["rhat_max"] for f in fits])),
@@ -194,7 +226,8 @@ def main(argv=None):
     rep["sampler_diagnostics"] = diag
     rep["config"] = {"n_per_family": a.n_per_family, "overround": a.overround,
                      "sampler": a.sampler, "n_samples": a.n_samples,
-                     "n_warmup": a.n_warmup, "seed": SEED,
+                     "n_warmup": a.n_warmup, "target_accept": a.target_accept,
+                     "limit_per_family": a.limit_per_family, "seed": SEED,
                      "sigma_q": synth.SIGMA_Q, "edges": synth.EDGES.tolist(),
                      "n_brackets": synth.N_BRACKETS}
 

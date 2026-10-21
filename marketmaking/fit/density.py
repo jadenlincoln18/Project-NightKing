@@ -288,7 +288,8 @@ def sample(model: LadderModel, rng, sampler: str = "nuts", n_chains: int = 4,
 
 def fit_ladder(edges, probs, half_spreads, rng, pad: float = PAD_DEGF,
                level: float = BAND_LEVEL, sampler: str = "nuts",
-               n_chains: int = 4, n_samples: int = 500, n_warmup: int = 500) -> dict:
+               n_chains: int = 4, n_samples: int = 500, n_warmup: int = 500,
+               target_accept: float = 0.8) -> dict:
     """Fit one ladder; return the posterior mean and **band90** per bracket.
 
     The quantiles are returned exactly as the sampler produced them —
@@ -298,7 +299,7 @@ def fit_ladder(edges, probs, half_spreads, rng, pad: float = PAD_DEGF,
     model = LadderModel(edges, probs, half_spreads,
                         s_lo=edges.min() - pad, s_hi=edges.max() + pad)
     res = sample(model, rng, sampler=sampler, n_chains=n_chains,
-                 n_samples=n_samples, n_warmup=n_warmup)
+                 n_samples=n_samples, n_warmup=n_warmup, target_accept=target_accept)
     br = model.bracket_draws(res["thetas"])
     lo_q = (100.0 - level) / 2.0
     return {
