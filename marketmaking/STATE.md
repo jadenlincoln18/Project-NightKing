@@ -146,3 +146,63 @@ returning 429 to every non-browser client — this is what defeated
 capture of an exact PDF URL, and — better — the **live keyless API**
 (`api.elections.kalshi.com/trade-api/v2`) plus `docs.kalshi.com/openapi.yaml`,
 which are authoritative, current, and not blocked. Prefer the API over the PDF.
+
+## Ops: watchdog proven under a deliberate wedge (2026-10-20)
+
+**Why this section exists.** On 2026-10-20 the watchdog was reported as broken
+on the evidence that `watchdog.log` held two entries across two days. That
+reading was wrong, and the way it was wrong is the lesson: the watchdog had run
+**633 times** (`launchctl print` run count), exiting 0 each time, and the
+collector *was* writing `logs/collector.heartbeat.json` every cycle. The old
+watchdog simply returned silently on the healthy path. **A monitor that is
+silent when healthy cannot be distinguished from a monitor that is dead.**
+
+Fixed in `ops/watchdog.py`:
+- Every check logs, including `CHECK: OK ...` with age, sweeps, depth passes.
+- A missing / unreadable / stale heartbeat now **alerts the operator** over the
+  configured channel, de-duplicated to once per `MM_ALERT_REPEAT_S` (30 min),
+  with an explicit RECOVERED notice when the heartbeat returns.
+  "No heartbeat yet" can no longer persist unnoticed for two days.
+- `MM_STALE_S` / `MM_GRACE_S` are env-overridable so the drill below runs in
+  seconds. Production defaults are unchanged (600 s / 20 s).
+
+### The drill: SIGSTOP, the alive-but-wedged case
+
+`kill -STOP` pauses a process without killing it — precisely the failure launchd
+`KeepAlive` cannot see, and the one this watchdog exists for.
+
+| Time (UTC) | Event |
+|---|---|
+| 02:42:43 | last healthy beat, sweep 631, pid 45417 |
+| 02:46:04 | `kill -STOP 45417` — process state `T`, heartbeat frozen |
+| 02:46:51 | watchdog `CHECK: STALE age=249s` (drill limit 30 s) |
+| 02:46:55 | **operator alert delivered** (4 s end-to-end) |
+| 02:46:55 | SIGTERM to wedged pid |
+| 02:47:00 | still alive after 5 s grace → SIGKILL |
+| 02:47:30 | `launchctl kickstart` issued |
+| 02:47:36 | collector restarts (launchd run #5, pid 33488) |
+| 02:52:36 | first post-restart beat, `sweeps=1`, pid 33488 |
+
+**Restart gap: 9 min 53 s** of heartbeat silence end to end (02:42:43 →
+02:52:36); roughly two touch cycles of data lost. Detection-to-kickstart was
+86 s of that. The remainder is collector startup plus one full 300 s cycle.
+
+### Second defect, found only because the drill was run
+
+For ~5 minutes after any restart the heartbeat still named the **previous pid**,
+because `_heartbeat()` was called only at the *end* of a cycle. A watchdog
+firing in that window sees a dead pid, concludes "collector not running", and
+kickstarts a collector that is in fact healthy — a restart loop. Production
+`STALE_S=600` left only ~2× margin over the ~300 s blind window.
+
+Fixed: `mm/collect.py::run()` now beats once immediately at startup, before the
+first cycle. The blind window is gone and the pid in the heartbeat is correct
+from the first second.
+
+### Market rollover verified by content, not row count
+
+A collector polling a stale market list keeps returning healthy row counts while
+collecting nothing current. Checked by ticker content in the live touch store:
+2,433 distinct tickers, 605 temperature tickers, of which **288 carry today's
+date tag `26OCT20`** and **zero** carry `26OCT19` or `26OCT18`. The universe is
+rolling over daily as intended.

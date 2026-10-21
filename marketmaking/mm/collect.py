@@ -152,6 +152,12 @@ class Collector:
         log.info("collector starting: %d series, depth=full/no-truncation, "
                  "touch period %ds, req pause %.2fs",
                  len(self.series), config.TOUCH_PERIOD_S, config.REQ_PAUSE_S)
+        # Beat immediately at startup. Without this the heartbeat still names the
+        # PREVIOUS pid for a whole cycle (~5 min) after a restart, so the watchdog
+        # sees a dead pid, concludes "collector not running", and kickstarts a
+        # process that is in fact healthy -- a restart loop. Measured in the
+        # 2026-10-20 SIGSTOP drill: 02:47:36 restart, first cycle beat 02:52:36.
+        self._heartbeat(0, 0)
         while not _STOP:
             cycle_start = time.time()
             if config.killed():
