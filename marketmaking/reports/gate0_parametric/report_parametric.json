@@ -1,0 +1,267 @@
+{
+ "primary_disagreement": {
+  "set": "primary_disagreement(trusted)",
+  "n": 1378,
+  "n_ladders": 736,
+  "brier_fit": 0.0678986925833174,
+  "brier_quote": 0.06765720246734397,
+  "log_fit": 0.22600761818583093,
+  "log_quote": 0.2336594544938783,
+  "brier_fit_vs_truth": 0.000531792867335261,
+  "brier_quote_vs_truth": 0.0005298006113382042,
+  "brier_diff": -0.00024149011597343617,
+  "fit_wins": false,
+  "boot95_brier_diff": [
+   -0.0013041045527452625,
+   0.0007990818408297798
+  ],
+  "boot95_excludes_zero": false
+ },
+ "union_disagreement": {
+  "set": "disagreement(trusted+untrustworthy)",
+  "n": 2278,
+  "n_ladders": 970,
+  "brier_fit": 0.0879939763431946,
+  "brier_quote": 0.08590194249341528,
+  "log_fit": 0.29582287017594205,
+  "log_quote": 0.28926854510388095,
+  "brier_fit_vs_truth": 0.002443875557640188,
+  "brier_quote_vs_truth": 0.00047198350493798144,
+  "brier_diff": -0.0020920338497793234,
+  "fit_wins": false,
+  "boot95_brier_diff": [
+   -0.0037349262493018,
+   -0.0005302162061479259
+  ],
+  "boot95_excludes_zero": true
+ },
+ "secondary_executable": {
+  "set": "secondary_executable",
+  "n": 662,
+  "n_ladders": 428,
+  "brier_fit": 0.029110452527778517,
+  "brier_quote": 0.02929739425981873,
+  "log_fit": 0.09609695341779834,
+  "log_quote": 0.11267206187174332,
+  "brier_fit_vs_truth": 0.00033698035333319806,
+  "brier_quote_vs_truth": 0.0005585182488313216,
+  "brier_diff": 0.00018694173204021267,
+  "fit_wins": true
+ },
+ "all": {
+  "set": "all",
+  "n": 7200,
+  "n_ladders": 1200,
+  "brier_fit": 0.1241024506757271,
+  "brier_quote": 0.12350186458333334,
+  "log_fit": 0.3948772793016688,
+  "log_quote": 0.3934830176844364,
+  "brier_fit_vs_truth": 0.0009867025274063487,
+  "brier_quote_vs_truth": 0.0003559538832793322,
+  "brier_diff": -0.0006005860923937595,
+  "fit_wins": false
+ },
+ "by_family_primary": {
+  "unimodal": {
+   "set": "primary/unimodal",
+   "n": 211,
+   "n_ladders": 152,
+   "brier_fit": 0.045190123825143286,
+   "brier_quote": 0.04671101895734598,
+   "log_fit": 0.15291419955850657,
+   "log_quote": 0.17090976954154752,
+   "brier_fit_vs_truth": 8.477830022836586e-05,
+   "brier_quote_vs_truth": 0.0007361269590034111,
+   "brier_diff": 0.0015208951322026945,
+   "fit_wins": true
+  },
+  "skewed": {
+   "set": "primary/skewed",
+   "n": 555,
+   "n_ladders": 271,
+   "brier_fit": 0.023343092976522508,
+   "brier_quote": 0.024040945945945948,
+   "log_fit": 0.0745564342278795,
+   "log_quote": 0.09339684523784796,
+   "brier_fit_vs_truth": 4.156931148901342e-05,
+   "brier_quote_vs_truth": 0.0006028779906276165,
+   "brier_diff": 0.0006978529694234396,
+   "fit_wins": true
+  },
+  "bimodal": {
+   "set": "primary/bimodal",
+   "n": 193,
+   "n_ladders": 80,
+   "brier_fit": 0.11911340683323698,
+   "brier_quote": 0.11634844559585492,
+   "log_fit": 0.40358788677543916,
+   "log_quote": 0.3924058120585069,
+   "brier_fit_vs_truth": 0.0018697742971876955,
+   "brier_quote_vs_truth": 0.0003602338847681086,
+   "brier_diff": -0.0027649612373820687,
+   "fit_wins": false
+  },
+  "mix": {
+   "set": "primary/mix",
+   "n": 419,
+   "n_ladders": 233,
+   "brier_fit": 0.11476128432439482,
+   "brier_quote": 0.11355041766109784,
+   "log_fit": 0.38162844536777385,
+   "log_quote": 0.37792648230310344,
+   "brier_fit_vs_truth": 0.0007899401971507798,
+   "brier_quote_vs_truth": 0.0004072077076748299,
+   "brier_diff": -0.0012108666632969778,
+   "fit_wins": false
+  }
+ },
+ "by_family_all": {
+  "unimodal": {
+   "set": "all/unimodal",
+   "n": 1800,
+   "n_ladders": 300,
+   "brier_fit": 0.12538381973837912,
+   "brier_quote": 0.12548361111111112,
+   "log_fit": 0.39665979817887004,
+   "log_quote": 0.3995356433359295,
+   "brier_fit_vs_truth": 0.00016212940066333934,
+   "brier_quote_vs_truth": 0.0003184887801856798,
+   "brier_diff": 9.97913727319999e-05,
+   "fit_wins": true
+  },
+  "skewed": {
+   "set": "all/skewed",
+   "n": 1800,
+   "n_ladders": 300,
+   "brier_fit": 0.10131602330763953,
+   "brier_quote": 0.10142794444444443,
+   "log_fit": 0.3107672206947364,
+   "log_quote": 0.31644687066466803,
+   "brier_fit_vs_truth": 0.00019559779051789186,
+   "brier_quote_vs_truth": 0.00040718468817445736,
+   "brier_diff": 0.00011192113680490168,
+   "fit_wins": true
+  },
+  "bimodal": {
+   "set": "all/bimodal",
+   "n": 1800,
+   "n_ladders": 300,
+   "brier_fit": 0.13701909636349996,
+   "brier_quote": 0.13422122222222224,
+   "log_fit": 0.44445909007817863,
+   "log_quote": 0.42893708636216815,
+   "brier_fit_vs_truth": 0.0031004003043219324,
+   "brier_quote_vs_truth": 0.000349527993168622,
+   "brier_diff": -0.0027978741412777175,
+   "fit_wins": false
+  },
+  "mix": {
+   "set": "all/mix",
+   "n": 1800,
+   "n_ladders": 300,
+   "brier_fit": 0.13269086329338986,
+   "brier_quote": 0.13287468055555557,
+   "log_fit": 0.4276230082548904,
+   "log_quote": 0.4290124703749796,
+   "brier_fit_vs_truth": 0.0004886826141222312,
+   "brier_quote_vs_truth": 0.00034861407158856994,
+   "brier_diff": 0.0001838172621657086,
+   "fit_wins": true
+  }
+ },
+ "untrustworthy": {
+  "n_ladders_flagged": 234,
+  "n_ladders": 1200,
+  "rate": 0.195,
+  "n_obs_excluded_from_primary": 900,
+  "fire_rate_by_family": {
+   "bimodal": 0.71,
+   "mix": 0.06666666666666667,
+   "skewed": 0.0033333333333333335,
+   "unimodal": 0.0
+  },
+  "n_ladders_by_family": {
+   "bimodal": 300,
+   "mix": 300,
+   "skewed": 300,
+   "unimodal": 300
+  },
+  "false_fire_rate_wellspecified_U_K": 0.0016666666666666668,
+  "gof_threshold": 11.3449
+ },
+ "bands": {
+  "coverage_trusted": 0.8145272601794341,
+  "coverage_all": 0.7261111111111112,
+  "coverage_by_family_trusted": {
+   "unimodal": 0.9644444444444444,
+   "skewed": 0.8015607580824972,
+   "bimodal": 0.5670498084291188,
+   "mix": 0.7446428571428572
+  },
+  "width_mean_trusted": 0.05131199270566522,
+  "asymmetry_mean_trusted": 0.0015415925882758925
+ },
+ "disagreement_rate_primary": 0.1913888888888889,
+ "disagreement_rate_exec": 0.17708333333333334,
+ "BAR1": {
+  "bar": "Brier(fit) < Brier(quote), strict, on the PRIMARY disagreement set, AND the ladder-clustered 95% CI excludes zero",
+  "n": 1378,
+  "brier_fit": 0.0678986925833174,
+  "brier_quote": 0.06765720246734397,
+  "brier_diff": -0.00024149011597343617,
+  "boot95": [
+   -0.0013041045527452625,
+   0.0007990818408297798
+  ],
+  "fit_wins": false,
+  "ci_excludes_zero": false,
+  "underpowered": false,
+  "PASS": false,
+  "union_set_check": {
+   "n": 2278,
+   "brier_fit": 0.0879939763431946,
+   "brier_quote": 0.08590194249341528,
+   "fit_wins": false,
+   "note": "bar 1's outcome is the same on the union set"
+  }
+ },
+ "BAR2": {
+  "bar": "90% band contains the truth on 85-95% of trusted observations (fails in BOTH directions)",
+  "coverage_trusted": 0.8145272601794341,
+  "lo": 0.85,
+  "hi": 0.95,
+  "direction": "too narrow / overconfident",
+  "PASS": false
+ },
+ "BAR3": {
+  "bar": "GoF fires on >= 60% of bimodal truths",
+  "fire_rate_bimodal": 0.71,
+  "required": 0.6,
+  "false_fire_rate_U_K": 0.0016666666666666668,
+  "PASS": true
+ },
+ "VERDICT": {
+  "bar1": false,
+  "bar2": false,
+  "bar3": true,
+  "PASS": false
+ },
+ "config": {
+  "arm": "parametric",
+  "method": "quadrature",
+  "n_per_family": 300,
+  "limit_per_family": null,
+  "seed": 20261020,
+  "families": [
+   "unimodal",
+   "skewed",
+   "bimodal",
+   "mix"
+  ],
+  "sigma_q": 0.0182,
+  "h_bar": 0.02,
+  "n_axis": 121,
+  "n_ladders": 1200,
+  "n_obs": 7200
+ }
+}
