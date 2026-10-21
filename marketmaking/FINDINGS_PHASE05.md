@@ -269,3 +269,82 @@ ladder-minutes at that cadence.
 cadence interacts with Test B's 5/30/60-minute horizons. This is a third item
 for the same ruling. It is flagged now, before any number exists, rather than
 discovered as a convenient degree of freedom later.
+
+---
+
+## 5. What this run built and changed
+
+All new code in `marketmaking/phase05/` and one ops script. **Nothing under
+`PROTOCOL.md`, `waves/`, `ladder/`, or `wti_arb/synth/` was modified.**
+`ladder.store` is imported read-only. The live collector was not touched, and no
+file under `data/depth|touch|price_ranges|incentive|live*` was read or written —
+`assert_not_live()` ran clean on the staged root.
+
+| Module | Change |
+|---|---|
+| `phase05/panel.py` | **new** — (bracket, minute) quote + settlement panel from the staged store; settlement joined from the store's own markets table |
+| `phase05/run.py` | now stops on `FitGap`, not the staging gate; reproduces the §2 diagnosis on demand, exits 2 |
+| `ops/stage_icloud_store.sh` | **new** — idempotent, resumable stager; records the `brctl` relative-path no-op and the request/copy decoupling |
+
+**Test suite: 47 passed**, unchanged (`../.venv/bin/python -m pytest tests/ -q`).
+No test was weakened, and `disagree.BandRule` still has no default.
+
+### Staging ledger
+
+| | |
+|---|---:|
+| Target | 12,914 files / 1.18 GB / 53 series |
+| **Staged** | **6,323 files / 552 MB** |
+| Markets tables | **37 of 53** |
+| Temperature series with markets | **32 of 48** |
+| Commodity series | **5 of 5** |
+
+**Staging is incomplete and the reason is external.** After ~1 hour at
+573–619 KB/s, iCloud stopped honouring `brctl download` entirely — verified
+with every local loop stopped and a single explicit absolute-path request, which
+returned `rc=0` and left the file `dataless` through 90 s of polling, while
+`bird` held 25% CPU and the link still carried 619 KB/s. That is a server-side
+state. `ops/stage_icloud_store.sh` resumes from exactly here at no cost.
+
+**This does not affect the verdict.** The blocker in §2 is that the fit does not
+exist, not that the data is thin — and §4 shows the staged subset already
+carries thousands of settled events, far past §1B's reporting bar.
+
+---
+
+## 6. What a ruling has to decide
+
+Three questions, in this order. The first gates the other two.
+
+1. **What is "the fit" for a daily temperature ladder?** (§2 above.) The options
+   are: authorise a digital likelihood in `wti_arb/synth/` (an amendment to
+   §1B's "may not alter the density extractor"); authorise a band on
+   `ladder/maker.py`'s PAVA fair value (an amendment to "does not invent a new
+   one"); build the phase-1 fitter `BRIEF.md` §4 describes and re-run phase 0.5
+   against it; or move phase 0.5 to the commodity series where Act III already
+   works (an amendment to §1A, and requires staging `data_cme`).
+2. **Which band reading?** (§3.) Moot until (1). §2 of `PROTOCOL.md` is new
+   evidence for reading B. The pre-specification in §3 above closes it safely.
+3. **What minute cadence?** (§4.) §1B says every minute; Act III cannot. The
+   cadence must be fixed before the first number, and it interacts with Test B's
+   5/30/60-minute horizons.
+
+**Per the amendment rule in `PROTOCOL.md`'s header, any of these is a new dated
+section at the bottom of that file, with §1B left intact and the reason
+recorded.** This run did not write one. A threshold that moves after the data
+arrives is not a threshold, and the same is true of a definition.
+
+---
+
+## 7. What was NOT done, deliberately
+
+- **No substitute dataset was scored.** The `results_backtest/brackets_KX*.csv`
+  rows still carry `pq_mean`/`pq_q05`/`pq_q95` and settlement, and would have
+  produced *a* Brier score in minutes. They remain the wrong unit, the wrong
+  universe, and already-read data — declined for the four reasons in the
+  2026-10-18 edition of this document, all of which still hold.
+- **No fit was invented** to get a number out of the run.
+- **No band rule was chosen** by the party running the code.
+- **No subgroup was searched.** Test A did not fail; it did not run. There is
+  nothing to re-cut.
+- **`PROTOCOL.md` was not edited.** The `132ce8c` ordering is intact.
