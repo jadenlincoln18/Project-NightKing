@@ -170,6 +170,47 @@ The unit is a (bracket, minute) observation on a settled ladder where:
 - **No look-ahead.** The fit at time $t$ is constructed from quotes available at
   or before $t$. Any accidental use of $t+$ data invalidates the run.
 
+#### Band rule — ruling, 2026-10-20 (before any Test A data was read)
+
+The second bullet above has two implementable readings and phase 0.5 refused to
+pick one by fiat (`FINDINGS_PHASE05.md` §3). **The protocol's author ruled.** The
+bullet is left exactly as written; this subsection is what implements it, and it
+was committed and pushed before Test A read any data.
+
+**PRIMARY (the gate).** A disagreement is a (bracket, minute) where both sides
+are quoted and the **quote midpoint lies outside the fit's 90% credible interval**
+for that bracket:
+
+```
+m_t < q_05   or   m_t > q_95
+```
+
+**Use the interval's actual asymmetric quantiles.** Do not convert to a
+symmetric half-width. If the band is skewed — e.g. `[0.48, 0.90]` around a fair
+value of `0.50` — **that skew is the fit's uncertainty**, and symmetrising it
+throws the information away. This closes the ambiguity in favour of the reading
+that keeps the band where the fitter put it.
+
+**The level is 90%, not 95%.** `band90` is what the fitter emits and the only
+level validated (93% coverage on synthetic). Any other level would smuggle in an
+unstated choice.
+
+**SECONDARY (reported, NOT a gate).** The **executable** disagreement set:
+
+```
+ask < q_05   or   bid > q_95
+```
+
+Reported alongside the primary because it shows how many disagreements were
+actually tradeable. It **cannot rescue a failed primary** and must never be
+presented as an alternative verdict.
+
+> Recorded for the audit trail: §2's `e = |F - Q| > w + f` is the *symmetric
+> half-width* reading, and phase 0.5 had flagged it as evidence for that
+> reading. **The ruling goes the other way on purpose** — §2's `w` is a phase-1
+> quoting threshold, and the asymmetry of the fitted band is exactly what
+> phase 0.5 is testing the fit's knowledge of.
+
 ### Test A — settlement calibration (the decisive one)
 
 Score two competing probability forecasts of the realised binary outcome: the
