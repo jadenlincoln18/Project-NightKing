@@ -640,3 +640,177 @@ begins only on explicit instruction, regardless of the result.
 The order manager is inert for the entire phase. There is no code path from the
 quoter to an authenticated endpoint, and the kill switch is checkable by both
 operator and agent and honoured within one cycle.
+
+---
+
+## 8. Amendment, 2026-10-20 — Gate 0 synthetic feasibility check: the operative specification
+
+**Written and committed before a single synthetic ladder was generated or
+scored.** Nothing below was informed by any Gate 0 result, because none existed.
+
+**Relationship to §1B.** §1B is left exactly as committed and is not edited by
+this section. §1B already carries a `Gate 0` subsection and a band-rule ruling
+added earlier today (`9fab518`, `d2fd6c3`); those were written *inside* §1B
+rather than as a dated section at the bottom, which is what this file's
+amendment rule requires. **This section is the amendment-rule-compliant record
+and the operative specification Gate 0 is run against.** It is strictly a
+numerical completion of that subsection — every quantity it fixes was left open
+there — and it relaxes nothing: the pass bar is reproduced verbatim and the band
+rule is §1B's PRIMARY ruling unchanged. Where this section and the §1B
+subsection could be read differently, **the stricter reading governs.**
+
+### 8.1 Why this check exists, in one sentence
+
+`BRIEF.md` §2 claims the fit beats a bracket's own quote by pooling **~25 noisy
+observations of one distribution**; the §1A universe supplies **6**, and with a
+24-coefficient spline through 6 points the fit may be mostly its own smoothness
+prior — so the fit is tested against a noisy quote on a truth that is *known*,
+before any real-data number is produced.
+
+### 8.2 Ladder geometry — measured, not assumed
+
+From the staged store, **all 48 temperature series, 15,523 classifiable `range`
+events** (`fit/geometry.py`, settlement never read):
+
+| quantity | measured |
+|---|---|
+| Brackets per event | **5.989 mean**; exactly 6 on **15,355 / 15,523 = 98.9%** |
+| Interior edge spacing | **2.0 °F** on 61,771 / 61,927 gaps (**99.7%**) |
+| Interior span | **8.0 °F** median |
+| Ladder kind | `range` on 15,712 events; `cumul` on **zero** |
+
+**Synthetic ladders use exactly this geometry:** 6 brackets, 5 interior edges at
+`c + {−4, −2, 0, +2, +4}` °F, two open wings `(−∞, c−4)` and `[c+4, ∞)`. Without
+loss of generality `c = 0`; the truth's location moves instead of the ladder's.
+Settlement is on integer °F and the edges fall on half degrees, so the bracket
+containing a continuous draw and the bracket containing its rounded value are
+the same bracket.
+
+### 8.3 Truth distributions — three families, fixed here
+
+Per `np.random.default_rng(20261020)`, **200 ladders per family, 600 total**, one
+snapshot each (Gate 0 has no time axis; the unit is (bracket, ladder)).
+
+| family | truth | parameters |
+|---|---|---|
+| **U — unimodal** | `N(μ, σ)` | `μ ~ U(−4, 4)` °F, `σ ~ U(1.5, 4.0)` °F |
+| **K — skewed** | skew-normal `(ξ, ω, α)` | `ξ ~ U(−4, 4)`, `ω ~ U(2.0, 4.5)`, `α ∈ {−6, +6}` equiprobable |
+| **B — bimodal** | `w·N(μ₁,σ) + (1−w)·N(μ₂,σ)` | separation `Δ ~ U(5, 9)` °F, `σ ~ U(1.2, 2.2)`, centre `~ U(−2, 2)`, `w ~ U(0.35, 0.65)` |
+
+True bracket probabilities are exact integrals of the truth between the edges.
+The **realised outcome** is a single draw `S` from the truth per ladder: the
+bracket containing it settles 1, the other five settle 0 — one YES per ladder,
+as on the exchange.
+
+### 8.4 Quote noise — measured on the real ladders, two independent ways
+
+**(a) Displacement.** A `range` ladder partitions the outcome space, so coherent
+mids sum to 1. Writing `m_i = p_i + e_i` with independent `e_i`,
+`sd(Σm − 1) = σ_q·√n_br`. On **6,680 fully-tight real ladder-minutes** across 12
+series (every bracket two-sided, every spread < 20c), `sd(Σm − 1) = 0.0445` at
+`n_br = 6.0`, so
+
+> **σ_q = 0.0445 / √6 = 0.0182** — about **1.8 cents** of idiosyncratic
+> per-bracket quote noise.
+
+This estimate sees only the **idiosyncratic** component; common-mode error
+cancels in the sum. That is the correct component: a common-mode error is one
+the fit absorbs rather than corrects, so counting it would credit the fit with
+knowledge it does not have.
+
+**(b) Spread.** Measured on the same universe, two-sided executable
+bracket-minutes, n = 45,338. **26.3% are degenerate 1/99-type books** (spread
+≥ 20c; 8.1% at ≥ 90c) — "quoted" in the data but not a price. On the remaining
+**73.7%** the median spread by mid-level stratum (cents) is:
+
+| mid (c) | 0–5 | 5–15 | 15–35 | 35–65 | 65–85 | 85–95 | 95–100 |
+|---|---|---|---|---|---|---|---|
+| median spread | 2 | 5 | 5 | 4 | 6 | 9 | 1 |
+
+so the median half-spread is **≈ 2c**, independently agreeing with σ_q ≈ 1.8c.
+
+**The noise model, fixed:** `m_i = p_i + e_i`, `e_i ~ N(0, 0.0182)`; spread `w_i`
+**resampled from the measured tight empirical distribution** for `m_i`'s stratum
+(the whole distribution, not its median, so the tail survives); `bid`/`ask`
+placed symmetrically about `m_i`, rounded to the 1c tick, clipped to [1, 99];
+the scored quote is the resulting **executable midpoint**.
+
+**Two deliberate conservative choices, both of which make the gate harder:**
+
+1. **Degenerate books excluded.** Including 1/99 books would hand the quote a
+   26% subset of mid-50 non-prices and let the fit win on arithmetic.
+2. **No overround.** The real ladders' mids sum to **1.0356** (+3.56%), a
+   systematic inflation the fit cancels by construction because its density
+   normalises. The primary run sets the overround to **zero**, so the quote is
+   unbiased and the fit gets no free structural win. The measured +3.56% is run
+   as a **declared sensitivity**, reported and not gating.
+
+### 8.5 The fit — specification fixed before any fit was run
+
+New code in `marketmaking/fit/`. `wti_arb/synth/`, `ladder/` and `waves/` are
+not modified, not imported for inference, and not patched; the *structure* of
+the existing WTI extractor is copied, not called.
+
+| | |
+|---|---|
+| Support grid | **linear in °F**, 400 points, interior edges **± 20 °F** (`[−24, +24]` at `c = 0`). No log-moneyness: temperature has no forward and its support reaches 0 °F and below. |
+| Payoff matrix | `G[i,k] = 1` iff grid point `k` lies in bracket `i` — an **indicator integral**, not `(s−K)⁺` |
+| Density | `p ∝ w·exp(Σⱼ θⱼ Bⱼ(s))`, cubic B-spline, **m = 24** coefficients — Act III's default, **deliberately not tuned down** for 6 points |
+| Prior | second-difference roughness penalty with a sampled smoothing scale |
+| Likelihood | Gaussian on `G@p` vs the quote mid, **sd = half-spread** (floor 0.005) — the extractor's own convention |
+| Constraints | **no martingale, no forward.** Not applicable to temperature |
+| Posterior | NUTS, 4 chains × 500 draws, 500 warmup |
+| Band | **band90** = posterior 5th/95th percentile of each bracket's probability, **asymmetric as drawn** |
+
+### 8.6 Scoring — identical to Test A
+
+- **Brier score**, mean squared error against the realised 0/1 settlement. Two
+  competing forecasts: the **fit's posterior mean** and the **noisy quote
+  midpoint**. Lower wins.
+- **Disagreement set (PRIMARY, the gate)** — §1B's ruling, verbatim: both sides
+  quoted **and** the quote midpoint lies outside the fit's 90% credible interval,
+  `m < q₀₅` or `m > q₉₅`, using the **actual asymmetric quantiles**, never a
+  symmetric half-width. Level 90% because `band90` is the only validated level.
+- **Secondary, reported and NOT gating:** the executable set, `ask < q₀₅` or
+  `bid > q₉₅`.
+
+### 8.7 The pass bar, stated numerically before any result exists
+
+> ### **PASS ⟺ Brier(fit) < Brier(quote) on the PRIMARY disagreement set.**
+> Strict inequality. Both Brier scores against the realised 0/1 settlement, on
+> the identical set of (bracket, ladder) observations. **No other condition can
+> produce a pass, and no other set may be substituted for the disagreement set.**
+
+**Reported alongside, explicitly NOT gating and incapable of rescuing a fail:**
+the ladder-clustered 95% bootstrap CI on `Brier(quote) − Brier(fit)`; the
+per-family breakdown (U / K / B); the secondary executable set; the log score;
+Brier against the *known true probability* as a lower-variance diagnostic; the
+all-observations comparison; and the overround sensitivity.
+
+**N guard, not an escape hatch.** The disagreement-set N is reported. If it is
+below 100 the verdict is additionally labelled **underpowered** — but the bar is
+still evaluated and the raw comparison still reported. A small N does not
+convert a fail into a non-result.
+
+**Per-family results may not re-gate.** A pass on U alone, with K or B losing,
+**is a fail**. Clustering is by ladder, never by bracket: six brackets of one
+ladder share one outcome, and bracket-level resampling overstates significance
+by √6 = 2.45.
+
+**On failure: STOP.** Do not run Test A, do not re-cut, do not retune the
+fitter and re-score. The response to a failure is the protocol author's decision
+about the universe — specifically whether to move toward ladders with more than
+6 brackets — made with this number in hand.
+
+**On success: ALSO STOP.** Test A additionally requires a ruling on minute
+cadence (`FINDINGS_PHASE05.md` §6, item 3) that has not been given. Gate 0
+passing does not license Test A to start.
+
+### 8.8 Fences on this run
+
+No trading code, no order placement, no authenticated Kalshi call,
+`ORDERS_ENABLED` stays `False`. `ops/watchdog.py`, `mm/collect.py` and
+`STATE.md` belong to another session and are not touched. Real market data is
+read for **geometry and spread only** — §1A explicitly permits microstructure —
+and **no settlement outcome is read by anything that scores**: everything scored
+in Gate 0 is synthetic, with a truth this protocol fixed above.
