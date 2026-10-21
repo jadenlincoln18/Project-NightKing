@@ -1,7 +1,7 @@
 """Gate 0 driver — generate, fit, score. PROTOCOL §8.
 
 Run:
-    ../.venv/bin/python -m fit.gate0 --n-per-family 200 --out reports/gate0
+    ../.venv/bin/python -m fitter.gate0 --n-per-family 200 --out reports/gate0
 
 The pass bar (§8.7) is evaluated here and nowhere else:
 
@@ -19,7 +19,7 @@ import warnings
 import numpy as np
 import pandas as pd
 
-from fit import density, synth
+from fitter import density, synth
 
 SEED = 20261020
 ROW_COLUMNS = ("ladder", "family", "bracket", "truth_p", "outcome", "bid", "ask",

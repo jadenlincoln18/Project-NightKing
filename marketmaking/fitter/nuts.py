@@ -1,4 +1,4 @@
-"""Posterior machinery for `fit/density.py` — copied from `wti_arb/synth/act3.py`.
+"""Posterior machinery for `fitter/density.py` — copied from `wti_arb/synth/act3.py`.
 
 **This is a copy, deliberately.** PROTOCOL §8.5 fixes the sampler as the one the
 WTI extractor already uses, and the extractor itself may not be modified or
@@ -15,7 +15,7 @@ transcription error can make Gate 0's sampler differ from the validated one:
   * `split_rhat`, `ess` — convergence diagnostics
 
 The only edit is this docstring and the import block. `model` is duck-typed: it
-needs `dim` and `logpost(q, with_grad)`, which `fit.density.LadderModel`
+needs `dim` and `logpost(q, with_grad)`, which `fitter.density.LadderModel`
 provides.
 """
 from __future__ import annotations

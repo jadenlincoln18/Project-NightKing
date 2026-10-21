@@ -48,7 +48,7 @@ import numpy as np
 from scipy.interpolate import BSpline
 from scipy.optimize import minimize
 
-from fit import nuts as _nuts
+from fitter import nuts as _nuts
 
 # --- hyperparameters, taken from the WTI extractor unchanged ----------------
 TILT_SD = 30.0
