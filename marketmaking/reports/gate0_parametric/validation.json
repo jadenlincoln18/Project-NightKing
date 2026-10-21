@@ -1,0 +1,75 @@
+{
+ "subsample": {
+  "n_ladders": 60,
+  "per_family": 15,
+  "n_bracket_obs": 360
+ },
+ "tolerances": {
+  "mean_abs_mean": 0.005,
+  "mean_abs_band": 0.01
+ },
+ "laplace_vs_quadrature": {
+  "mean_abs_mean": 0.017323398024995544,
+  "max_abs_mean": 0.12865644312577115,
+  "mean_abs_band": 0.0809532754661075,
+  "max_abs_band": 0.8554092817174406,
+  "n_obs": 360
+ },
+ "mcmc_vs_quadrature": {
+  "mean_abs_mean": 0.0018991933854829739,
+  "max_abs_mean": 0.03245116136112888,
+  "mean_abs_band": 0.0023578987192415363,
+  "max_abs_band": 0.04301498639204282,
+  "n_obs": 72
+ },
+ "quadrature_grid_stability_81_vs_121": {
+  "mean_abs_mean": 0.0031956889176801622,
+  "max_abs_mean": 0.06755309165863227,
+  "mean_abs_band": 0.003969899484696089,
+  "max_abs_band": 0.06713413472438666,
+  "n_obs": 360
+ },
+ "quadrature_boundary_mass": {
+  "max": 0.03305609366414106,
+  "median": 1.489857408975413e-07,
+  "n_above_1e-4": 3,
+  "max_sd_extent": 192.0
+ },
+ "mcmc_diagnostics": {
+  "rhat_max": 1.5058129048679532,
+  "ess_min": 116.42446837625499,
+  "n_ladders": 12
+ },
+ "laplace_by_family": {
+  "unimodal": {
+   "mean_abs_mean": 0.0186426499837272,
+   "max_abs_mean": 0.12865644312577115,
+   "mean_abs_band": 0.10173244544743819,
+   "max_abs_band": 0.8554092817174406,
+   "n_obs": 90
+  },
+  "skewed": {
+   "mean_abs_mean": 0.020022633302356332,
+   "max_abs_mean": 0.10948589317832391,
+   "mean_abs_band": 0.06460313752027293,
+   "max_abs_band": 0.40280183247671203,
+   "n_obs": 90
+  },
+  "bimodal": {
+   "mean_abs_mean": 0.01799698162686031,
+   "max_abs_mean": 0.10552397058730464,
+   "mean_abs_band": 0.0884298217335069,
+   "max_abs_band": 0.6838760307907964,
+   "n_obs": 90
+  },
+  "mix": {
+   "mean_abs_mean": 0.012631327187038341,
+   "max_abs_mean": 0.06820395932097167,
+   "mean_abs_band": 0.06904769716321199,
+   "max_abs_band": 0.5157568996493735,
+   "n_obs": 90
+  }
+ },
+ "LAPLACE_LICENSED": false,
+ "PRIMARY_INFERENCE": "quadrature"
+}

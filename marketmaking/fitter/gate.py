@@ -35,11 +35,12 @@ UNDERPOWERED_N = 100              # §8.7
 # --- workers -----------------------------------------------------------------
 
 def _fit_parametric(args):
-    idx, bid, ask, method = args
+    idx, bid, ask, method, n_axis = args
     warnings.filterwarnings("ignore")
     np.seterr(all="ignore")
+    kw = {"n_axis": n_axis} if method == "quadrature" else {}
     r = sn.fit_ladder(synth.EDGES, bid, ask,
-                      np.random.default_rng(SEED + 1000 + idx), method=method)
+                      np.random.default_rng(SEED + 1000 + idx), method=method, **kw)
     return idx, r
 
 
@@ -210,6 +211,10 @@ def main(argv=None):
     ap.add_argument("--n-warmup", type=int, default=500)
     ap.add_argument("--workers", type=int, default=None)
     ap.add_argument("--n-boot", type=int, default=2000)
+    ap.add_argument("--n-axis", type=int, default=121,
+                    help="quadrature nodes per axis; the §9.6 validation showed "
+                         "81-vs-121 agreement of 0.003-0.004 mean absolute, and the "
+                         "finer grid is used for the primary")
     ap.add_argument("--spread-sample", default="reports/gate0/spread_sample.parquet")
     a = ap.parse_args(argv)
     np.seterr(all="ignore")
@@ -231,7 +236,7 @@ def main(argv=None):
         idxs = [i for i, _ in sel]
         lads = [l for _, l in sel]
         if a.arm == "parametric":
-            jobs = [(i, l.bid, l.ask, a.method) for i, l in sel]
+            jobs = [(i, l.bid, l.ask, a.method, a.n_axis) for i, l in sel]
             fn = _fit_parametric
         else:
             jobs = [(i, l.bid, l.ask, a.n_samples, a.n_warmup) for i, l in sel]
@@ -255,7 +260,8 @@ def main(argv=None):
     rep["config"] = {"arm": a.arm, "method": a.method, "n_per_family": a.n_per_family,
                      "limit_per_family": a.limit_per_family, "seed": SEED,
                      "families": list(synth.FAMILIES), "sigma_q": sn.SIGMA_Q,
-                     "h_bar": sn.H_BAR, "n_ladders": int(full["ladder"].nunique()),
+                     "h_bar": sn.H_BAR, "n_axis": a.n_axis,
+                     "n_ladders": int(full["ladder"].nunique()),
                      "n_obs": int(len(full))}
     with open(os.path.join(a.out, "report_%s.json" % a.arm), "w") as fh:
         json.dump(rep, fh, indent=1, default=float)
