@@ -1,0 +1,57 @@
+[
+ {
+  "what": "CL minute coverage extension 2026-09-05..10-27, CLX6+CLZ6",
+  "schema": "ohlcv-1m",
+  "cost": 0.324846804142
+ },
+ {
+  "what": "CL minute coverage extension 2026-09-05..10-27, CLX6+CLZ6",
+  "schema": "bbo-1m",
+  "cost": 0.125049948692
+ },
+ {
+  "what": "CL tick-level, one contract window (CLQ6, 2026-06-24..07-10, 15 days)",
+  "schema": "trades",
+  "cost": 1.213219106197
+ },
+ {
+  "what": "CL tick-level, one contract window (CLQ6, 2026-06-24..07-10, 15 days)",
+  "schema": "mbp-1",
+  "cost": 1.823202341795
+ },
+ {
+  "what": "CL tick-level, one contract window (CLQ6, 2026-06-24..07-10, 15 days)",
+  "schema": "tbbo",
+  "cost": 2.022031843662
+ },
+ {
+  "what": "CL tick-level, one US session (CLQ6, 2026-07-01 13:00-21:00 UTC)",
+  "schema": "trades",
+  "cost": 0.046683311462
+ },
+ {
+  "what": "CL tick-level, one US session (CLQ6, 2026-07-01 13:00-21:00 UTC)",
+  "schema": "mbp-1",
+  "cost": 0.064453616738
+ },
+ {
+  "what": "GC minute bars 2026-03-01..09-10 (GCM6,GCQ6,GCZ6)",
+  "schema": "ohlcv-1m",
+  "cost": 0.966651067138
+ },
+ {
+  "what": "SI minute bars 2026-03-01..09-10 (SIK6,SIN6,SIU6)",
+  "schema": "ohlcv-1m",
+  "cost": 0.814365893602
+ },
+ {
+  "what": "NG minute bars 2026-03-01..09-10 (NGK6,NGM6,NGN6,NGQ6,NGU6)",
+  "schema": "ohlcv-1m",
+  "cost": NaN
+ },
+ {
+  "what": "HG minute bars 2026-03-01..09-10 (HGK6,HGN6,HGU6)",
+  "schema": "ohlcv-1m",
+  "cost": 0.828414112329
+ }
+]
