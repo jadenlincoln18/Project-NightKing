@@ -1,0 +1,7 @@
+{"ticker": "KXWTIW-26JUN2614-T83.99", "event_ticker": "KXWTIW-26JUN2614", "yes_sub_title": "Above $83.99",
+ "open_time": "2026-06-19T14:00:00Z", "close_time": "2026-06-26T18:30:00Z", "expiration_time": "2026-06-26T18:30:00Z",
+ "status": "settled", "result": "no", "expiration_value": "69.23", "settlement_ts": "2026-06-26T18:31:02Z",
+ "occurrence_datetime": "2026-06-26T18:30:00Z", "settlement_timer_seconds": 3600,
+ "strike_type": "greater", "floor_strike": 83.99, "volume_fp": "512.00", "open_interest_fp": "0.00",
+ "custom_strike": {"front_month_contract": "WBS 26V-ICE", "strike_date": "2026-06-26T18:30:00Z"},
+ "rules_primary": "If the WTI Crude Futures settle above $83.99 ..."}

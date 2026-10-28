@@ -15,4 +15,28 @@ data/probe.json
 data_cme/raw/
 data_cme/parquet/
 data_cme/db.log
-synth/results/*.pkl
+wti_arb/synth/results/*.pkl
+
+# ladder study: per-event checkpoints and live collector output are large; aggregates and findings are kept
+ladder/results/parts/
+ladder/results/*.pkl
+ladder/data/books/
+ladder/data/live_candles/
+
+# waves study: per-ladder checkpoints and the pulled store are large; discovery tables, aggregates and findings are kept
+waves/results/parts/
+waves/results/events.parquet
+waves_data/parquet/
+waves_data/raw/
+waves_data/manifest.jsonl
+waves_data/discovery/raw_*.jsonl
+waves_data/*.log
+
+# large reproducible outputs (previous study results/plots; aggregate parquets of the ladder/waves studies; discovery tables)
+wti_arb/synth/results*/
+wti_arb/synth/plots_real*/
+ladder/results/*.parquet
+waves/results/*.parquet
+waves_data/discovery/*.parquet
+.DS_Store
+waves/results/status.jsonl
